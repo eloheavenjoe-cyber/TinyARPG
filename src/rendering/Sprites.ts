@@ -4,6 +4,8 @@ export class Sprites {
   static player: Texture;
   static ranger: Texture;
   static enemy: Texture;
+  static archer: Texture;
+  static cultist: Texture;
   static juggernaut: Texture;
   static wall: Texture;
   static floor: Texture;
@@ -67,6 +69,50 @@ export class Sprites {
       ctx.fillStyle = '#2a0808';
       ctx.fillRect(8, 28, 8, 4);
       ctx.fillRect(16, 28, 8, 4);
+    });
+
+    Sprites.archer = Sprites.createTexture(32, 32, (ctx) => {
+      ctx.fillStyle = '#2a4a1a';
+      ctx.fillRect(10, 2, 12, 6);
+      ctx.fillStyle = '#cc3333';
+      ctx.fillRect(13, 4, 2, 2);
+      ctx.fillRect(17, 4, 2, 2);
+      ctx.fillStyle = '#3a5a28';
+      ctx.fillRect(8, 8, 16, 12);
+      ctx.fillStyle = '#4a7a35';
+      ctx.fillRect(10, 10, 12, 3);
+      ctx.fillStyle = '#5a4a2a';
+      ctx.fillRect(22, 6, 4, 14);
+      ctx.fillStyle = '#3a2a1a';
+      ctx.fillRect(23, 6, 2, 14);
+      ctx.fillStyle = '#2a3a18';
+      ctx.fillRect(9, 20, 14, 2);
+      ctx.fillStyle = '#1a2a0e';
+      ctx.fillRect(10, 22, 5, 6);
+      ctx.fillRect(17, 22, 5, 6);
+      ctx.fillStyle = '#3a2a1a';
+      ctx.fillRect(9, 28, 6, 4);
+      ctx.fillRect(17, 28, 6, 4);
+    });
+
+    Sprites.cultist = Sprites.createTexture(32, 32, (ctx) => {
+      ctx.fillStyle = '#2a0a3a';
+      ctx.fillRect(9, 1, 14, 7);
+      ctx.fillStyle = '#aa44dd';
+      ctx.fillRect(12, 3, 3, 3);
+      ctx.fillRect(17, 3, 3, 3);
+      ctx.fillStyle = '#3a1050';
+      ctx.fillRect(7, 8, 18, 14);
+      ctx.fillStyle = '#4a1860';
+      ctx.fillRect(9, 10, 14, 4);
+      ctx.fillStyle = '#1a0525';
+      ctx.fillRect(8, 22, 16, 2);
+      ctx.fillStyle = '#2a0a3a';
+      ctx.fillRect(9, 24, 5, 6);
+      ctx.fillRect(18, 24, 5, 6);
+      ctx.fillStyle = '#1a0425';
+      ctx.fillRect(8, 28, 7, 4);
+      ctx.fillRect(17, 28, 7, 4);
     });
 
     Sprites.juggernaut = Sprites.createTexture(48, 48, (ctx) => {

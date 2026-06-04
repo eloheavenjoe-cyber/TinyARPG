@@ -20,11 +20,11 @@ function getConfig(type: EnemyType): EnemyConfig {
     case 'grunt':
       return { hp: 40, speed: 2.2, size: 28, xp: 10, sprite: Sprites.enemy, damage: 8 };
     case 'archer':
-      return { hp: 25, speed: 2.5, size: 28, xp: 12, sprite: Sprites.enemy, damage: 6 };
+      return { hp: 25, speed: 2.5, size: 28, xp: 12, sprite: Sprites.archer, damage: 6 };
     case 'juggernaut':
       return { hp: 120, speed: 1.2, size: 42, xp: 25, sprite: Sprites.juggernaut, damage: 16 };
     case 'cultist':
-      return { hp: 35, speed: 2.0, size: 28, xp: 15, sprite: Sprites.enemy, damage: 5 };
+      return { hp: 35, speed: 2.0, size: 28, xp: 15, sprite: Sprites.cultist, damage: 5 };
   }
 }
 
