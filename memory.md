@@ -221,19 +221,15 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Player sprite**: always `AnimatedSprite` type. Warrior uses sprite sheets, Ranger uses single-frame AnimatedSprite from programmatic texture
 - **Sprite folder**: `public/sprites/warrior/` (created via `New-Item -ItemType Directory`)
 - **Critical gotcha (Windows)**: NTFS is case-insensitive. `git mv IDLE.png idle.png` is a no-op! Must use two-step with temp name: `git mv IDLE.png tmp.png && git mv tmp.png idle.png` to force git to track the rename.
-- **URL paths**: Use relative paths (`sprites/warrior/idle.png` NOT `/sprites/warrior/idle.png`) to work with GitHub Pages sub-path (`/TinyARPG/`). Vite's `base: './'` handles the rest.
-
-#### To add Ranger sprite sheets (next session):
-1. Place `idle.png`, `walk.png`, `attack.png` in `public/sprites/ranger/`
-2. In `SpriteAnimator.ts`, add `'ranger'` to `AnimName` type or create a separate loader
-3. In `Player.ts` constructor, when `classType === 'ranger'`, call the ranger sprite creator
-4. Update `loadWarriorAnimations()` to also load ranger sheets (or create `loadRangerAnimations()`)
-5. The AnimatedSprite system handles everything else (rotation, animation switching, tinting)
-
-#### Animation file sizes (committed):
+#### Animation file sizes (warrior sprite sheets):
 - `attack.png`: 576×84 (6 frames), 4295 bytes
 - `idle.png`: 672×84 (7 frames), 3627 bytes
 - `walk.png`: 768×84 (8 frames), 5529 bytes
+
+#### Ranger individual PNGs:
+- `idle_1`..`idle_12`: 12 frames, 288×128 each
+- `run_1`..`run_10`: 10 frames, 288×128 each
+- `2_atk_1`..`2_atk_15`: 15 frames, 288×128 each
 
 ## Architecture Notes (current state)
 - Zone system: ZoneConfig (types + registry) + ZoneRegistry (templates merged) + ZoneManager (state machine)
@@ -245,8 +241,11 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Portal scrolls stored as `{ kind: 'orb', orbId: 'portal_scroll', count: number }` — reuses orb stacking
 - Recall portal is a separate Game.ts field (not a room child) to persist across zone transitions
 - Animated portals use the VFX system with high maxLife (99999) so they never expire
-- SpriteAnimator uses pending sprites pattern to handle async loading race conditions
+- SpriteAnimator has separate caches per class (`warriorFrames` / `rangerFrames`) with independent pending sprite arrays
 - Raw Image loading via fetch + createObjectURL is more reliable than PixiJS Assets.load()
+- `loadRangerAnimations()` loads individual frame PNGs using filename patterns; `loadWarriorAnimations()` loads sprite sheets
+- `playAnimation()` and `isLoaded()` accept a `classType` parameter to select the correct cache
+- `Player.triggerAttackAnimation()` extracted as public method, called by both melee and projectile skill paths
 
 ## Key Constants
 - Canvas: 1920×1080, Room: 1600×896 at offset (160,92)
@@ -276,7 +275,6 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Level requirements displayed but not enforced (player can equip above level)
 - Hub NPCs/vendor/stash are placeholders only (no interactions yet)
 - Endless Dungeon uses single template (no per-room rotation)
-- Ranger still uses programmatic sprite (needs sprite sheets ported)
 - No animation for support skills (only main ability triggers attack animation)
 - Sprites loaded from `public/` using `fetch + blob + createObjectURL` — not Vite-bundled, so no hash-based cache busting
 
@@ -288,13 +286,6 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Load on game start, continue from saved state
 - Needed before adding more permanent progression systems
 
-### Phase 5e — Ranger Sprite Sheets
-- Add `idle.png`, `walk.png`, `attack.png` to `public/sprites/ranger/`
-- Create `loadRangerAnimations()` in SpriteAnimator.ts (parallel to warrior loader)
-- Add ranger variant to `createWarriorSprite()` or create `createRangerSprite()`
-- Update Player.ts constructor to pick correct sprite factory based on classType
-- Store ranger frames in a separate cache or unified cache with prefix
-
 ### Phase 6 — Polish & Expansion
 - Hub NPC interactions (vendor buy/sell, stash deposit/withdraw)
 - Boss encounters with unique mechanics
@@ -302,7 +293,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - More room templates for variety
 - Balance pass on difficulty scaling
 - Support skill animations (dash, buff, etc.)
-- Port ranger to sprite sheets
+- Save/load (localStorage)
 
 ## Co-authoring
 This workspace may be shared between AI agents. Always read before writing —
@@ -338,8 +329,11 @@ without explicit approval. See AGENTS.md for full coordination rules.
 - **Loot stacking:** `spawnLoot()` spreads drops vertically with 25px spacing. Both `drop.y` and `drop.container.y` must be updated for correct hit detection and visual position.
 - **Sprite path gotcha (GitHub Pages):** Use relative paths (`sprites/warrior/idle.png`), not absolute (`/sprites/warrior/idle.png`). Absolute paths miss the `/TinyARPG/` sub-path prefix.
 - **Sprite loading:** Use `fetch + blob + createObjectURL` not `Assets.load()`. The PixiJS Assets loader had silent failures with certain PNG files.
-- **Pending sprites:** `createWarriorSprite()` can be called before async loading completes. The `pendingSprites[]` array holds references and updates them when loading finishes.
+- **Pending sprites:** `createWarriorSprite()`/`createRangerSprite()` can be called before async loading completes. Each class has its own `pending*Sprites[]` array that gets resolved when loading finishes.
 - **NTFS case renames:** On Windows, `git mv IDLE.png idle.png` is a no-op. Must use two-step: `git mv IDLE.png tmp.png && git mv tmp.png idle.png`.
-- **AnimatedSprite vs Sprite:** Player sprite is always `AnimatedSprite` type. For non-animated classes (ranger), create single-frame AnimatedSprite from static texture.
+- **AnimatedSprite vs Sprite:** Both warrior and ranger use `AnimatedSprite`. Warrior uses sprite sheets, ranger uses individual PNG frames loaded into texture arrays.
 - **onComplete callback:** Attack animation uses `sprite.onComplete` to reset to idle. Must check `animState === 'attack'` before resetting to avoid race conditions.
-- **AnimatedSprite.anchor:** Must be set AFTER construction. For sprite sheets, anchor is (0.5, 0.5) to match the existing rotation-based aiming system.
+- **Sprite mirroring (no rotation):** Player sprite does NOT rotate. `facingAngle` stores the logical aim angle. `sprite.scale.x = -1` mirrors west-facing. All combat logic (cones, projectiles, VFX) reads `facingAngle` not `sprite.rotation`.
+- **Projectile spawn offset:** Projectiles spawn 20px forward of player center (`player.x + cos(angle)*20`) so they emerge from in front of the character visually.
+- **InventoryScreen destroy guard:** Click handlers in `InventoryScreen.update()` can trigger `toggleInventory()` which destroys the container. After each click handler, `if (!this.container.parent) return;` prevents processing on destroyed objects.
+- **Recall portal null guard:** Walking into a recall portal sets `this.recallPortal = null` in the collision handler BEFORE `buildCurrentZoneRoom()` runs, preventing double-destroy.
