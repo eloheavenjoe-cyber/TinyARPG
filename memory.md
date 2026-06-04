@@ -391,7 +391,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
 - Archer completed (2026-06-05): 4 sheets (idle/run/attack/death, 100×100 frames)
 - Juggernaut attempted and reverted — programmatic texture still in use
-- Grunt still pending
+- Grunt completed (2026-06-05): skeleton sprites with per-animation frame sizes (idle 24×32, run 22×33, attack 43×37, death 33×32). Grunt uses `scale.x` flip for facing, triggers attack animation on contact damage via `attackAnimPlayed` flag, plays death animation on kill.`
 
 ### Phase 7 — Polish & Expansion
 - Hub NPC interactions (vendor buy/sell, stash deposit/withdraw)

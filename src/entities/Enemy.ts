@@ -1,6 +1,6 @@
 import { Sprite, Texture, AnimatedSprite } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
-import { createCultistSprite, playCultistAnimation, CultistAnimName, createArcherSprite, playArcherAnimation, ArcherAnimName } from '../rendering/SpriteAnimator';
+import { createCultistSprite, playCultistAnimation, CultistAnimName, createArcherSprite, playArcherAnimation, ArcherAnimName, createGruntSprite, playGruntAnimation, GruntAnimName } from '../rendering/SpriteAnimator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Projectile } from './Projectile';
@@ -55,6 +55,7 @@ export class Enemy {
   private blinkCooldown = 0;
   private wobblePhase: number;
   private animState: 'idle' | 'run' | 'attack' | 'death' = 'idle';
+  private attackAnimPlayed = false;
 
   projectiles: Projectile[] = [];
 
@@ -77,6 +78,7 @@ export class Enemy {
 
     if (type === 'cultist') this.sprite = createCultistSprite();
     else if (type === 'archer') this.sprite = createArcherSprite();
+    else if (type === 'grunt') this.sprite = createGruntSprite();
     else this.sprite = new Sprite(cfg.sprite);
     this.sprite.anchor.set(0.5);
     this.sprite.tint = 0xffffff;
@@ -121,7 +123,7 @@ export class Enemy {
 
     // Facing
     const faceAngle = Math.atan2(playerY - this.y, playerX - this.x);
-    if (this.type === 'cultist' || this.type === 'archer') {
+    if (this.type === 'cultist' || this.type === 'archer' || this.type === 'grunt') {
       this.sprite.scale.x = Math.abs(faceAngle) > Math.PI / 2 ? -1 : 1;
     } else {
       this.sprite.rotation = faceAngle;
@@ -147,6 +149,26 @@ export class Enemy {
         if (newState !== this.animState) {
           this.animState = newState;
           playArcherAnimation(this.sprite as AnimatedSprite, this.animState);
+        }
+      }
+    } else if (this.type === 'grunt') {
+      if (!this.alive) {
+        this.animState = 'death';
+      } else if (this.animState !== 'attack') {
+        if (this.attackAnimPlayed) {
+          this.attackAnimPlayed = false;
+          this.animState = 'attack';
+          playGruntAnimation(this.sprite as AnimatedSprite, 'attack', false);
+          (this.sprite as AnimatedSprite).onComplete = () => {
+            this.animState = 'idle';
+            playGruntAnimation(this.sprite as AnimatedSprite, 'idle');
+          };
+        } else {
+          const newState: 'idle' | 'run' = isMoving ? 'run' : 'idle';
+          if (newState !== this.animState) {
+            this.animState = newState;
+            playGruntAnimation(this.sprite as AnimatedSprite, this.animState);
+          }
         }
       }
     }
@@ -297,6 +319,7 @@ export class Enemy {
 
   onDamagePlayer() {
     this.attackCooldown = 30;
+    if (this.type === 'grunt') this.attackAnimPlayed = true;
   }
 
   cullThreshold = 0;
@@ -319,6 +342,8 @@ export class Enemy {
       this.alive = false;
       if (this.type === 'cultist') {
         playCultistAnimation(this.sprite as AnimatedSprite, 'death', false);
+      } else if (this.type === 'grunt') {
+        playGruntAnimation(this.sprite as AnimatedSprite, 'death', false);
       } else {
         this.sprite.visible = false;
       }

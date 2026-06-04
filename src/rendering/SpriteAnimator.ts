@@ -549,6 +549,78 @@ export function playArcherAnimation(sprite: AnimatedSprite, name: ArcherAnimName
   sprite.gotoAndPlay(0);
 }
 
+// --- Grunt (Skeleton) animated sprite ---
+export type GruntAnimName = 'idle' | 'run' | 'attack' | 'death';
+
+let gruntFrames: Record<GruntAnimName, Texture[]> | null = null;
+let pendingGruntSprites: AnimatedSprite[] = [];
+
+const GRUNT_SHEETS: Record<GruntAnimName, { url: string; frameW: number; frameH: number; frames: number; cols: number }> = {
+  idle: { url: 'sprites/grunt/Idle.png', frameW: 24, frameH: 32, frames: 11, cols: 11 },
+  run: { url: 'sprites/grunt/Run.png', frameW: 22, frameH: 33, frames: 13, cols: 13 },
+  attack: { url: 'sprites/grunt/Attack.png', frameW: 43, frameH: 37, frames: 18, cols: 18 },
+  death: { url: 'sprites/grunt/Death.png', frameW: 33, frameH: 32, frames: 15, cols: 15 },
+};
+
+export async function loadGruntAnimations(): Promise<void> {
+  if (gruntFrames) return;
+  const entries = Object.entries(GRUNT_SHEETS) as [GruntAnimName, typeof GRUNT_SHEETS[GruntAnimName]][];
+
+  const results = await Promise.all(entries.map(async ([name, cfg]) => {
+    try {
+      return { name, frames: await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols) };
+    } catch {
+      const canvas = document.createElement('canvas');
+      canvas.width = cfg.frameW;
+      canvas.height = cfg.frameH;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#884422';
+      ctx.fillRect(0, 0, cfg.frameW, cfg.frameH);
+      return { name, frames: [Texture.from(canvas)] };
+    }
+  }));
+
+  const result = {} as Record<GruntAnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
+  gruntFrames = result;
+
+  for (const sprite of pendingGruntSprites) {
+    const f = gruntFrames.idle;
+    if (f.length > 0) {
+      sprite.textures = f;
+      sprite.animationSpeed = 0.12;
+      sprite.play();
+    }
+  }
+  pendingGruntSprites = [];
+}
+
+export function createGruntSprite(): AnimatedSprite {
+  if (gruntFrames && gruntFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(gruntFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.12;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x884422;
+  pendingGruntSprites.push(sprite);
+  return sprite;
+}
+
+export function playGruntAnimation(sprite: AnimatedSprite, name: GruntAnimName, loop = true) {
+  if (!gruntFrames) return;
+  const f = gruntFrames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === 'attack' ? 0.15 : 0.12;
+  sprite.gotoAndPlay(0);
+}
+
 // --- Vendor NPC animated sprite (4 separate images for idle) ---
 let vendorFrames: Texture[] | null = null;
 let pendingVendorSprites: AnimatedSprite[] = [];
