@@ -1,5 +1,6 @@
 import { Application, Container, Point, Graphics, Text, TextStyle, AnimatedSprite } from 'pixi.js';
 import { InputManager } from './InputManager';
+import { Camera } from './Camera';
 import { Logger } from './Logger';
 import { Sprites } from '../rendering/Sprites';
 import { MainMenu } from '../ui/MainMenu';
@@ -28,8 +29,7 @@ import { BossHpBar } from '../ui/BossHpBar';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
-const ROOM_OFFSET_X = (SCREEN_WIDTH - ROOM_WIDTH) / 2;
-const ROOM_OFFSET_Y = (SCREEN_HEIGHT - ROOM_HEIGHT) / 2;
+
 const D = Math.PI / 180;
 
 const enum State { Menu, Picking, Playing, Death }
@@ -70,6 +70,7 @@ export class Game {
   private vfx: VfxEffect[] = [];
   private dash: DashState | null = null;
   private zoneManager: ZoneManager = new ZoneManager();
+  private camera?: Camera;
   private portalAngle = 0;
   private recallPortal: { x: number; y: number; graphic: Graphics; active: boolean } | null = null;
 
@@ -196,8 +197,9 @@ export class Game {
     }
     this.state = State.Playing;
     this.gameContainer = new Container();
-    this.gameContainer.x = ROOM_OFFSET_X;
-    this.gameContainer.y = ROOM_OFFSET_Y;
+    this.camera = new Camera(SCREEN_WIDTH, SCREEN_HEIGHT, ROOM_WIDTH, ROOM_HEIGHT);
+    this.gameContainer.x = 0;
+    this.gameContainer.y = 0;
     this.app.stage.addChild(this.gameContainer);
     this.room = new Room();
     this.gameContainer.addChild(this.room.container);
@@ -515,6 +517,13 @@ export class Game {
 
     this.combatText.update(dt);
     this.portalAngle += dt * 0.03;
+
+    // Update camera
+    if (this.camera) {
+      this.camera.update(this.player.x, this.player.y, dt);
+      this.gameContainer!.x = -this.camera.x;
+      this.gameContainer!.y = -this.camera.y;
+    }
 
     // Recall portal drawing and collision
     if (this.recallPortal?.active) {

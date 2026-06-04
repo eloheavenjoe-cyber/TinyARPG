@@ -36,7 +36,7 @@ export class Player {
   mana = 50;
   maxMana = 50;
   gold = 0;
-  speed = 6;
+  speed = 8;
   alive = true;
 
   sprite: AnimatedSprite;
