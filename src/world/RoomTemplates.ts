@@ -90,3 +90,65 @@ export const TEMPLATE_RING: RoomTemplate = {
   ],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
+
+// Hub — town with portal positions
+export const TEMPLATE_HUB: RoomTemplate = {
+  walls: [],
+  doors: [],
+  portals: [
+    { rect: { x: 50, y: 80, width: 80, height: 80 }, targetZone: 'tutorial', label: 'Tutorial' },
+    { rect: { x: 1470, y: 80, width: 80, height: 80 }, targetZone: 'endless_arena', label: 'Endless Arena' },
+    { rect: { x: 50, y: 400, width: 80, height: 80 }, targetZone: 'forest', label: 'Verdant Forest' },
+    { rect: { x: 1470, y: 400, width: 80, height: 80 }, targetZone: 'desert', label: 'Scorched Desert' },
+    { rect: { x: 50, y: 720, width: 80, height: 80 }, targetZone: 'ice', label: 'Frozen Wastes' },
+    { rect: { x: 1470, y: 720, width: 80, height: 80 }, targetZone: 'endless_dungeon', label: 'Endless Dungeon' },
+  ],
+  spawnZones: [],
+  playerStart: { x: 800, y: 448 },
+};
+
+// Tutorial — exit door to hub
+export const TEMPLATE_TUTORIAL: RoomTemplate = {
+  walls: [],
+  doors: [
+    { rect: { x: 750, y: 860, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 },
+  ],
+  portals: [],
+  spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
+  playerStart: { x: 800, y: 448 },
+};
+
+// Arena — open room with exit portal
+export const TEMPLATE_ARENA: RoomTemplate = {
+  walls: [],
+  doors: [],
+  portals: [
+    { rect: { x: 1500, y: 10, width: 80, height: 50 }, targetZone: 'hub', label: 'Exit' },
+  ],
+  spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
+  playerStart: { x: 800, y: 448 },
+};
+
+// Dungeon room — exit door to next room, exit portal to hub
+export const TEMPLATE_DUNGEON: RoomTemplate = {
+  walls: [],
+  doors: [
+    { rect: { x: 750, y: 860, width: 100, height: 36 }, targetZone: 'endless_dungeon', targetRoom: -1 },
+  ],
+  portals: [
+    { rect: { x: 1500, y: 10, width: 80, height: 50 }, targetZone: 'hub', label: 'Exit' },
+  ],
+  spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
+  playerStart: { x: 800, y: 448 },
+};
+
+// Dev room — exit door to hub
+export const TEMPLATE_DEV: RoomTemplate = {
+  walls: [],
+  doors: [
+    { rect: { x: 750, y: 860, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 },
+  ],
+  portals: [],
+  spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
+  playerStart: { x: 800, y: 448 },
+};

@@ -1,4 +1,7 @@
 import { EnemyType } from '../entities/Enemy';
+import {
+  TEMPLATE_HUB, TEMPLATE_TUTORIAL, TEMPLATE_ARENA, TEMPLATE_DUNGEON, TEMPLATE_DEV
+} from '../world/RoomTemplates';
 
 export type BiomeId = 'dev' | 'hub' | 'tutorial' | 'forest' | 'desert' | 'ice' | 'endless';
 
@@ -62,7 +65,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 1, enemyDmgMult: 1, enemyXpMult: 1,
     isEndless: false, nextZone: 'hub', availableFromHub: false,
     enemyCount: { min: 3, max: 6 },
-    templates: [],
+    templates: [TEMPLATE_DEV],
   },
   hub: {
     id: 'hub', name: 'Town', biome: 'hub',
@@ -70,7 +73,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 1, enemyDmgMult: 1, enemyXpMult: 1,
     isEndless: false, nextZone: null, availableFromHub: false,
     enemyCount: 0,
-    templates: [],
+    templates: [TEMPLATE_HUB],
   },
   tutorial: {
     id: 'tutorial', name: 'Tutorial Glen', biome: 'tutorial',
@@ -78,7 +81,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 0.5, enemyDmgMult: 0.5, enemyXpMult: 0,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 2, max: 3 },
-    templates: [],
+    templates: [TEMPLATE_TUTORIAL],
   },
   forest: {
     id: 'forest', name: 'Verdant Forest', biome: 'forest',
@@ -110,7 +113,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 1, enemyDmgMult: 1, enemyXpMult: 1,
     isEndless: 'procgen', nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 4, max: 4 },
-    templates: [],
+    templates: [TEMPLATE_DUNGEON],
   },
   endless_arena: {
     id: 'endless_arena', name: 'Endless Arena', biome: 'endless',
@@ -118,6 +121,6 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 1, enemyDmgMult: 1, enemyXpMult: 1,
     isEndless: 'wave', nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 3, max: 3 },
-    templates: [],
+    templates: [TEMPLATE_ARENA],
   },
 };
