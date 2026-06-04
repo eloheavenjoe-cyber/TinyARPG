@@ -15,6 +15,9 @@ import { Enemy, EnemyType } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, isOrbDrop, createOrbDrop, isPortalScrollDrop } from '../entities/ItemDrop';
+import { decorateRoom } from '../world/RoomDecorator';
+import { Chest } from '../entities/Chest';
+import { Breakable } from '../entities/Breakable';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
@@ -66,6 +69,8 @@ export class Game {
   private projectiles: Projectile[] = [];
   private waveCooldown = 0;
   private itemDrops: ItemDrop[] = [];
+  private chests: Chest[] = [];
+  private breakables: Breakable[] = [];
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
   private dash: DashState | null = null;
@@ -227,9 +232,13 @@ export class Game {
     for (const e of this.enemies) { this.gameContainer.removeChild(e.sprite); e.destroy(); }
     for (const p of this.projectiles) { this.gameContainer.removeChild(p.sprite); p.destroy(); }
     for (const d of this.itemDrops) { this.gameContainer.removeChild(d.container); d.destroy(); }
+    for (const c of this.chests) { this.gameContainer.removeChild(c.container); c.destroy(); }
+    for (const b of this.breakables) { this.gameContainer.removeChild(b.container); b.destroy(); }
     this.enemies = [];
     this.projectiles = [];
     this.itemDrops = [];
+    this.chests = [];
+    this.breakables = [];
     this.vfx = [];
     this.dash = null;
     if (this.recallPortal) {
@@ -261,6 +270,21 @@ export class Game {
 
     this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone));
     this.gameContainer.addChild(this.room.container);
+
+    // Procedural decoration
+    const decor = decorateRoom(template, zone.biome);
+    for (const d of decor.decorations) this.gameContainer.addChild(d.sprite);
+    for (const ob of decor.obstacles) this.room.walls.push(ob);
+    for (const cp of decor.chests) {
+      const chest = new Chest(cp.x, cp.y);
+      this.chests.push(chest);
+      this.gameContainer.addChild(chest.container);
+    }
+    for (const bp of decor.breakables) {
+      const brk = new Breakable(bp.x, bp.y);
+      this.breakables.push(brk);
+      this.gameContainer.addChild(brk.container);
+    }
 
     // Re-add player and combat text above the new room (room floor tiles would cover them)
     this.gameContainer.removeChild(this.player.sprite);
@@ -362,6 +386,48 @@ export class Game {
     this.app.stage.addChild(this.bossHpBar.container);
 
     Logger.log('entity', `Boss spawned: ${boss.name}`);
+  }
+
+  private spawnChestLoot(cx: number, cy: number) {
+    for (const drop of createRandomLoot(cx, cy, 3)) {
+      this.itemDrops.push(drop);
+      this.gameContainer!.addChild(drop.container);
+    }
+    const gen = generateItemDrop(this.player?.level);
+    const iDrop = createItemDrop(cx, cy, gen);
+    this.itemDrops.push(iDrop);
+    this.gameContainer!.addChild(iDrop.container);
+    if (Math.random() < 0.3) {
+      const gen2 = generateItemDrop(this.player?.level);
+      const iDrop2 = createItemDrop(cx, cy, gen2);
+      this.itemDrops.push(iDrop2);
+      this.gameContainer!.addChild(iDrop2.container);
+    }
+    if (Math.random() < 0.15) {
+      const orb = generateOrbDrop();
+      const oDrop = createOrbDrop(cx, cy, orb.orbId, orb.name);
+      this.itemDrops.push(oDrop);
+      this.gameContainer!.addChild(oDrop.container);
+    }
+  }
+
+  private spawnBreakableLoot(bx: number, by: number) {
+    for (const drop of createRandomLoot(bx, by, 0.5)) {
+      this.itemDrops.push(drop);
+      this.gameContainer!.addChild(drop.container);
+    }
+    if (Math.random() < 0.05) {
+      const item = generateItemDrop(this.player?.level);
+      const iDrop = createItemDrop(bx, by, item);
+      this.itemDrops.push(iDrop);
+      this.gameContainer!.addChild(iDrop.container);
+    }
+    if (Math.random() < 0.03) {
+      const orb = generateOrbDrop();
+      const oDrop = createOrbDrop(bx, by, orb.orbId, orb.name);
+      this.itemDrops.push(oDrop);
+      this.gameContainer!.addChild(oDrop.container);
+    }
   }
 
   private update(dt: number) {
@@ -563,6 +629,18 @@ export class Game {
       }
     }
 
+    // Chest interaction
+    const interactKey = this.input.isKeyDown('KeyE');
+    for (const chest of this.chests) {
+      if (chest.isOpen) continue;
+      const dist = Math.hypot(this.player.x - chest.x, this.player.y - chest.y);
+      chest.showPrompt(dist < 48);
+      if (dist < 48 && interactKey) {
+        chest.open();
+        this.spawnChestLoot(chest.x, chest.y);
+      }
+    }
+
     // Update projectiles
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
@@ -604,6 +682,17 @@ export class Game {
             if (!p.pierce) {
               hit = true;
             }
+          }
+        }
+        // Check breakables hit by projectile
+        for (const brk of this.breakables) {
+          if (!brk.alive || p.hitTargets.has(brk)) continue;
+          if (rectsOverlap(p.getBounds(), brk.getBounds())) {
+            if (brk.takeDamage()) {
+              this.spawnBreakableLoot(brk.x, brk.y);
+            }
+            p.hitTargets.add(brk);
+            if (!p.pierce) { hit = true; break; }
           }
         }
       }
@@ -1086,6 +1175,16 @@ export class Game {
           break;
         case 'whirlwind': this.vfxWhirlwind(this.player.x, this.player.y); break;
         case 'heavy_strike': this.vfxHeavyStrike(this.player.x, this.player.y, angle); break;
+      }
+
+      // Check breakables hit by melee attack
+      for (const brk of this.breakables) {
+        if (!brk.alive) continue;
+        if (Math.hypot(this.player.x - brk.x, this.player.y - brk.y) < 80) {
+          if (brk.takeDamage()) {
+            this.spawnBreakableLoot(brk.x, brk.y);
+          }
+        }
       }
     }
   }
