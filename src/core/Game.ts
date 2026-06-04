@@ -647,6 +647,7 @@ export class Game {
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
       const drop = this.itemDrops[i];
       if (drop.pickedUp) continue;
+      if (isEquippableDrop(drop)) continue;
       if (Math.hypot(drop.x - this.player.x, drop.y - this.player.y) < 50) {
         const item = drop.pickup();
         switch (item.type) {
