@@ -345,6 +345,21 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Enemy sprite files must be tracked in git (case-sensitive on Linux deployment)
 - Golem was missing from git (PNGs existed locally but weren't committed)
 
+### Phase 5j — Room Expansion & Camera System (completed 2026-06-05)
+- Rooms scaled 4x (6400×3584, from 1600×896). Walls 48px (from 32px). Walkable area auto-scales.
+- Player-following camera with smooth lerp (Camera.ts). Replaces fixed gameContainer offset.
+- Player base speed increased from 6→8 to compensate for larger rooms.
+- All room templates (22 total) scaled 4x: walls, doors, portals, spawn zones, buildings, NPCs, decorations.
+- Procedural room decoration (RoomDecorator.ts): trees/rocks as collision obstacles, bushes as decoration, ambient grass/flowers. Biome-tinted sprites (forest green, desert brown, ice blue, endless purple).
+- Rejection-sampling placement: ~50 attempts per object, avoids walls/doors/portals/spawn zones/buildings/other objects.
+- Chests (Chest.ts): 4-8 per room, interactable with E key, open/close states, guaranteed item drop + bonus loot.
+- Breakables (Breakable.ts): 8-15 per room, pots/barrels with 1 HP, destroyed by attacks and projectiles, low loot chance.
+- Chest loot: `createRandomLoot(cx, cy, 3)` for gold/potions + guaranteed item + 30% second item + 15% orb.
+- Breakable loot: `createRandomLoot(bx, by, 0.5)` for gold/potions + 5% item + 3% orb.
+- Decoration sprites tracked in `decorationSprites[]` and cleaned up on zone transition (fixes sprite leak).
+- `rectsOverlap` reused from Room.ts (no duplication in RoomDecorator).
+- Camera edge-clamped post-lerp to prevent void bleed.
+
 ## Next Up
 
 ### Phase 5e — Save/Load (still pending)
