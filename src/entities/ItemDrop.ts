@@ -1,12 +1,22 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Logger } from '../core/Logger';
+import { GeneratedItem } from '../core/ItemGenerator';
 
-export interface LootItem {
+export interface ConsumableItem {
   type: 'gold' | 'healthPotion' | 'manaPotion';
   name: string;
   color: number;
   value: number;
 }
+
+export interface EquippableItem {
+  type: 'item';
+  name: string;
+  color: number;
+  generated: GeneratedItem;
+}
+
+export type LootItem = ConsumableItem | EquippableItem;
 
 const RARITY_COLORS: Record<string, number> = {
   normal: 0xffffff,
@@ -64,6 +74,19 @@ export class ItemDrop {
   destroy() {
     this.container.destroy({ children: true });
   }
+}
+
+export function isEquippableDrop(drop: ItemDrop): boolean {
+  return drop.item.type === 'item';
+}
+
+export function createItemDrop(x: number, y: number, generated: GeneratedItem): ItemDrop {
+  return new ItemDrop(x, y, {
+    type: 'item',
+    name: generated.computedName,
+    color: RARITY_COLORS[generated.rarity] || 0xffffff,
+    generated,
+  });
 }
 
 export function createRandomLoot(x: number, y: number): ItemDrop[] {
