@@ -21,13 +21,13 @@ interface EnemyConfig {
 function getConfig(type: EnemyType): EnemyConfig {
   switch (type) {
     case 'grunt':
-      return { hp: 40, speed: 2.2, size: 28, xp: 10, sprite: Sprites.enemy, damage: 8, detectRange: 400, deaggroRange: 600 };
+      return { hp: 40, speed: 2.2, size: 34, xp: 10, sprite: Sprites.enemy, damage: 8, detectRange: 400, deaggroRange: 600 };
     case 'archer':
-      return { hp: 25, speed: 2.5, size: 28, xp: 12, sprite: Sprites.archer, damage: 6, detectRange: 500, deaggroRange: 750 };
+      return { hp: 25, speed: 2.5, size: 32, xp: 12, sprite: Sprites.archer, damage: 6, detectRange: 500, deaggroRange: 750 };
     case 'juggernaut':
-      return { hp: 120, speed: 1.2, size: 42, xp: 25, sprite: Sprites.juggernaut, damage: 16, detectRange: 350, deaggroRange: 525 };
+      return { hp: 120, speed: 1.2, size: 51, xp: 25, sprite: Sprites.juggernaut, damage: 16, detectRange: 350, deaggroRange: 525 };
     case 'cultist':
-      return { hp: 35, speed: 2.0, size: 28, xp: 15, sprite: Sprites.cultist, damage: 5, detectRange: 450, deaggroRange: 675 };
+      return { hp: 35, speed: 2.0, size: 26, xp: 15, sprite: Sprites.cultist, damage: 5, detectRange: 450, deaggroRange: 675 };
   }
 }
 

@@ -424,6 +424,7 @@ export function createCultistSprite(): AnimatedSprite {
     const sprite = new AnimatedSprite(cultistFrames.idle);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.12;
+    sprite.scale.set(0.925);
     sprite.play();
     return sprite;
   }
@@ -431,6 +432,7 @@ export function createCultistSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x8844aa;
+  sprite.scale.set(0.925);
   pendingCultistSprites.push(sprite);
   return sprite;
 }
@@ -528,6 +530,7 @@ export function createArcherSprite(): AnimatedSprite {
     const sprite = new AnimatedSprite(archerFrames.idle);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.12;
+    sprite.scale.set(1.15);
     sprite.play();
     return sprite;
   }
@@ -535,6 +538,7 @@ export function createArcherSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x44aa44;
+  sprite.scale.set(1.15);
   pendingArcherSprites.push(sprite);
   return sprite;
 }
@@ -600,6 +604,7 @@ export function createGruntSprite(): AnimatedSprite {
     const sprite = new AnimatedSprite(gruntFrames.idle);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.12;
+    sprite.scale.set(1.225);
     sprite.play();
     return sprite;
   }
@@ -607,6 +612,7 @@ export function createGruntSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x884422;
+  sprite.scale.set(1.225);
   pendingGruntSprites.push(sprite);
   return sprite;
 }
@@ -633,7 +639,7 @@ const JUGGERNAUT_FRAME_H = 64;
 
 const JUGGERNAUT_SHEETS: Record<JuggernautAnimName, { url: string; cols: number; totalFrames: number }> = {
   idle: { url: 'sprites/juggernaut/orc2_idle_full.png', cols: 4, totalFrames: 16 },
-  walk: { url: 'sprites/juggernaut/orc2_walk_full.png', cols: 8, totalFrames: 32 },
+  walk: { url: 'sprites/juggernaut/orc2_walk_full.png', cols: 6, totalFrames: 24 },
   attack: { url: 'sprites/juggernaut/orc2_attack_full.png', cols: 8, totalFrames: 32 },
   death: { url: 'sprites/juggernaut/orc2_death_full.png', cols: 8, totalFrames: 32 },
 };
@@ -694,7 +700,7 @@ export function createJuggernautSprite(): AnimatedSprite {
     const sprite = new AnimatedSprite(juggernautFrames.idle.south);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.1;
-    sprite.scale.set(1.3);
+    sprite.scale.set(1.6);
     sprite.play();
     return sprite;
   }
@@ -702,7 +708,7 @@ export function createJuggernautSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x664422;
-  sprite.scale.set(1.3);
+  sprite.scale.set(1.6);
   pendingJuggernautSprites.push(sprite);
   return sprite;
 }
