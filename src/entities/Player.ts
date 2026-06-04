@@ -412,34 +412,37 @@ export class Player {
     }
 
     let dx = 0, dy = 0;
-    if (input.isKeyDown('KeyW') || input.isKeyDown('ArrowUp')) dy = -1;
-    if (input.isKeyDown('KeyS') || input.isKeyDown('ArrowDown')) dy = 1;
-    if (input.isKeyDown('KeyA') || input.isKeyDown('ArrowLeft')) dx = -1;
-    if (input.isKeyDown('KeyD') || input.isKeyDown('ArrowRight')) dx = 1;
 
-    if (dx !== 0 && dy !== 0) {
-      dx *= 0.7071;
-      dy *= 0.7071;
+    if (!this.channeling) {
+      if (input.isKeyDown('KeyW') || input.isKeyDown('ArrowUp')) dy = -1;
+      if (input.isKeyDown('KeyS') || input.isKeyDown('ArrowDown')) dy = 1;
+      if (input.isKeyDown('KeyA') || input.isKeyDown('ArrowLeft')) dx = -1;
+      if (input.isKeyDown('KeyD') || input.isKeyDown('ArrowRight')) dx = 1;
+
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      if (dx !== 0 || dy !== 0) {
+        Logger.log('movement', `Moving: (${dx.toFixed(2)}, ${dy.toFixed(2)})`);
+      }
+
+      const speedMult = this.skills.moveSpeedBonus();
+      const slowMult = this.slowTimer > 0 ? 0.5 : 1;
+      this.x += dx * this.speed * speedMult * slowMult * dt;
+      this.y += dy * this.speed * slowMult * dt;
+
+      const bounds = this.getBounds();
+      const resolved = resolveCollision(bounds, walls);
+      const newX = resolved.x + this.width / 2;
+      const newY = resolved.y + this.height / 2;
+      if (newX !== this.x || newY !== this.y) {
+        Logger.log('collision', `Wall push at (${this.x.toFixed(0)}, ${this.y.toFixed(0)}) -> (${newX.toFixed(0)}, ${newY.toFixed(0)})`);
+      }
+      this.x = newX;
+      this.y = newY;
     }
-
-    if (dx !== 0 || dy !== 0) {
-      Logger.log('movement', `Moving: (${dx.toFixed(2)}, ${dy.toFixed(2)})`);
-    }
-
-    const speedMult = this.skills.moveSpeedBonus();
-    const slowMult = this.slowTimer > 0 ? 0.5 : 1;
-    this.x += dx * this.speed * speedMult * slowMult * dt;
-    this.y += dy * this.speed * slowMult * dt;
-
-    const bounds = this.getBounds();
-    const resolved = resolveCollision(bounds, walls);
-    const newX = resolved.x + this.width / 2;
-    const newY = resolved.y + this.height / 2;
-    if (newX !== this.x || newY !== this.y) {
-      Logger.log('collision', `Wall push at (${this.x.toFixed(0)}, ${this.y.toFixed(0)}) -> (${newX.toFixed(0)}, ${newY.toFixed(0)})`);
-    }
-    this.x = newX;
-    this.y = newY;
 
     this.facingAngle = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
     this.sprite.scale.x = Math.abs(this.facingAngle) > Math.PI / 2 ? -1 : 1;

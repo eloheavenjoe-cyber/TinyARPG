@@ -22,7 +22,7 @@ import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
-import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, playMonkAnimation } from '../rendering/SpriteAnimator';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 
@@ -114,6 +114,7 @@ export class Game {
       loadRangerAnimations(),
       loadReaperAnimations(),
       loadGolemAnimations(),
+      loadMonkAnimations(),
     ]);
 
     this.app.stage.removeChild(loadingText);
@@ -965,6 +966,18 @@ export class Game {
 
   private useMainAbility() {
     if (!this.player?.alive) return;
+
+    // Monk meditate channel
+    if (this.player.classType === 'monk' && this.player.skills.mainAbility?.id === 'meditate') {
+      const result = this.player.skills.consume(0, this.player.mana);
+      if (!result) return;
+      this.player.mana -= result.manaCost;
+      this.player.startChannel('meditate', 60);
+      const sprite = this.player.sprite as import('pixi.js').AnimatedSprite;
+      playMonkAnimation(sprite, 'meditate', false);
+      return;
+    }
+
     const skill = this.player.skills.mainAbility;
     const angle = this.player.facingAngle;
 
@@ -1040,6 +1053,25 @@ export class Game {
     if (!skill) return;
     const result = this.player.skills.consume(slot, this.player.mana);
     if (!result) return;
+
+    // Monk stance toggle
+    if (this.player.classType === 'monk' && result.id === 'stance_toggle') {
+      const newStance = this.player.skills.cycleStance();
+      const vfxColors: Record<string, number> = {
+        tiger: 0xff8844,
+        tortoise: 0x4488ff,
+        crane: 0x44ff88,
+      };
+      this.addVfx((g, t) => {
+        const r = 50 * t;
+        const alpha = Math.max(0, 1 - t * 1.5);
+        g.lineStyle(3, vfxColors[newStance], alpha);
+        g.drawCircle(0, 0, r);
+        g.lineStyle(1, vfxColors[newStance], alpha * 0.5);
+        g.drawCircle(0, 0, r * 0.6);
+      }, 20).position.set(this.player.x, this.player.y);
+      return;
+    }
 
     const isProjectileType = result.effectType === 'projectile' || result.effectType === 'projectile_spread';
 
