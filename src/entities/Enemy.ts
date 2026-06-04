@@ -1,6 +1,6 @@
 import { Sprite, Texture, AnimatedSprite } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
-import { createCultistSprite, playCultistAnimation, CultistAnimName, createArcherSprite, playArcherAnimation, ArcherAnimName, createGruntSprite, playGruntAnimation, GruntAnimName } from '../rendering/SpriteAnimator';
+import { createCultistSprite, playCultistAnimation, CultistAnimName, createArcherSprite, playArcherAnimation, ArcherAnimName, createGruntSprite, playGruntAnimation, GruntAnimName, createJuggernautSprite, playJuggernautAnimation, JuggernautAnimName, Direction, angleToDirection } from '../rendering/SpriteAnimator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Projectile } from './Projectile';
@@ -54,8 +54,11 @@ export class Enemy {
   private fireTimer = 0;
   private blinkCooldown = 0;
   private wobblePhase: number;
-  private animState: 'idle' | 'run' | 'attack' | 'death' = 'idle';
+  private animState: 'idle' | 'run' | 'walk' | 'attack' | 'death' = 'idle';
   private attackAnimPlayed = false;
+  private direction: Direction = 'south';
+  private prevDirection: Direction = 'south';
+  private currentJuggernautAnim: JuggernautAnimName | null = null;
 
   projectiles: Projectile[] = [];
 
@@ -79,6 +82,7 @@ export class Enemy {
     if (type === 'cultist') this.sprite = createCultistSprite();
     else if (type === 'archer') this.sprite = createArcherSprite();
     else if (type === 'grunt') this.sprite = createGruntSprite();
+    else if (type === 'juggernaut') this.sprite = createJuggernautSprite();
     else this.sprite = new Sprite(cfg.sprite);
     this.sprite.anchor.set(0.5);
     this.sprite.tint = 0xffffff;
@@ -125,6 +129,8 @@ export class Enemy {
     const faceAngle = Math.atan2(playerY - this.y, playerX - this.x);
     if (this.type === 'cultist' || this.type === 'archer' || this.type === 'grunt') {
       this.sprite.scale.x = Math.abs(faceAngle) > Math.PI / 2 ? -1 : 1;
+    } else if (this.type === 'juggernaut') {
+      this.direction = angleToDirection(faceAngle);
     } else {
       this.sprite.rotation = faceAngle;
     }
@@ -168,6 +174,35 @@ export class Enemy {
           if (newState !== this.animState) {
             this.animState = newState;
             playGruntAnimation(this.sprite as AnimatedSprite, this.animState);
+          }
+        }
+      }
+    } else if (this.type === 'juggernaut') {
+      if (!this.alive) {
+        if (this.currentJuggernautAnim !== 'death') {
+          this.currentJuggernautAnim = 'death';
+          this.animState = 'death';
+          playJuggernautAnimation(this.sprite as AnimatedSprite, 'death', this.direction, false);
+        }
+      } else if (this.animState !== 'attack') {
+        if (this.attackAnimPlayed) {
+          this.attackAnimPlayed = false;
+          this.animState = 'attack';
+          this.currentJuggernautAnim = 'attack';
+          playJuggernautAnimation(this.sprite as AnimatedSprite, 'attack', this.direction, false);
+          (this.sprite as AnimatedSprite).onComplete = () => {
+            this.animState = 'idle';
+            this.currentJuggernautAnim = 'idle';
+            playJuggernautAnimation(this.sprite as AnimatedSprite, 'idle', this.direction);
+          };
+        } else {
+          const newState: 'idle' | 'walk' = isMoving ? 'walk' : 'idle';
+          const dirChanged = this.direction !== this.prevDirection;
+          if (newState !== this.animState || dirChanged) {
+            this.animState = newState;
+            this.currentJuggernautAnim = newState;
+            this.prevDirection = this.direction;
+            playJuggernautAnimation(this.sprite as AnimatedSprite, newState, this.direction);
           }
         }
       }
@@ -319,7 +354,7 @@ export class Enemy {
 
   onDamagePlayer() {
     this.attackCooldown = 30;
-    if (this.type === 'grunt') this.attackAnimPlayed = true;
+    if (this.type === 'grunt' || this.type === 'juggernaut') this.attackAnimPlayed = true;
   }
 
   cullThreshold = 0;
@@ -344,6 +379,8 @@ export class Enemy {
         playCultistAnimation(this.sprite as AnimatedSprite, 'death', false);
       } else if (this.type === 'grunt') {
         playGruntAnimation(this.sprite as AnimatedSprite, 'death', false);
+      } else if (this.type === 'juggernaut') {
+        playJuggernautAnimation(this.sprite as AnimatedSprite, 'death', this.direction, false);
       } else {
         this.sprite.visible = false;
       }

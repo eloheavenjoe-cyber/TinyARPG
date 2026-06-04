@@ -621,6 +621,104 @@ export function playGruntAnimation(sprite: AnimatedSprite, name: GruntAnimName, 
   sprite.gotoAndPlay(0);
 }
 
+// --- Juggernaut (Orc) animated sprite (directional 4-row sheets) ---
+export type JuggernautAnimName = 'idle' | 'walk' | 'attack' | 'death';
+export type Direction = 'south' | 'north' | 'east' | 'west';
+
+let juggernautFrames: Record<JuggernautAnimName, Record<Direction, Texture[]>> | null = null;
+let pendingJuggernautSprites: AnimatedSprite[] = [];
+
+const JUGGERNAUT_FRAME_W = 64;
+const JUGGERNAUT_FRAME_H = 64;
+
+const JUGGERNAUT_SHEETS: Record<JuggernautAnimName, { url: string; cols: number; totalFrames: number }> = {
+  idle: { url: 'sprites/juggernaut/orc2_idle_full.png', cols: 4, totalFrames: 16 },
+  walk: { url: 'sprites/juggernaut/orc2_walk_full.png', cols: 8, totalFrames: 32 },
+  attack: { url: 'sprites/juggernaut/orc2_attack_full.png', cols: 8, totalFrames: 32 },
+  death: { url: 'sprites/juggernaut/orc2_death_full.png', cols: 8, totalFrames: 32 },
+};
+
+export function angleToDirection(angle: number): Direction {
+  if (angle > Math.PI / 4 && angle <= 3 * Math.PI / 4) return 'south';
+  if (angle > -3 * Math.PI / 4 && angle <= -Math.PI / 4) return 'north';
+  if (angle > 3 * Math.PI / 4 || angle <= -3 * Math.PI / 4) return 'west';
+  return 'east';
+}
+
+export async function loadJuggernautAnimations(): Promise<void> {
+  if (juggernautFrames) return;
+  const entries = Object.entries(JUGGERNAUT_SHEETS) as [JuggernautAnimName, typeof JUGGERNAUT_SHEETS[JuggernautAnimName]][];
+
+  const results = await Promise.all(entries.map(async ([name, cfg]) => {
+    try {
+      const allFrames = await loadMultiRowSheet(cfg.url, JUGGERNAUT_FRAME_W, JUGGERNAUT_FRAME_H, cfg.totalFrames, cfg.cols);
+      const fpc = cfg.cols; // frames per column (i.e. per direction row)
+      return {
+        name,
+        dirs: {
+          south: allFrames.slice(0, fpc),
+          north: allFrames.slice(fpc, fpc * 2),
+          east: allFrames.slice(fpc * 2, fpc * 3),
+          west: allFrames.slice(fpc * 3, fpc * 4),
+        } as Record<Direction, Texture[]>,
+      };
+    } catch {
+      const canvas = document.createElement('canvas');
+      canvas.width = JUGGERNAUT_FRAME_W;
+      canvas.height = JUGGERNAUT_FRAME_H;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#664422';
+      ctx.fillRect(0, 0, JUGGERNAUT_FRAME_W, JUGGERNAUT_FRAME_H);
+      const fallback = [Texture.from(canvas)];
+      return { name, dirs: { south: fallback, north: fallback, east: fallback, west: fallback } };
+    }
+  }));
+
+  const result = {} as Record<JuggernautAnimName, Record<Direction, Texture[]>>;
+  for (const { name, dirs } of results) result[name] = dirs;
+  juggernautFrames = result;
+
+  for (const sprite of pendingJuggernautSprites) {
+    const f = juggernautFrames.idle?.south;
+    if (f && f.length > 0) {
+      sprite.textures = f;
+      sprite.animationSpeed = 0.1;
+      sprite.play();
+    }
+  }
+  pendingJuggernautSprites = [];
+}
+
+export function createJuggernautSprite(): AnimatedSprite {
+  if (juggernautFrames && juggernautFrames.idle?.south?.length > 0) {
+    const sprite = new AnimatedSprite(juggernautFrames.idle.south);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.1;
+    sprite.scale.set(1.3);
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x664422;
+  sprite.scale.set(1.3);
+  pendingJuggernautSprites.push(sprite);
+  return sprite;
+}
+
+export function playJuggernautAnimation(sprite: AnimatedSprite, name: JuggernautAnimName, direction: Direction, loop = true) {
+  if (!juggernautFrames) return;
+  const dirs = juggernautFrames[name];
+  if (!dirs) return;
+  const f = dirs[direction];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === 'attack' ? 0.15 : 0.1;
+  sprite.gotoAndPlay(0);
+}
+
 // --- Vendor NPC animated sprite (4 separate images for idle) ---
 let vendorFrames: Texture[] | null = null;
 let pendingVendorSprites: AnimatedSprite[] = [];

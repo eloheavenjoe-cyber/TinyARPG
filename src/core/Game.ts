@@ -26,7 +26,7 @@ import { Slot, ITEM_BASES, AFFIXES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
-import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation } from '../rendering/SpriteAnimator';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 import { Minimap } from '../ui/Minimap';
@@ -155,6 +155,7 @@ export class Game {
       loadCultistAnimations(),
       loadArcherAnimations(),
       loadGruntAnimations(),
+      loadJuggernautAnimations(),
       loadVendorAnimations(),
       loadStashAnimations(),
     ]);
