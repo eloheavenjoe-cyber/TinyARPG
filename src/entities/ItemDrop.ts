@@ -16,7 +16,15 @@ export interface EquippableItem {
   generated: GeneratedItem;
 }
 
-export type LootItem = ConsumableItem | EquippableItem;
+export interface OrbItem {
+  type: 'orb';
+  name: string;
+  color: number;
+  orbId: string;
+  count: number;
+}
+
+export type LootItem = ConsumableItem | EquippableItem | OrbItem;
 
 const RARITY_COLORS: Record<string, number> = {
   normal: 0xffffff,
@@ -78,6 +86,16 @@ export class ItemDrop {
 
 export function isEquippableDrop(drop: ItemDrop): drop is ItemDrop & { item: EquippableItem } {
   return drop.item.type === 'item';
+}
+
+export function createOrbDrop(x: number, y: number, orbId: string, name: string): ItemDrop {
+  return new ItemDrop(x, y, {
+    type: 'orb', name, color: 0x44dddd, orbId, count: 1,
+  });
+}
+
+export function isOrbDrop(drop: ItemDrop): drop is ItemDrop & { item: OrbItem } {
+  return drop.item.type === 'orb';
 }
 
 export function createItemDrop(x: number, y: number, generated: GeneratedItem): ItemDrop {

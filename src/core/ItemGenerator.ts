@@ -97,3 +97,9 @@ export function generateItemDrop(): GeneratedItem {
   };
   return item;
 }
+
+export function generateOrbDrop(): { orbId: string; name: string } {
+  const r = Math.random();
+  if (r < 0.5) return { orbId: 'empowerment', name: 'Orb of Empowerment' };
+  return { orbId: 'flux', name: 'Orb of Flux' };
+}
