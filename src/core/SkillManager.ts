@@ -1,5 +1,7 @@
-import { SkillDef, ClassType, WARRIOR_MAIN, WARRIOR_SUPPORT, RANGER_MAIN, RANGER_SUPPORT, DEFAULT_SUPPORT_IDS, RANGER_DEFAULT_SUPPORT_IDS } from './SkillDefs';
+import { SkillDef, ClassType, WARRIOR_MAIN, WARRIOR_SUPPORT, RANGER_MAIN, RANGER_SUPPORT, DEFAULT_SUPPORT_IDS, RANGER_DEFAULT_SUPPORT_IDS, MONK_MAIN, MONK_SUPPORT } from './SkillDefs';
 import { Logger } from './Logger';
+
+export type StanceId = 'tiger' | 'tortoise' | 'crane';
 
 export interface ActiveBuff {
   skillId: string;
@@ -13,9 +15,25 @@ export class SkillManager {
   cooldowns: Map<string, number> = new Map();
   activeBuffs: ActiveBuff[] = [];
   mainAbility: SkillDef | null = null;
+  currentStance: StanceId = 'tiger';
 
   constructor(classType: ClassType) {
     this.classType = classType;
+
+    if (classType === 'monk') {
+      const mainSkills = MONK_MAIN;
+      const supportSkills = MONK_SUPPORT;
+      this.allSkills = [...mainSkills, ...supportSkills];
+      const basic = mainSkills.find(s => s.id === 'basic_strike')!;
+      const palm = mainSkills.find(s => s.id === 'dragon_palm')!;
+      const kick = mainSkills.find(s => s.id === 'whirlwind_kick')!;
+      const uppercut = mainSkills.find(s => s.id === 'tiger_uppercut')!;
+      const meditate = mainSkills.find(s => s.id === 'meditate')!;
+      const stance = supportSkills.find(s => s.id === 'stance_toggle')!;
+      this.slots = [basic, palm, kick, uppercut, meditate, stance];
+      return;
+    }
+
     const mainSkills = classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
     const supportSkills = classType === 'warrior' ? WARRIOR_SUPPORT : RANGER_SUPPORT;
     const defaultSupportIds = classType === 'warrior' ? DEFAULT_SUPPORT_IDS : RANGER_DEFAULT_SUPPORT_IDS;
@@ -127,5 +145,29 @@ export class SkillManager {
 
   moveSpeedBonus(): number {
     return this.hasBuff('haste') ? 1.5 : 1;
+  }
+
+  cycleStance(): StanceId {
+    const stances: StanceId[] = ['tiger', 'tortoise', 'crane'];
+    const idx = (stances.indexOf(this.currentStance) + 1) % 3;
+    this.currentStance = stances[idx];
+    return this.currentStance;
+  }
+
+  stanceDamageMultBonus(): number {
+    if (this.currentStance === 'tiger') return 1.4;
+    if (this.currentStance === 'crane') return 0.85;
+    return 1.0;
+  }
+
+  stanceDamageReductionBonus(): number {
+    if (this.currentStance === 'tortoise') return 0.4;
+    if (this.currentStance === 'tiger') return -0.1;
+    return 0.0;
+  }
+
+  stanceLifestealBonus(): number {
+    if (this.currentStance === 'crane') return 0.25;
+    return 0.0;
   }
 }
