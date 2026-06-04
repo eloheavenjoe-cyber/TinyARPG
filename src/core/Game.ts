@@ -16,7 +16,9 @@ import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop } from '../entities/ItemDrop';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
+import { InventoryScreen } from '../ui/InventoryScreen';
 import { generateItemDrop } from './ItemGenerator';
+import { Slot } from './ItemDefs';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -63,9 +65,12 @@ export class Game {
 
   private lastKeys: Set<string> = new Set();
   private wasPKeyDown = false;
+  private wasIKeyDown = false;
   private pendingClassType: ClassType = 'warrior';
   private treeOpen = false;
+  private inventoryOpen = false;
   private passiveTreeScreen?: PassiveTreeScreen;
+  private inventoryScreen?: InventoryScreen;
 
   constructor(app: Application) {
     this.app = app;
@@ -153,9 +158,21 @@ export class Game {
 
   private update(dt: number) {
     if (this.state === State.Playing) {
-      const pDown = this.input.isKeyDown('KeyP');
-      if (pDown && !this.wasPKeyDown) this.toggleTree();
-      this.wasPKeyDown = pDown;
+      if (this.inventoryOpen && this.input.isKeyDown('Escape')) {
+        this.toggleInventory();
+      } else if (this.inventoryOpen) {
+        const iDown = this.input.isKeyDown('KeyI');
+        if (iDown && !this.wasIKeyDown) this.toggleInventory();
+        this.wasIKeyDown = iDown;
+      } else {
+        const pDown = this.input.isKeyDown('KeyP');
+        if (pDown && !this.wasPKeyDown) this.toggleTree();
+        this.wasPKeyDown = pDown;
+
+        const iDown = this.input.isKeyDown('KeyI');
+        if (iDown && !this.wasIKeyDown) this.toggleInventory();
+        this.wasIKeyDown = iDown;
+      }
     }
     switch (this.state) {
       case State.Menu: this.mainMenu?.update(this.input); break;
@@ -164,7 +181,9 @@ export class Game {
         this.abilitySelect?.update(this.input);
         break;
       case State.Playing:
-        if (this.treeOpen) {
+        if (this.inventoryOpen) {
+          this.updateInventory();
+        } else if (this.treeOpen) {
           this.updateTree();
         } else {
           this.updateGameplay(dt);
@@ -282,10 +301,13 @@ export class Game {
       for (const drop of this.itemDrops) {
         if (drop.pickedUp) continue;
         if (isEquippableDrop(drop) && Math.hypot(mouseWX - drop.x, mouseWY - drop.y) < 30) {
-          drop.pickup();
-          this.gameContainer!.removeChild(drop.container);
-          drop.destroy();
-          this.itemDrops.splice(this.itemDrops.indexOf(drop), 1);
+          const gen = drop.item.generated;
+          if (this.player!.pickupItem(gen)) {
+            drop.pickup();
+            this.gameContainer!.removeChild(drop.container);
+            drop.destroy();
+            this.itemDrops.splice(this.itemDrops.indexOf(drop), 1);
+          }
           clickedItem = true;
           break;
         }
@@ -716,7 +738,59 @@ export class Game {
     }
   }
 
+  private toggleInventory() {
+    if (!this.player) return;
+    if (this.treeOpen) return;
+    this.inventoryOpen = !this.inventoryOpen;
+    if (this.inventoryOpen) {
+      this.inventoryScreen = new InventoryScreen(
+        SCREEN_WIDTH, SCREEN_HEIGHT,
+        this.player.inventory, this.player.equipment,
+        this.player.computedStats,
+      );
+      this.inventoryScreen.onEquipCallback((gridIndex: number) => {
+        if (this.player) {
+          this.player.equipItem(gridIndex);
+          this.inventoryScreen?.update(
+            this.player.inventory, this.player.equipment,
+            this.player.computedStats, this.input,
+          );
+        }
+      });
+      this.inventoryScreen.onUnequipCallback((slot: Slot) => {
+        if (this.player) {
+          this.player.unequipItem(slot);
+          this.inventoryScreen?.update(
+            this.player.inventory, this.player.equipment,
+            this.player.computedStats, this.input,
+          );
+        }
+      });
+      this.app.stage.addChild(this.inventoryScreen.container);
+    } else {
+      if (this.inventoryScreen) {
+        this.app.stage.removeChild(this.inventoryScreen.container);
+        this.inventoryScreen.destroy();
+        this.inventoryScreen = undefined;
+      }
+    }
+  }
+
+  private updateInventory() {
+    if (!this.inventoryScreen || !this.player) return;
+    this.inventoryScreen.update(
+      this.player.inventory, this.player.equipment,
+      this.player.computedStats, this.input,
+    );
+  }
+
   private restartGame() {
+    if (this.inventoryOpen) this.toggleInventory();
+    if (this.inventoryScreen) {
+      this.app.stage.removeChild(this.inventoryScreen.container);
+      this.inventoryScreen.destroy();
+      this.inventoryScreen = undefined;
+    }
     if (this.treeOpen) this.toggleTree();
     if (this.passiveTreeScreen) {
       this.app.stage.removeChild(this.passiveTreeScreen.container);
