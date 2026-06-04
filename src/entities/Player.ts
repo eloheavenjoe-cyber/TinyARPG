@@ -56,6 +56,7 @@ export class Player {
   };
 
   private invulnTimer = 0;
+  godMode = false;
   slowTimer = 0;
   private fortifyTimer = 0;
   private attackCooldown = 0;
@@ -450,6 +451,7 @@ export class Player {
 
   takeDamage(amount: number): boolean {
     if (this.invulnTimer > 0 || !this.alive) return false;
+    if (this.godMode) return false;
     if (this.skills.isInvulnerable()) return false;
 
     const skillReduction = this.skills.damageReduction();

@@ -18,7 +18,8 @@ import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
 import { generateItemDrop, generateOrbDrop } from './ItemGenerator';
-import { Slot } from './ItemDefs';
+import { Slot, ITEM_BASES } from './ItemDefs';
+import { DeveloperConsole } from '../ui/DeveloperConsole';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -67,16 +68,20 @@ export class Game {
   private lastKeys: Set<string> = new Set();
   private wasPKeyDown = false;
   private wasIKeyDown = false;
+  private _consoleKeyWasDown = false;
   private pendingClassType: ClassType = 'warrior';
   private treeOpen = false;
   private inventoryOpen = false;
   private passiveTreeScreen?: PassiveTreeScreen;
   private inventoryScreen?: InventoryScreen;
+  private devConsole: DeveloperConsole;
 
   constructor(app: Application) {
     this.app = app;
     this.input = new InputManager(app.view as HTMLCanvasElement);
     Sprites.generateAll();
+    this.devConsole = new DeveloperConsole();
+    this.setupConsoleCommands();
     Logger.log('game', 'TinyARPG initialized');
   }
 
@@ -179,6 +184,17 @@ export class Game {
 
   private update(dt: number) {
     if (this.state === State.Playing) {
+      // Dev console toggle
+      if (this.input.isKeyDown('Backquote')) {
+        if (!this._consoleKeyWasDown) {
+          this.devConsole.toggle();
+          this._consoleKeyWasDown = true;
+        }
+      } else {
+        this._consoleKeyWasDown = false;
+      }
+      if (this.devConsole.isVisible()) return;
+
       if (this.inventoryOpen && this.input.isKeyDown('Escape')) {
         this.toggleInventory();
       } else if (this.inventoryOpen) {
@@ -934,6 +950,185 @@ export class Game {
     );
   }
 
+  private setupConsoleCommands() {
+    const c = this.devConsole;
+
+    // Register built-in commands first
+    for (const cmd of c.getBuiltInCommands()) c.registerCommand(cmd);
+
+    c.registerCommand({
+      name: 'additem', aliases: ['item', 'give'],
+      description: 'Add an item to inventory',
+      usage: '<baseId> [rarity]',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const baseId = args[0];
+        const base = ITEM_BASES.find(b => b.id === baseId);
+        if (!base) return `Unknown base: ${baseId}. Available: ${ITEM_BASES.map(b => b.id).join(', ')}`;
+        const rarity = args[1] || 'rare';
+        if (!['normal', 'magic', 'rare', 'unique'].includes(rarity)) return 'Rarity must be normal/magic/rare/unique';
+        const item = generateItemDrop(this.player.level);
+        item.base = base;
+        item.rarity = rarity as any;
+        const idx = this.player!.inventory.findIndex(s => s === null);
+        if (idx === -1) return 'Inventory full';
+        this.player!.inventory[idx] = { kind: 'equip', item };
+        return `Added ${rarity} ${base.name} to inventory`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'addorb', aliases: ['orb'],
+      description: 'Add orbs to inventory',
+      usage: '<orbId> [count]',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const orbId = args[0];
+        const valid = ['empowerment', 'flux', 'mutation', 'growth', 'ascendance', 'purification'];
+        if (!valid.includes(orbId)) return `Unknown orb: ${orbId}. Valid: ${valid.join(', ')}`;
+        const count = parseInt(args[1]) || 1;
+        this.player.pickupOrb(orbId, count);
+        return `Added ${count}x ${orbId} orb(s)`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'addgold', aliases: ['gold'],
+      description: 'Add gold',
+      usage: '<amount>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        this.player.gold += parseInt(args[0]) || 100;
+        return `Gold: ${this.player.gold}`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'addlevel', aliases: ['level', 'lvl'],
+      description: 'Add levels',
+      usage: '<count>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const count = parseInt(args[0]) || 1;
+        for (let i = 0; i < count; i++) this.player.addXp(this.player.xpToNext);
+        return `Level: ${this.player.level}`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'addxp', aliases: ['xp'],
+      description: 'Add experience',
+      usage: '<amount>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const amt = parseInt(args[0]) || 100;
+        this.player.addXp(amt);
+        return `XP added. Level: ${this.player.level}`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'passivepoints', aliases: ['pp', 'passive'],
+      description: 'Add passive skill points',
+      usage: '<count>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const count = parseInt(args[0]) || 1;
+        this.player.passivePoints = (this.player.passivePoints || 0) + count;
+        return `Passive points: ${this.player.passivePoints}`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'attrpoints', aliases: ['ap', 'attrs'],
+      description: 'Add attribute points',
+      usage: '<count>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const count = parseInt(args[0]) || 1;
+        this.player.unspentAttrPoints = (this.player.unspentAttrPoints || 0) + count;
+        return `Attribute points: ${this.player.unspentAttrPoints}`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'heal', aliases: ['h'],
+      description: 'Restore health and mana to full',
+      usage: '/heal',
+      run: () => {
+        if (!this.player) return 'No player';
+        this.player.health = this.player.maxHealth;
+        this.player.mana = this.player.maxMana;
+        return 'Healed to full';
+      },
+    });
+
+    c.registerCommand({
+      name: 'killall', aliases: ['ka'],
+      description: 'Kill all enemies on screen',
+      usage: '/killall',
+      run: () => {
+        let count = 0;
+        for (const e of this.enemies) {
+          if (e.alive) { e.takeDamage(9999); count++; }
+        }
+        return `Killed ${count} enemies`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'spawn', aliases: [],
+      description: 'Spawn enemies of a given type',
+      usage: '<type> [count]',
+      run: (args) => {
+        const valid: EnemyType[] = ['grunt', 'archer', 'juggernaut', 'cultist'];
+        const type = args[0] as EnemyType;
+        if (!valid.includes(type)) return `Unknown type: ${args[0]}. Valid: ${valid.join(', ')}`;
+        const count = parseInt(args[1]) || 1;
+        const margin = 80;
+        const wa = this.room!.walkableArea;
+        for (let i = 0; i < count; i++) {
+          let x = margin + Math.random() * (wa.width - margin * 2) + wa.x;
+          let y = margin + Math.random() * (wa.height - margin * 2) + wa.y;
+          if (this.player && Math.hypot(x - this.player.x, y - this.player.y) < 200) {
+            x += 200;
+          }
+          const e = new Enemy(x, y, type);
+          this.enemies.push(e);
+          this.gameContainer!.addChild(e.sprite);
+        }
+        return `Spawned ${count} ${type}(s)`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'speed', aliases: [],
+      description: 'Set player movement speed multiplier',
+      usage: '<mult>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const mult = parseFloat(args[0]) || 1;
+        this.player.speed = 6 * mult;
+        return `Speed set to ${this.player.speed}`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'god', aliases: ['invuln'],
+      description: 'Toggle god mode (invulnerability)',
+      usage: '/god',
+      run: () => {
+        if (!this.player) return 'No player';
+        this.player.godMode = !this.player.godMode;
+        return `God mode: ${this.player.godMode ? 'ON' : 'OFF'}`;
+      },
+    });
+
+    c.onCommandCallback((cmd, args) => {
+      return `Unknown command: /${cmd}. Type /help for commands.`;
+    });
+  }
+
   private restartGame() {
     if (this.inventoryOpen) this.toggleInventory();
     if (this.inventoryScreen) {
@@ -959,6 +1154,7 @@ export class Game {
       this.gameContainer.destroy({ children: true });
       this.gameContainer = undefined;
     }
+    this.devConsole.hide();
     this.enemies = [];
     for (const p of this.projectiles) { p.destroy(); }
     this.projectiles = [];
