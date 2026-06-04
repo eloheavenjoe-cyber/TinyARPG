@@ -70,7 +70,7 @@ export class Game {
   private projectiles: Projectile[] = [];
   private waveCooldown = 0;
   private itemDrops: ItemDrop[] = [];
-  private decorationSprites: Sprite[] = [];
+  private decorationSprites: Container[] = [];
   private chests: Chest[] = [];
   private breakables: Breakable[] = [];
   private combatText: CombatTextManager = new CombatTextManager();
@@ -301,30 +301,65 @@ export class Game {
 
     // Hub-specific detailed visuals
     if (zone.id === 'hub') {
-      // Stone pathway tiles from portals to center
-      const pathY = 1792;
-      for (let x = 1800; x < 4600; x += 32) {
-        const tile = new Sprite(Sprites.pathTile);
-        tile.x = x;
-        tile.y = pathY;
-        this.gameContainer.addChild(tile);
-        this.decorationSprites.push(tile);
+      const pathCenterY = 1792;
+      const pathL = 1800;
+      const pathR = 4600;
+
+      // Stone pathway — 3 tiles wide for main axes
+      for (let x = pathL - 32; x <= pathL + 32; x += 32) {
+        for (let y = 1120; y < 2400; y += 32) {
+          const tile = new Sprite(Sprites.pathTile);
+          tile.x = x; tile.y = y;
+          this.gameContainer.addChild(tile);
+          this.decorationSprites.push(tile);
+        }
       }
-      // Vertical path
-      for (let y = 1120; y < 2400; y += 32) {
-        const tileL = new Sprite(Sprites.pathTile);
-        tileL.x = 1800;
-        tileL.y = y;
-        this.gameContainer.addChild(tileL);
-        this.decorationSprites.push(tileL);
-        const tileR = new Sprite(Sprites.pathTile);
-        tileR.x = 4600;
-        tileR.y = y;
-        this.gameContainer.addChild(tileR);
-        this.decorationSprites.push(tileR);
+      for (let x = pathR - 32; x <= pathR + 32; x += 32) {
+        for (let y = 1120; y < 2400; y += 32) {
+          const tile = new Sprite(Sprites.pathTile);
+          tile.x = x; tile.y = y;
+          this.gameContainer.addChild(tile);
+          this.decorationSprites.push(tile);
+        }
+      }
+      // Horizontal cross path — 3 tiles wide
+      for (let y = pathCenterY - 32; y <= pathCenterY + 32; y += 32) {
+        for (let x = pathL; x < pathR; x += 32) {
+          const tile = new Sprite(Sprites.pathTile);
+          tile.x = x; tile.y = y;
+          this.gameContainer.addChild(tile);
+          this.decorationSprites.push(tile);
+        }
       }
 
-      // Detailed building sprites (overlay on Graphics buildings)
+      // Pillars along the portal paths (between path and portals)
+      for (const py of [1070, 1470, 1870]) {
+        const pillarL = new Graphics();
+        pillarL.beginFill(0x6a6a6a, 0.9);
+        pillarL.drawRoundedRect(-6, -20, 12, 80, 3);
+        pillarL.endFill();
+        pillarL.lineStyle(1, 0x8a8a8a, 0.6);
+        pillarL.drawRoundedRect(-6, -20, 12, 80, 3);
+        pillarL.x = 1720; pillarL.y = py + 40;
+        this.gameContainer.addChild(pillarL);
+        this.decorationSprites.push(pillarL as any);
+
+        const pillarR = new Graphics();
+        pillarR.beginFill(0x6a6a6a, 0.9);
+        pillarR.drawRoundedRect(-6, -20, 12, 80, 3);
+        pillarR.endFill();
+        pillarR.lineStyle(1, 0x8a8a8a, 0.6);
+        pillarR.drawRoundedRect(-6, -20, 12, 80, 3);
+        pillarR.x = 4680; pillarR.y = py + 40;
+        this.gameContainer.addChild(pillarR);
+        this.decorationSprites.push(pillarR as any);
+      }
+
+      // Building collision walls
+      this.room.walls.push({ x: 2700, y: 1100, width: 400, height: 250 });
+      this.room.walls.push({ x: 3300, y: 1100, width: 400, height: 250 });
+
+      // Detailed building sprites
       const vendorSprite = new Sprite(Sprites.buildVendor);
       vendorSprite.x = 2700;
       vendorSprite.y = 1100;
@@ -339,40 +374,41 @@ export class Game {
       this.gameContainer.addChild(stashSprite);
       this.decorationSprites.push(stashSprite);
 
-      // Fountain at town center
+      // Fountain at town center (scaled up 2x)
       const fountainSprite = new Sprite(Sprites.fountain);
       fountainSprite.anchor.set(0.5, 0.5);
+      fountainSprite.scale.set(2);
       fountainSprite.x = 3200;
-      fountainSprite.y = 1792;
+      fountainSprite.y = 1808;
       this.gameContainer.addChild(fountainSprite);
       this.decorationSprites.push(fountainSprite);
-      // Fountain water VFX (animated spray)
+      // Fountain water VFX — larger animated spray
       this.addVfx((g, t) => {
         g.clear();
-        const cx = 3200, cy = 1792;
+        const cx = 3200, cy = 1808;
         const spin = this.portalAngle;
-        g.lineStyle(2, 0x66ccff, 0.3);
-        for (let i = 0; i < 6; i++) {
-          const a = spin + (i / 6) * Math.PI * 2;
-          const len = 10 + 8 * Math.abs(Math.sin(a));
-          g.moveTo(cx, cy - 16);
-          g.lineTo(cx + Math.cos(a) * len, cy - 16 + Math.sin(a) * len);
+        g.lineStyle(3, 0x66ccff, 0.3);
+        for (let i = 0; i < 8; i++) {
+          const a = spin + (i / 8) * Math.PI * 2;
+          const len = 24 + 12 * Math.abs(Math.sin(a));
+          g.moveTo(cx, cy - 24);
+          g.lineTo(cx + Math.cos(a) * len, cy - 24 + Math.sin(a) * len);
         }
-        // Water droplets
-        for (let i = 0; i < 4; i++) {
-          const a = spin * 2 + (i / 4) * Math.PI * 2;
-          const dist = 12 + 6 * Math.sin(a);
+        for (let i = 0; i < 6; i++) {
+          const a = spin * 2 + (i / 6) * Math.PI * 2;
+          const dist = 20 + 10 * Math.sin(a);
           g.beginFill(0x88ddff, 0.5 - 0.4 * Math.abs(Math.sin(a)));
-          g.drawCircle(cx + Math.cos(a) * dist, cy - 20 + Math.sin(a) * dist, 2);
+          g.drawCircle(cx + Math.cos(a) * dist, cy - 30 + Math.sin(a) * dist, 3);
           g.endFill();
         }
       }, 99999);
 
-      // Statue near fountain
+      // Statue near fountain (scaled up 2.5x)
       const statueSprite = new Sprite(Sprites.statue);
       statueSprite.anchor.set(0.5, 1);
+      statueSprite.scale.set(2.5);
       statueSprite.x = 3200;
-      statueSprite.y = 1740;
+      statueSprite.y = 1730;
       this.gameContainer.addChild(statueSprite);
       this.decorationSprites.push(statueSprite);
     }
