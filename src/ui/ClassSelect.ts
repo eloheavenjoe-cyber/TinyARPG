@@ -186,7 +186,6 @@ export class ClassSelect {
       cls.drawIcon(icon);
       icon.x = btnX + btnW / 2;
       icon.y = btnY + 50;
-      this.container.addChild(icon);
 
       const name = new Text(cls.label, new TextStyle({
         fontFamily: 'Georgia, serif', fontSize: 24, fill: '#c0a060',
@@ -204,7 +203,7 @@ export class ClassSelect {
       desc.x = btnX + btnW / 2;
       desc.y = btnY + 144;
 
-      this.container.addChild(btn, name, desc);
+      this.container.addChild(btn, icon, name, desc);
       this.buttons.push({ bg: btn, classType: cls.classType });
     }
 
