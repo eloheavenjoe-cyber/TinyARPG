@@ -1,7 +1,7 @@
 import { AnimatedSprite, Texture } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
 import { InputManager } from '../core/InputManager';
-import { createWarriorSprite, createRangerSprite, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
+import { createWarriorSprite, createRangerSprite, createMonkSprite, playMonkAnimation, MonkAnimName, isMonkLoaded, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
 import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
 import { PassiveTree } from '../core/PassiveTree';
@@ -66,6 +66,8 @@ export class Player {
   lastHitInfo: { x: number; y: number; damage: number } | null = null;
   private animState: 'idle' | 'walk' | 'attack' = 'idle';
   facingAngle = 0;
+  private channeling = false;
+  private channelTimer = 0;
 
   private _computedStats = computeStats(this.passiveTree, this.attrs, 100, 50);
 
@@ -76,6 +78,8 @@ export class Player {
       this.sprite = createWarriorSprite();
     } else if (classType === 'ranger' && isLoaded('ranger')) {
       this.sprite = createRangerSprite();
+    } else if (classType === 'monk' && isMonkLoaded()) {
+      this.sprite = createMonkSprite();
     } else {
       const tex = classType === 'ranger' ? Sprites.ranger : Sprites.player;
       const s = new AnimatedSprite([tex]);
@@ -397,6 +401,16 @@ export class Player {
 
     this.skills.update(dt);
 
+    if (this.channeling) {
+      this.channelTimer -= dt;
+      if (this.channelTimer <= 0) {
+        this.channeling = false;
+        const healAmt = Math.round(this.maxHealth * 0.25);
+        this.health = Math.min(this.maxHealth, this.health + healAmt);
+        this.skills.addBuff('meditate_damage');
+      }
+    }
+
     let dx = 0, dy = 0;
     if (input.isKeyDown('KeyW') || input.isKeyDown('ArrowUp')) dy = -1;
     if (input.isKeyDown('KeyS') || input.isKeyDown('ArrowDown')) dy = 1;
@@ -472,6 +486,7 @@ export class Player {
   }
 
   takeDamage(amount: number): boolean {
+    this.channeling = false;
     if (this.invulnTimer > 0 || !this.alive) return false;
     if (this.godMode) return false;
     if (this.skills.isInvulnerable()) return false;
@@ -480,7 +495,13 @@ export class Player {
     const treeReduction = (this._computedStats.damageReduction || 0) / 100;
     const fortifyReduction = this.fortifyTimer > 0 ? (this._computedStats.fortifyOnHit || 0) / 100 : 0;
     const reduction = Math.min(0.5, skillReduction + treeReduction + fortifyReduction);
-    const finalDmg = reduction > 0 ? Math.round(amount * (1 - reduction)) : amount;
+    let finalDmg = reduction > 0 ? Math.round(amount * (1 - reduction)) : amount;
+
+    if (this.classType === 'monk') {
+      const stanceReduction = this.skills.stanceDamageReductionBonus();
+      if (stanceReduction > 0) finalDmg = Math.round(finalDmg * (1 - stanceReduction));
+      if (stanceReduction < 0) finalDmg = Math.round(finalDmg * (1 + Math.abs(stanceReduction)));
+    }
 
     this.health = Math.max(0, this.health - finalDmg);
     this.invulnTimer = 60;
@@ -500,16 +521,41 @@ export class Player {
     Logger.log('combat', `Player healed for ${amount} (hp: ${this.health}/${this.maxHealth})`);
   }
 
-  triggerAttackAnimation() {
+  triggerAttackAnimation(skillId: string) {
     this.animState = 'attack';
-    playAnimation(this.sprite, 'attack', false, this.classType);
-    const resetAnim = () => {
-      if (this.animState === 'attack') {
-        this.animState = 'idle';
-        playAnimation(this.sprite, 'idle', true, this.classType);
-      }
-    };
-    this.sprite.onComplete = resetAnim;
+    if (this.classType === 'monk') {
+      const animMap: Record<string, MonkAnimName> = {
+        basic_strike: 'basic_strike',
+        dragon_palm: 'dragon_palm',
+        whirlwind_kick: 'whirlwind_kick',
+        tiger_uppercut: 'dragon_palm',
+      };
+      const animName = animMap[skillId] || 'basic_strike';
+      playMonkAnimation(this.sprite, animName, false);
+      this.sprite.onComplete = () => {
+        if (this.animState === 'attack') {
+          this.animState = 'idle';
+          playMonkAnimation(this.sprite, 'idle');
+        }
+      };
+    } else {
+      playAnimation(this.sprite, 'attack', false, this.classType);
+      this.sprite.onComplete = () => {
+        if (this.animState === 'attack') {
+          this.animState = 'idle';
+          playAnimation(this.sprite, 'idle', true, this.classType);
+        }
+      };
+    }
+  }
+
+  isChanneling(): boolean {
+    return this.channeling;
+  }
+
+  startChannel(skillId: string, duration: number) {
+    this.channeling = true;
+    this.channelTimer = duration;
   }
 
   useMainAbility(enemies: Enemy[]): boolean {
@@ -520,7 +566,7 @@ export class Player {
     if (!result) return false;
     this.mana -= result.manaCost;
 
-    this.triggerAttackAnimation();
+    this.triggerAttackAnimation(skill.id);
 
     const aoeMult = 1 + ((this._computedStats.skillAoePct || 0) / 100);
     const leechPct = this._computedStats.lifeLeechPct || 0;
@@ -563,6 +609,11 @@ export class Player {
         if (closest) {
           const dmg = this.calcDamage(skill);
           closest.takeDamage(dmg);
+          if (skill.id === 'tiger_uppercut' && closest.alive) {
+            const angle = Math.atan2(closest.y - this.y, closest.x - this.x);
+            closest.x += Math.cos(angle) * 80;
+            closest.y += Math.sin(angle) * 80;
+          }
           this.lastHitInfo = { x: closest.x, y: closest.y, damage: dmg };
           totalDmg += dmg;
           hitCount++;
@@ -584,6 +635,14 @@ export class Player {
         }
         Logger.log('combat', `${skill.name} aoe`);
         break;
+      }
+    }
+
+    if (this.classType === 'monk') {
+      const lifesteal = this.skills.stanceLifestealBonus();
+      if (lifesteal > 0 && totalDmg > 0) {
+        const heal = Math.round(totalDmg * lifesteal);
+        this.health = Math.min(this.maxHealth, this.health + heal);
       }
     }
 
@@ -658,7 +717,14 @@ export class Player {
   }
 
   private calcDamage(skill: SkillDef): number {
-    return Math.round(25 * skill.damageMult);
+    let mult = skill.damageMult;
+    if (this.classType === 'monk') {
+      mult *= this.skills.stanceDamageMultBonus();
+      if (this.skills.hasBuff('meditate_damage')) {
+        mult *= 1.2;
+      }
+    }
+    return Math.round(25 * mult);
   }
 
   getAttackCooldown(): number {

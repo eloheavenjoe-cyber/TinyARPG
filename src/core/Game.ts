@@ -976,7 +976,7 @@ export class Game {
       if (!result) return;
       this.player.mana -= result.manaCost;
 
-      this.player.triggerAttackAnimation();
+      this.player.triggerAttackAnimation(result.id);
 
       if (isProjectileType) {
         const px = this.player.x + Math.cos(angle) * 20;
