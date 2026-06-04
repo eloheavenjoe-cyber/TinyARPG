@@ -5,12 +5,25 @@ import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
 import { PassiveTree } from '../core/PassiveTree';
 import { computeStats } from '../core/StatSystem';
-import { Slot } from '../core/ItemDefs';
+import { Slot, AFFIXES } from '../core/ItemDefs';
 import { GeneratedItem } from '../core/ItemGenerator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Enemy } from './Enemy';
 import { Projectile } from './Projectile';
+
+export interface OrbInfo {
+  kind: 'orb';
+  orbId: string;
+  count: number;
+}
+
+export interface EquipSlot {
+  kind: 'equip';
+  item: GeneratedItem;
+}
+
+export type InventorySlot = EquipSlot | OrbInfo | null;
 
 export class Player {
   x: number;
@@ -36,7 +49,7 @@ export class Player {
   attrs = { str: 0, dex: 0, int: 0 };
   unspentAttrPoints = 0;
   passivePoints = 0;
-  inventory: (GeneratedItem | null)[] = new Array(30).fill(null);
+  inventory: InventorySlot[] = new Array(30).fill(null);
   equipment: Record<Slot, GeneratedItem | null> = {
     weapon: null, body: null, helmet: null, boots: null,
     ring: null, ring2: null, amulet: null,
@@ -85,19 +98,20 @@ export class Player {
   pickupItem(item: GeneratedItem): boolean {
     const idx = this.inventory.findIndex(s => s === null);
     if (idx === -1) return false;
-    this.inventory[idx] = item;
+    this.inventory[idx] = { kind: 'equip', item };
     return true;
   }
 
   equipItem(gridIndex: number): boolean {
-    const item = this.inventory[gridIndex];
-    if (!item) return false;
-    const slot = item.base.slot;
-    const slotKey: Slot = slot === 'ring' && this.equipment.ring !== null && this.equipment.ring2 === null
-      ? 'ring2' : slot;
+    const slot = this.inventory[gridIndex];
+    if (!slot || slot.kind !== 'equip') return false;
+    const item = slot.item;
+    const equipSlot = item.base.slot;
+    const slotKey: Slot = equipSlot === 'ring' && this.equipment.ring !== null && this.equipment.ring2 === null
+      ? 'ring2' : equipSlot;
     const current = this.equipment[slotKey];
     this.equipment[slotKey] = item;
-    this.inventory[gridIndex] = current || null;
+    this.inventory[gridIndex] = current ? { kind: 'equip', item: current } : null;
     this.recalcStats();
     return true;
   }
@@ -107,8 +121,71 @@ export class Player {
     if (!item) return false;
     const idx = this.inventory.findIndex(s => s === null);
     if (idx === -1) return false;
-    this.inventory[idx] = item;
+    this.inventory[idx] = { kind: 'equip', item };
     this.equipment[slot] = null;
+    this.recalcStats();
+    return true;
+  }
+
+  pickupOrb(orbId: string, count: number = 1): boolean {
+    const existing = this.inventory.find(
+      (s): s is OrbInfo => s !== null && s.kind === 'orb' && s.orbId === orbId
+    );
+    if (existing) {
+      existing.count += count;
+      return true;
+    }
+    const idx = this.inventory.findIndex(s => s === null);
+    if (idx === -1) return false;
+    this.inventory[idx] = { kind: 'orb', orbId, count };
+    return true;
+  }
+
+  empowerItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item || item.rarity !== 'rare' || item.uniqueId) return false;
+    if (item.affixes.length >= 6) return false;
+
+    const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
+    const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+
+    const usedStats = new Set(item.affixes.map(a => a.affix.stat));
+    const pool = item.affixes.length <= 3 ? prefixes : suffixes;
+    const pick = pool.find(a => !usedStats.has(a.stat));
+    if (!pick) return false;
+
+    const roll = pick.min + Math.floor(Math.random() * (pick.max - pick.min + 1));
+    item.affixes.push({ affix: pick, roll });
+    item.computedStats[pick.stat] = (item.computedStats[pick.stat] || 0) + roll;
+    this.recalcStats();
+    return true;
+  }
+
+  fluxItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item || item.rarity !== 'rare' || item.uniqueId) return false;
+
+    const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
+    const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+    const count = 4 + Math.floor(Math.random() * 3);
+
+    const pickPref = Math.min(Math.ceil(count / 2), prefixes.length);
+    const pickSuff = Math.min(Math.floor(count / 2), suffixes.length);
+
+    item.affixes = [];
+    for (const src of [prefixes.slice(0, pickPref), suffixes.slice(0, pickSuff)]) {
+      for (const affix of src) {
+        const roll = affix.min + Math.floor(Math.random() * (affix.max - affix.min + 1));
+        item.affixes.push({ affix, roll });
+      }
+    }
+
+    const stats: Record<string, number> = { ...item.base.innateStats };
+    if (item.damageRoll > 0) stats.damage = item.damageRoll;
+    for (const p of item.affixes) {
+      stats[p.affix.stat] = (stats[p.affix.stat] || 0) + p.roll;
+    }
+    item.computedStats = stats;
     this.recalcStats();
     return true;
   }
