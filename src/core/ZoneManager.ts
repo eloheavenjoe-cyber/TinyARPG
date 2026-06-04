@@ -96,14 +96,14 @@ export class ZoneManager {
     return enemies;
   }
 
-  transitionTo(zoneId: string): ZoneState {
+  transitionTo(zoneId: string, targetRoom?: number): ZoneState {
     const config = ZONE_REGISTRY[zoneId];
     if (!config) {
       Logger.log('system', `Unknown zone: ${zoneId}, defaulting to hub`);
       return this.transitionTo('hub');
     }
 
-    const roomIndex = 0;
+    const roomIndex = targetRoom ?? 0;
     const template = this.pickTemplate(config, roomIndex);
 
     if (config.isEndless === 'wave') {

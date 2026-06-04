@@ -1492,6 +1492,22 @@ export class Game {
       },
     });
 
+    c.registerCommand({
+      name: 'boss', aliases: [],
+      description: 'Teleport to boss room for a zone',
+      usage: '<zoneId>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const zoneId = args[0];
+        const config = ZoneManager.getZone(zoneId);
+        if (!config) return `Unknown zone: ${zoneId}. Try: forest, desert, ice`;
+        if (!config.bossId) return `${config.name} has no boss`;
+        this.zoneManager.transitionTo(zoneId, config.roomCount - 1);
+        this.buildCurrentZoneRoom();
+        return `Teleported to ${config.name} boss room`;
+      },
+    });
+
     c.onCommandCallback((cmd, args) => {
       return `Unknown command: /${cmd}. Type /help for commands.`;
     });
