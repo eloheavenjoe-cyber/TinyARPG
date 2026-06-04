@@ -1,6 +1,9 @@
 import { EnemyType } from '../entities/Enemy';
 import {
-  TEMPLATE_HUB, TEMPLATE_TUTORIAL, TEMPLATE_ARENA, TEMPLATE_DUNGEON, TEMPLATE_DEV
+  TEMPLATE_HUB, TEMPLATE_TUTORIAL, TEMPLATE_ARENA, TEMPLATE_DUNGEON, TEMPLATE_DEV,
+  TEMPLATE_FOREST_1, TEMPLATE_FOREST_2, TEMPLATE_FOREST_3,
+  TEMPLATE_DESERT_1, TEMPLATE_DESERT_2, TEMPLATE_DESERT_3, TEMPLATE_DESERT_4,
+  TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5,
 } from '../world/RoomTemplates';
 
 export type BiomeId = 'dev' | 'hub' | 'tutorial' | 'forest' | 'desert' | 'ice' | 'endless';
@@ -89,7 +92,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 1.0, enemyDmgMult: 1.0, enemyXpMult: 1.0,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 3, max: 5 },
-    templates: [],
+    templates: [TEMPLATE_FOREST_1, TEMPLATE_FOREST_2, TEMPLATE_FOREST_3],
   },
   desert: {
     id: 'desert', name: 'Scorched Desert', biome: 'desert',
@@ -97,7 +100,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 1.5, enemyDmgMult: 1.3, enemyXpMult: 1.5,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 4, max: 6 },
-    templates: [],
+    templates: [TEMPLATE_DESERT_1, TEMPLATE_DESERT_2, TEMPLATE_DESERT_3, TEMPLATE_DESERT_4],
   },
   ice: {
     id: 'ice', name: 'Frozen Wastes', biome: 'ice',
@@ -105,7 +108,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     enemyHpMult: 2.5, enemyDmgMult: 2.0, enemyXpMult: 2.5,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 5, max: 7 },
-    templates: [],
+    templates: [TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5],
   },
   endless_dungeon: {
     id: 'endless_dungeon', name: 'Endless Dungeon', biome: 'endless',

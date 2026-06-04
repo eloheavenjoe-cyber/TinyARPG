@@ -152,3 +152,184 @@ export const TEMPLATE_DEV: RoomTemplate = {
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   playerStart: { x: 800, y: 448 },
 };
+
+// --- Forest zone templates (3 rooms) ---
+export const TEMPLATE_FOREST_1: RoomTemplate = {
+  walls: [],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'forest', targetRoom: 1 }],
+  portals: [],
+  spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_FOREST_2: RoomTemplate = {
+  walls: [
+    { x: 680, y: 340, width: 40, height: 40 },
+    { x: 880, y: 340, width: 40, height: 40 },
+    { x: 680, y: 516, width: 40, height: 40 },
+    { x: 880, y: 516, width: 40, height: 40 },
+  ],
+  doors: [{ rect: { x: 750, y: 0, width: 100, height: 36 }, targetZone: 'forest', targetRoom: 2 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 550, height: 200 },
+    { x: 900, y: 64, width: 600, height: 200 },
+    { x: 64, y: 500, width: 550, height: 300 },
+    { x: 900, y: 500, width: 600, height: 300 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_FOREST_3: RoomTemplate = {
+  walls: [
+    { x: 0, y: 400, width: 600, height: 40 },
+    { x: 600, y: 200, width: 40, height: 240 },
+  ],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 500, height: 300 },
+    { x: 700, y: 64, width: 800, height: 100 },
+    { x: 700, y: 480, width: 800, height: 350 },
+    { x: 64, y: 480, width: 500, height: 350 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+// --- Desert zone templates (4 rooms) ---
+export const TEMPLATE_DESERT_1: RoomTemplate = {
+  walls: [
+    { x: 750, y: 0, width: 40, height: 400 },
+    { x: 810, y: 440, width: 40, height: 456 },
+  ],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'desert', targetRoom: 1 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 600, height: 300 },
+    { x: 900, y: 64, width: 600, height: 300 },
+    { x: 64, y: 480, width: 600, height: 350 },
+    { x: 900, y: 480, width: 600, height: 350 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_DESERT_2: RoomTemplate = {
+  walls: [
+    { x: 0, y: 400, width: 750, height: 40 },
+    { x: 858, y: 400, width: 742, height: 40 },
+    { x: 750, y: 0, width: 28, height: 400 },
+    { x: 778, y: 440, width: 32, height: 456 },
+  ],
+  doors: [{ rect: { x: 1520, y: 400, width: 36, height: 80 }, targetZone: 'desert', targetRoom: 2 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 600, height: 300 },
+    { x: 900, y: 64, width: 600, height: 300 },
+    { x: 64, y: 480, width: 600, height: 350 },
+    { x: 900, y: 480, width: 600, height: 350 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_DESERT_3: RoomTemplate = {
+  walls: [
+    { x: 680, y: 340, width: 40, height: 40 },
+    { x: 880, y: 340, width: 40, height: 40 },
+    { x: 680, y: 516, width: 40, height: 40 },
+    { x: 880, y: 516, width: 40, height: 40 },
+  ],
+  doors: [{ rect: { x: 750, y: 0, width: 100, height: 36 }, targetZone: 'desert', targetRoom: 3 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 550, height: 200 },
+    { x: 900, y: 64, width: 600, height: 200 },
+    { x: 64, y: 500, width: 550, height: 300 },
+    { x: 900, y: 500, width: 600, height: 300 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_DESERT_4: RoomTemplate = {
+  walls: [],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  portals: [],
+  spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
+  playerStart: { x: 800, y: 448 },
+};
+
+// --- Ice zone templates (5 rooms) ---
+export const TEMPLATE_ICE_1: RoomTemplate = {
+  walls: [],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'ice', targetRoom: 1 }],
+  portals: [],
+  spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_ICE_2: RoomTemplate = {
+  walls: [
+    { x: 680, y: 340, width: 40, height: 40 },
+    { x: 880, y: 340, width: 40, height: 40 },
+    { x: 680, y: 516, width: 40, height: 40 },
+    { x: 880, y: 516, width: 40, height: 40 },
+  ],
+  doors: [{ rect: { x: 750, y: 0, width: 100, height: 36 }, targetZone: 'ice', targetRoom: 2 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 550, height: 200 },
+    { x: 900, y: 64, width: 600, height: 200 },
+    { x: 64, y: 500, width: 550, height: 300 },
+    { x: 900, y: 500, width: 600, height: 300 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_ICE_3: RoomTemplate = {
+  walls: [
+    { x: 0, y: 400, width: 600, height: 40 },
+    { x: 600, y: 200, width: 40, height: 240 },
+  ],
+  doors: [{ rect: { x: 1520, y: 400, width: 36, height: 80 }, targetZone: 'ice', targetRoom: 3 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 500, height: 300 },
+    { x: 700, y: 64, width: 800, height: 100 },
+    { x: 700, y: 480, width: 800, height: 350 },
+    { x: 64, y: 480, width: 500, height: 350 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_ICE_4: RoomTemplate = {
+  walls: [
+    { x: 750, y: 0, width: 28, height: 400 },
+    { x: 778, y: 440, width: 32, height: 456 },
+  ],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'ice', targetRoom: 4 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 650, height: 300 },
+    { x: 850, y: 64, width: 650, height: 300 },
+    { x: 64, y: 480, width: 650, height: 350 },
+    { x: 850, y: 480, width: 650, height: 350 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_ICE_5: RoomTemplate = {
+  walls: [
+    { x: 680, y: 340, width: 40, height: 40 },
+    { x: 880, y: 340, width: 40, height: 40 },
+    { x: 680, y: 516, width: 40, height: 40 },
+    { x: 880, y: 516, width: 40, height: 40 },
+  ],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  portals: [],
+  spawnZones: [
+    { x: 64, y: 64, width: 550, height: 200 },
+    { x: 900, y: 64, width: 600, height: 200 },
+    { x: 64, y: 500, width: 550, height: 300 },
+    { x: 900, y: 500, width: 600, height: 300 },
+  ],
+  playerStart: { x: 800, y: 448 },
+};
