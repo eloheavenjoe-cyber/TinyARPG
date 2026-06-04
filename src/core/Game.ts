@@ -3,6 +3,7 @@ import { InputManager } from './InputManager';
 import { Logger } from './Logger';
 import { Sprites } from '../rendering/Sprites';
 import { MainMenu } from '../ui/MainMenu';
+import { ClassSelect } from '../ui/ClassSelect';
 import { AbilitySelect } from '../ui/AbilitySelect';
 import { DeathScreen } from '../ui/DeathScreen';
 import { HUD } from '../ui/HUD';
@@ -10,8 +11,10 @@ import { SkillBar } from '../ui/SkillBar';
 import { Room, ROOM_WIDTH, ROOM_HEIGHT, rectsOverlap } from '../world/Room';
 import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
+import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot } from '../entities/ItemDrop';
+import { ClassType } from './SkillDefs';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -41,6 +44,7 @@ export class Game {
   private state = State.Menu;
 
   private mainMenu?: MainMenu;
+  private classSelect?: ClassSelect;
   private abilitySelect?: AbilitySelect;
   private deathScreen?: DeathScreen;
   private hud?: HUD;
@@ -49,12 +53,14 @@ export class Game {
   private room?: Room;
   private player?: Player;
   private enemies: Enemy[] = [];
+  private projectiles: Projectile[] = [];
   private itemDrops: ItemDrop[] = [];
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
   private dash: DashState | null = null;
 
   private lastKeys: Set<string> = new Set();
+  private pendingClassType: ClassType = 'warrior';
 
   constructor(app: Application) {
     this.app = app;
@@ -71,24 +77,39 @@ export class Game {
   private showMainMenu() {
     this.state = State.Menu;
     this.mainMenu = new MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT);
-    this.mainMenu.onStart(() => this.showAbilitySelect());
+    this.mainMenu.onStart(() => this.showClassSelect());
     this.app.stage.addChild(this.mainMenu.container);
   }
 
-  private showAbilitySelect() {
+  private showClassSelect() {
     if (this.mainMenu) {
       this.app.stage.removeChild(this.mainMenu.container);
       this.mainMenu.destroy();
       this.mainMenu = undefined;
     }
     this.state = State.Picking;
-    this.abilitySelect = new AbilitySelect(SCREEN_WIDTH, SCREEN_HEIGHT);
-    this.abilitySelect.onPick((id) => this.startGame(id));
+    this.classSelect = new ClassSelect(SCREEN_WIDTH, SCREEN_HEIGHT);
+    this.classSelect.onPick((classType) => {
+      this.pendingClassType = classType;
+      this.showAbilitySelect(classType);
+    });
+    this.app.stage.addChild(this.classSelect.container);
+  }
+
+  private showAbilitySelect(classType: ClassType) {
+    if (this.classSelect) {
+      this.app.stage.removeChild(this.classSelect.container);
+      this.classSelect.destroy();
+      this.classSelect = undefined;
+    }
+    this.state = State.Picking;
+    this.abilitySelect = new AbilitySelect(SCREEN_WIDTH, SCREEN_HEIGHT, classType);
+    this.abilitySelect.onPick((id) => this.startGame(classType, id));
     this.app.stage.addChild(this.abilitySelect.container);
   }
 
-  private startGame(abilityId: string) {
-    Logger.log('game', `Starting with ability: ${abilityId}`);
+  private startGame(classType: ClassType, abilityId: string) {
+    Logger.log('game', `Starting ${classType} with ability: ${abilityId}`);
     if (this.abilitySelect) {
       this.app.stage.removeChild(this.abilitySelect.container);
       this.abilitySelect.destroy();
@@ -101,7 +122,7 @@ export class Game {
     this.app.stage.addChild(this.gameContainer);
     this.room = new Room();
     this.gameContainer.addChild(this.room.container);
-    this.player = new Player(ROOM_WIDTH / 2, ROOM_HEIGHT / 2);
+    this.player = new Player(ROOM_WIDTH / 2, ROOM_HEIGHT / 2, classType);
     this.player.skills.selectMainAbility(abilityId);
     this.gameContainer.addChild(this.player.sprite);
     this.gameContainer.addChild(this.combatText.container);
@@ -128,7 +149,10 @@ export class Game {
   private update(dt: number) {
     switch (this.state) {
       case State.Menu: this.mainMenu?.update(this.input); break;
-      case State.Picking: this.abilitySelect?.update(this.input); break;
+      case State.Picking:
+        this.classSelect?.update(this.input);
+        this.abilitySelect?.update(this.input);
+        break;
       case State.Playing: this.updateGameplay(dt); break;
       case State.Death: this.deathScreen?.update(this.input); break;
     }
@@ -185,6 +209,35 @@ export class Game {
         this.gameContainer!.removeChild(v.g);
         v.g.destroy();
         this.vfx.splice(i, 1);
+      }
+    }
+
+    // Update projectiles
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const p = this.projectiles[i];
+      p.update(dt);
+      if (!p.alive) {
+        this.gameContainer!.removeChild(p.sprite);
+        p.destroy();
+        this.projectiles.splice(i, 1);
+        continue;
+      }
+      let hit = false;
+      for (const enemy of this.enemies) {
+        if (!enemy.alive) continue;
+        if (rectsOverlap(p.getBounds(), enemy.getBounds())) {
+          enemy.takeDamage(p.damage);
+          this.combatText.showDamage(enemy.x, enemy.y - 20, p.damage, 0xffaa00);
+          if (!p.pierce) {
+            hit = true;
+            break;
+          }
+        }
+      }
+      if (hit) {
+        this.gameContainer!.removeChild(p.sprite);
+        p.destroy();
+        this.projectiles.splice(i, 1);
       }
     }
 
@@ -326,6 +379,15 @@ export class Game {
     }, 30).position.set(x, y);
   }
 
+  private vfxProjectileTrail(p: Projectile) {
+    this.addVfx((g, t) => {
+      const alpha = Math.max(0, 0.4 - t * 1.2);
+      g.lineStyle(1, 0xffdd44, alpha);
+      g.moveTo(0, 0);
+      g.lineTo(-p.vx * 0.5, -p.vy * 0.5);
+    }, 15).position.set(p.x, p.y);
+  }
+
   private vfxGroundSlam(x: number, y: number, angle: number) {
     this.addVfx((g, t) => {
       const r = 180 * t;
@@ -364,6 +426,44 @@ export class Game {
     const skill = this.player.skills.mainAbility;
     const angle = this.player.sprite.rotation;
 
+    const isProjectileType = skill?.effectType === 'projectile' || skill?.effectType === 'projectile_spread' || skill?.effectType === 'projectile_pierce';
+    const isAoeTarget = skill?.effectType === 'aoe_target';
+
+    if (isProjectileType || isAoeTarget) {
+      const result = this.player.skills.consume(0, this.player.mana);
+      if (!result) return;
+      this.player.mana -= result.manaCost;
+
+      if (isProjectileType) {
+        const newProjectiles = this.player.fireProjectile(this.player.x, this.player.y, angle, result, this.projectiles);
+        for (const p of newProjectiles) {
+          this.projectiles.push(p);
+          this.gameContainer!.addChild(p.sprite);
+          this.vfxProjectileTrail(p);
+        }
+      } else if (isAoeTarget) {
+        let mouseWX = this.input.mouseX;
+        let mouseWY = this.input.mouseY;
+        if (this.gameContainer) {
+          const local = this.gameContainer.toLocal(new Point(this.input.mouseX, this.input.mouseY));
+          mouseWX = local.x;
+          mouseWY = local.y;
+        }
+
+        for (const enemy of this.enemies) {
+          if (!enemy.alive) continue;
+          const dist = Math.hypot(enemy.x - mouseWX, enemy.y - mouseWY);
+          if (dist < (result.radius || 100)) {
+            const dmg = Math.round(25 * result.damageMult);
+            enemy.takeDamage(dmg);
+            this.combatText.showDamage(enemy.x, enemy.y - 20, dmg, 0x44ff44);
+          }
+        }
+        this.vfxRing(mouseWX, mouseWY, 0x44ff44, result.radius || 100);
+      }
+      return;
+    }
+
     if (this.player.useMainAbility(this.enemies)) {
       if (this.player.lastHitInfo) {
         const h = this.player.lastHitInfo;
@@ -395,17 +495,35 @@ export class Game {
     const result = this.player.skills.consume(slot, this.player.mana);
     if (!result) return;
 
+    const isProjectileType = result.effectType === 'projectile' || result.effectType === 'projectile_spread';
+
+    if (isProjectileType) {
+      const angle = Math.atan2(mouseWY - this.player.y, mouseWX - this.player.x);
+      const newProjectiles = this.player.fireProjectile(this.player.x, this.player.y, angle, result, this.projectiles);
+      for (const p of newProjectiles) {
+        this.projectiles.push(p);
+        this.gameContainer!.addChild(p.sprite);
+        this.vfxProjectileTrail(p);
+      }
+      return;
+    }
+
     switch (result.effectType) {
       case 'dash': {
-        const dx = mouseWX - this.player.x;
-        const dy = mouseWY - this.player.y;
+        let dx: number, dy: number;
+        if (result.id === 'retreat') {
+          dx = this.player.x - mouseWX;
+          dy = this.player.y - mouseWY;
+        } else {
+          dx = mouseWX - this.player.x;
+          dy = mouseWY - this.player.y;
+        }
         const dist = Math.hypot(dx, dy);
         if (dist <= 0) break;
         const dashDist = Math.min(result.range || 150, dist);
         const tx = this.player.x + (dx / dist) * dashDist;
         const ty = this.player.y + (dy / dist) * dashDist;
 
-        // Wall check
         const testBounds = { x: tx - this.player.width / 2, y: ty - this.player.height / 2, width: this.player.width, height: this.player.height };
         let hitWall = false;
         for (const wall of this.room!.walls) {
@@ -433,7 +551,16 @@ export class Game {
         if (result.id === 'ignore_pain') this.vfxRing(this.player.x, this.player.y, 0xffdd44, 70);
         if (result.id === 'rally') this.vfxRing(this.player.x, this.player.y, 0x4488ff, 65);
         if (result.id === 'bloodlust') this.vfxRing(this.player.x, this.player.y, 0xff4488, 55);
+        if (result.id === 'eagle_eye') this.vfxRing(this.player.x, this.player.y, 0x44ff44, 60);
+        if (result.id === 'haste') this.vfxRing(this.player.x, this.player.y, 0x44ccff, 55);
+        if (result.id === 'camouflage') this.vfxRing(this.player.x, this.player.y, 0x8888aa, 50);
         Logger.log('skill', `Buff activated: ${result.name}`);
+        break;
+      }
+      case 'aoe_self': {
+        if (result.id === 'trap') {
+          this.vfxRing(this.player.x, this.player.y, 0xff6622, 20);
+        }
         break;
       }
       case 'cone': {
@@ -507,6 +634,8 @@ export class Game {
       this.gameContainer = undefined;
     }
     this.enemies = [];
+    for (const p of this.projectiles) { p.destroy(); }
+    this.projectiles = [];
     this.itemDrops = [];
     this.vfx = [];
     this.dash = null;
@@ -516,6 +645,6 @@ export class Game {
     this.room = undefined;
     this.input.reset();
     this.lastKeys.clear();
-    this.showAbilitySelect();
+    this.showClassSelect();
   }
 }

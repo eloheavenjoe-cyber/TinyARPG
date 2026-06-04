@@ -1,7 +1,7 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Logger } from '../core/Logger';
-import { WARRIOR_MAIN, SkillDef } from '../core/SkillDefs';
+import { WARRIOR_MAIN, RANGER_MAIN, SkillDef, ClassType } from '../core/SkillDefs';
 
 type PickCallback = (id: string) => void;
 
@@ -9,9 +9,13 @@ export class AbilitySelect {
   container: Container;
   private callback: PickCallback = () => {};
   private buttons: { bg: Graphics; skill: SkillDef }[] = [];
+  private classType: ClassType;
 
-  constructor(screenWidth: number, screenHeight: number) {
+  constructor(screenWidth: number, screenHeight: number, classType: ClassType = 'warrior') {
+    this.classType = classType;
     this.container = new Container();
+
+    const mainSkills = classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
 
     const bg = new Graphics();
     bg.beginFill(0x0a0a1a);
@@ -19,7 +23,8 @@ export class AbilitySelect {
     bg.endFill();
     this.container.addChild(bg);
 
-    const title = new Text('Choose Your Main Ability', new TextStyle({
+    const titleText = `${classType === 'warrior' ? 'Warrior' : 'Ranger'} - Choose Your Main Ability`;
+    const title = new Text(titleText, new TextStyle({
       fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
       stroke: '#000', strokeThickness: 3, letterSpacing: 3,
     }));
@@ -31,8 +36,8 @@ export class AbilitySelect {
     const startY = 220;
     const gap = 100;
 
-    for (let i = 0; i < WARRIOR_MAIN.length; i++) {
-      const skill = WARRIOR_MAIN[i];
+    for (let i = 0; i < mainSkills.length; i++) {
+      const skill = mainSkills[i];
       const y = startY + i * gap;
       const btnX = screenWidth / 2 - 250;
       const btnY = y;

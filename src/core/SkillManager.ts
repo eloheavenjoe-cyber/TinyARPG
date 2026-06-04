@@ -1,4 +1,4 @@
-import { SkillDef, WARRIOR_MAIN, WARRIOR_SUPPORT, DEFAULT_SUPPORT_IDS } from './SkillDefs';
+import { SkillDef, ClassType, WARRIOR_MAIN, WARRIOR_SUPPORT, RANGER_MAIN, RANGER_SUPPORT, DEFAULT_SUPPORT_IDS, RANGER_DEFAULT_SUPPORT_IDS } from './SkillDefs';
 import { Logger } from './Logger';
 
 export interface ActiveBuff {
@@ -7,22 +7,28 @@ export interface ActiveBuff {
 }
 
 export class SkillManager {
+  classType: ClassType;
   allSkills: SkillDef[];
   slots: (SkillDef | null)[] = [null, null, null, null, null, null];
   cooldowns: Map<string, number> = new Map();
   activeBuffs: ActiveBuff[] = [];
   mainAbility: SkillDef | null = null;
 
-  constructor() {
-    this.allSkills = [...WARRIOR_MAIN, ...WARRIOR_SUPPORT];
-    const supports = DEFAULT_SUPPORT_IDS
-      .map(id => WARRIOR_SUPPORT.find(s => s.id === id)!)
+  constructor(classType: ClassType) {
+    this.classType = classType;
+    const mainSkills = classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
+    const supportSkills = classType === 'warrior' ? WARRIOR_SUPPORT : RANGER_SUPPORT;
+    const defaultSupportIds = classType === 'warrior' ? DEFAULT_SUPPORT_IDS : RANGER_DEFAULT_SUPPORT_IDS;
+    this.allSkills = [...mainSkills, ...supportSkills];
+    const supports = defaultSupportIds
+      .map(id => supportSkills.find(s => s.id === id)!)
       .filter(Boolean);
     this.slots = [null, ...supports].slice(0, 6);
   }
 
   selectMainAbility(id: string) {
-    const skill = WARRIOR_MAIN.find(s => s.id === id);
+    const mainSkills = this.classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
+    const skill = mainSkills.find(s => s.id === id);
     if (!skill) return;
     this.mainAbility = skill;
     this.slots[0] = skill;
@@ -113,5 +119,13 @@ export class SkillManager {
 
   executeMult(): number {
     return 3.0;
+  }
+
+  projectileSpeedBonus(): number {
+    return this.hasBuff('eagle_eye') ? 1.3 : 1;
+  }
+
+  moveSpeedBonus(): number {
+    return this.hasBuff('haste') ? 1.5 : 1;
   }
 }

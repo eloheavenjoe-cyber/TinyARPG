@@ -2,10 +2,11 @@ import { Sprite } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
 import { InputManager } from '../core/InputManager';
 import { SkillManager } from '../core/SkillManager';
-import { SkillDef } from '../core/SkillDefs';
+import { SkillDef, ClassType } from '../core/SkillDefs';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Enemy } from './Enemy';
+import { Projectile } from './Projectile';
 
 export class Player {
   x: number;
@@ -29,13 +30,17 @@ export class Player {
   private readonly baseManaRegen = 8;
   lastHitInfo: { x: number; y: number; damage: number } | null = null;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, classType: ClassType = 'warrior') {
     this.x = x;
     this.y = y;
-    this.sprite = new Sprite(Sprites.player);
+    this.sprite = new Sprite(classType === 'ranger' ? Sprites.ranger : Sprites.player);
     this.sprite.anchor.set(0.5);
-    this.skills = new SkillManager();
+    this.skills = new SkillManager(classType);
     this.updateSprite();
+  }
+
+  get classType(): ClassType {
+    return this.skills.classType;
   }
 
   update(input: InputManager, mouseWorldX: number, mouseWorldY: number, walls: Rect[], dt: number) {
@@ -58,7 +63,8 @@ export class Player {
       Logger.log('movement', `Moving: (${dx.toFixed(2)}, ${dy.toFixed(2)})`);
     }
 
-    this.x += dx * this.speed * dt;
+    const speedMult = this.skills.moveSpeedBonus();
+    this.x += dx * this.speed * speedMult * dt;
     this.y += dy * this.speed * dt;
 
     const bounds = this.getBounds();
@@ -177,6 +183,54 @@ export class Player {
 
     this.updateSprite();
     return true;
+  }
+
+  fireProjectile(x: number, y: number, angle: number, skill: SkillDef, projectiles: Projectile[]): Projectile[] {
+    const speed = 8 * this.skills.projectileSpeedBonus();
+    const damage = Math.round(25 * skill.damageMult);
+    const pierce = skill.effectType === 'projectile_pierce';
+    const created: Projectile[] = [];
+
+    switch (skill.effectType) {
+      case 'projectile': {
+        const count = skill.value || 1;
+        for (let i = 0; i < count; i++) {
+          const p = new Projectile(x, y, angle, speed, damage, pierce);
+          p.lifetime = skill.range / speed;
+          created.push(p);
+        }
+        break;
+      }
+      case 'projectile_spread': {
+        const count = skill.value || 8;
+        const coneAngle = skill.angle !== undefined ? skill.angle * (Math.PI / 180) : Math.PI * 2;
+        if (skill.angle !== undefined) {
+          const halfCone = coneAngle / 2;
+          for (let i = 0; i < count; i++) {
+            const a = angle - halfCone + (i / (count - 1 || 1)) * coneAngle;
+            const p = new Projectile(x, y, a, speed, damage, pierce);
+            p.lifetime = skill.range / speed;
+            created.push(p);
+          }
+        } else {
+          for (let i = 0; i < count; i++) {
+            const a = (i / count) * Math.PI * 2;
+            const p = new Projectile(x, y, a, speed, damage, pierce);
+            p.lifetime = skill.range / speed;
+            created.push(p);
+          }
+        }
+        break;
+      }
+      case 'projectile_pierce': {
+        const p = new Projectile(x, y, angle, speed, damage, true);
+        p.lifetime = skill.range / speed;
+        created.push(p);
+        break;
+      }
+    }
+
+    return created;
   }
 
   private calcDamage(skill: SkillDef): number {

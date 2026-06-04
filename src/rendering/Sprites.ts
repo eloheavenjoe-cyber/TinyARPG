@@ -2,6 +2,7 @@ import { Texture } from 'pixi.js';
 
 export class Sprites {
   static player: Texture;
+  static ranger: Texture;
   static enemy: Texture;
   static wall: Texture;
   static floor: Texture;
@@ -24,6 +25,29 @@ export class Sprites {
       ctx.fillStyle = '#5a3a1a';
       ctx.fillRect(8, 28, 7, 4);
       ctx.fillRect(17, 28, 7, 4);
+    });
+
+    Sprites.ranger = Sprites.createTexture(32, 32, (ctx) => {
+      ctx.fillStyle = '#2d5a1e';
+      ctx.fillRect(9, 0, 14, 6);
+      ctx.fillStyle = '#e8c99b';
+      ctx.fillRect(12, 4, 8, 5);
+      ctx.fillStyle = '#3a7a28';
+      ctx.fillRect(7, 9, 18, 11);
+      ctx.fillStyle = '#4a9a35';
+      ctx.fillRect(9, 10, 14, 2);
+      ctx.fillStyle = '#6a4a2a';
+      ctx.fillRect(8, 20, 16, 2);
+      ctx.fillStyle = '#2a6a1a';
+      ctx.fillRect(9, 22, 6, 6);
+      ctx.fillRect(17, 22, 6, 6);
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(8, 28, 7, 4);
+      ctx.fillRect(17, 28, 7, 4);
+      ctx.fillStyle = '#8a6a3a';
+      ctx.fillRect(22, 6, 3, 14);
+      ctx.fillStyle = '#6a4a2a';
+      ctx.fillRect(22, 6, 1, 14);
     });
 
     Sprites.enemy = Sprites.createTexture(32, 32, (ctx) => {
