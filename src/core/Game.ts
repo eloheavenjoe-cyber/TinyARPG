@@ -20,6 +20,8 @@ import { InventoryScreen } from '../ui/InventoryScreen';
 import { generateItemDrop, generateOrbDrop } from './ItemGenerator';
 import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
+import { ZoneManager } from './ZoneManager';
+import { ZONE_REGISTRY } from './ZoneConfig';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -64,6 +66,7 @@ export class Game {
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
   private dash: DashState | null = null;
+  private zoneManager: ZoneManager = new ZoneManager();
 
   private lastKeys: Set<string> = new Set();
   private wasPKeyDown = false;
@@ -146,40 +149,54 @@ export class Game {
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
     this.app.stage.addChild(this.skillBar.container);
-    this.spawnWave();
+    this.zoneManager.transitionTo('hub');
+    this.buildCurrentZoneRoom();
   }
 
-  private spawnWave() {
-    const count = 3 + Math.floor(Math.random() * 4);
-    const types: EnemyType[] = ['grunt', 'grunt'];
-    if (Math.random() < 0.5) types.push('archer');
-    if (Math.random() < 0.3) types.push('juggernaut');
-    if (Math.random() < 0.4) types.push('cultist');
-    while (types.length < count) types.push('grunt');
-    types.length = count;
+  private buildCurrentZoneRoom() {
+    if (!this.gameContainer || !this.room || !this.player) return;
 
-    const margin = 80;
-    const wa = this.room!.walkableArea;
-    const cx = wa.x + wa.width / 2;
-    const cy = wa.y + wa.height / 2;
+    // Clear existing entities
+    for (const e of this.enemies) { this.gameContainer.removeChild(e.sprite); e.destroy(); }
+    for (const p of this.projectiles) { this.gameContainer.removeChild(p.sprite); p.destroy(); }
+    for (const d of this.itemDrops) { this.gameContainer.removeChild(d.container); d.destroy(); }
+    this.enemies = [];
+    this.projectiles = [];
+    this.itemDrops = [];
+    this.vfx = [];
+    this.dash = null;
 
-    for (const t of types) {
-      let x: number, y: number;
-      let attempts = 0;
-      do {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 80 + Math.random() * 120;
-        x = cx + Math.cos(angle) * dist;
-        y = cy + Math.sin(angle) * dist;
-        x = Math.max(margin, Math.min(wa.x + wa.width - margin, x));
-        y = Math.max(margin, Math.min(wa.y + wa.height - margin, y));
-        attempts++;
-      } while (this.player && Math.hypot(x - this.player.x, y - this.player.y) < 250 && attempts < 10);
+    // Remove old room visuals
+    this.gameContainer.removeChild(this.room.container);
+    this.room.container.destroy({ children: true });
 
-      const e = new Enemy(x, y, t);
+    // Build new room from zone state
+    const state = this.zoneManager.state;
+    if (!state) return;
+
+    const zone = state.config;
+    const template = state.currentTemplate;
+
+    this.room = new Room(zone.biome, template.doors, template.portals);
+    this.gameContainer.addChild(this.room.container);
+
+    // Position player at template start point
+    this.player.x = template.playerStart.x;
+    this.player.y = template.playerStart.y;
+
+    // Spawn enemies
+    const enemies = this.zoneManager.spawnEnemies(zone, template, state.roomIndex);
+    for (const e of enemies) {
       this.enemies.push(e);
-      this.gameContainer!.addChild(e.sprite);
+      this.gameContainer.addChild(e.sprite);
     }
+
+    // Reset wave cooldown for arena mode
+    if (zone.isEndless === 'wave') {
+      this.waveCooldown = 120;
+    }
+
+    Logger.log('system', `Room built: ${zone.name}, room ${state.roomIndex + 1}/${zone.roomCount}`);
   }
 
   private update(dt: number) {
@@ -357,8 +374,19 @@ export class Game {
     this.handleSkillKeys(mouseWX, mouseWY);
 
     if (this.input.consumeClick()) {
+      // Portal click check (game coords)
       let clickedItem = false;
-      for (const drop of this.itemDrops) {
+      for (const portal of this.room?.portals ?? []) {
+        const cx = portal.rect.x + portal.rect.width / 2;
+        const cy = portal.rect.y + portal.rect.height / 2;
+        if (Math.hypot(mouseWX - cx, mouseWY - cy) < 60) {
+          this.zoneManager.transitionTo(portal.targetZone);
+          this.buildCurrentZoneRoom();
+          clickedItem = true;
+          break;
+        }
+      }
+      if (!clickedItem) for (const drop of this.itemDrops) {
         if (drop.pickedUp) continue;
         if (isOrbDrop(drop) && Math.hypot(mouseWX - drop.x, mouseWY - drop.y) < 30) {
           if (this.player!.pickupOrb(drop.item.orbId)) {
@@ -415,15 +443,34 @@ export class Game {
       }
     }
 
-    // Wave spawning
-    if (this.enemies.length === 0) {
-      if (this.waveCooldown <= 0) {
-        this.waveCooldown = 120;
-      } else {
-        this.waveCooldown -= dt;
+    // Zone transition logic
+    const zone = this.zoneManager.state?.config;
+
+    // Arena: wave-based spawning
+    if (zone?.isEndless === 'wave') {
+      if (this.enemies.length === 0) {
         if (this.waveCooldown <= 0) {
-          this.spawnWave();
+          this.waveCooldown = 120;
+        } else {
+          this.waveCooldown -= dt;
+          if (this.waveCooldown <= 0) {
+            this.zoneManager.nextWave();
+            this.buildCurrentZoneRoom();
+          }
         }
+      }
+    }
+
+    // Door overlap check
+    for (const door of this.room?.doors ?? []) {
+      if (this.player && rectsOverlap(this.player.getBounds(), door.rect)) {
+        if (zone && door.targetZone === zone.id) {
+          this.zoneManager.nextRoom();
+        } else {
+          this.zoneManager.transitionTo(door.targetZone);
+        }
+        this.buildCurrentZoneRoom();
+        break;
       }
     }
 
@@ -1161,6 +1208,7 @@ export class Game {
     this.itemDrops = [];
     this.vfx = [];
     this.waveCooldown = 0;
+    this.zoneManager = new ZoneManager();
     this.dash = null;
     this.combatText.destroy();
     this.combatText = new CombatTextManager();
