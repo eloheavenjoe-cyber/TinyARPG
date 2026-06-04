@@ -1,4 +1,4 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Logger } from '../core/Logger';
 import { BiomeData, BIOME_DATA, BiomeId, DoorMarker, PortalMarker, BuildingData, NpcData } from '../core/ZoneConfig';
 
@@ -63,8 +63,9 @@ export class Room {
   private decorations: Rect[];
   private buildings: BuildingData[];
   private npcs: NpcData[];
+  private isPortalUnlocked: (targetZone: string) => boolean;
 
-  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = []) {
+  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = [], isPortalUnlocked?: (targetZone: string) => boolean) {
     this.container = new Container();
     this.walkableArea = {
       x: WALL_THICKNESS,
@@ -78,6 +79,7 @@ export class Room {
     this.decorations = decorations;
     this.buildings = buildings;
     this.npcs = npcs;
+    this.isPortalUnlocked = isPortalUnlocked || (() => true);
     this.build();
     Logger.log('system', `Room created: ${ROOM_WIDTH}x${ROOM_HEIGHT}, walkable: ${this.walkableArea.width}x${this.walkableArea.height}`);
   }
@@ -160,6 +162,28 @@ export class Room {
       label.x = cx;
       label.y = cy + r + 6;
       this.container.addChild(label);
+      // Locked portal overlay
+      if (!this.isPortalUnlocked(portal.targetZone)) {
+        g.lineStyle(3, 0x5a3a2a);
+        const chainStartX = cx - 20;
+        const chainEndX = cx + 20;
+        g.moveTo(chainStartX, cy - r);
+        g.lineTo(chainStartX - 8, cy - r - 16);
+        g.moveTo(chainEndX, cy - r);
+        g.lineTo(chainEndX + 8, cy - r - 16);
+        g.lineStyle(2, 0x886644);
+        g.drawRect(cx - 6, cy - r - 20, 12, 10);
+        g.beginFill(0x443322);
+        g.drawRect(cx - 2, cy - r - 18, 4, 4);
+        g.endFill();
+        const lockLabel = new Text('Locked', {
+          fontFamily: 'monospace', fontSize: 11, fill: '#666677',
+        });
+        lockLabel.anchor.set(0.5);
+        lockLabel.x = cx;
+        lockLabel.y = cy + r + 14;
+        this.container.addChild(lockLabel);
+      }
     }
   }
 

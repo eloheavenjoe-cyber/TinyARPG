@@ -15,6 +15,7 @@ export interface ZoneState {
 
 export class ZoneManager {
   state: ZoneState | null = null;
+  completedZoneIds: Set<string> = new Set();
   private endlessWave = 0;
   private endlessRoomCount = 0;
 
@@ -145,6 +146,18 @@ export class ZoneManager {
     const template = this.pickTemplate(this.state.config, 0);
     this.state = { ...this.state, currentTemplate: template };
     return this.endlessWave;
+  }
+
+  isZoneUnlocked(zoneId: string): boolean {
+    if (zoneId === 'tutorial' || zoneId === 'endless_arena' || zoneId === 'endless_dungeon' || zoneId === 'hub') return true;
+    if (zoneId === 'forest') return this.completedZoneIds.has('tutorial');
+    if (zoneId === 'desert') return this.completedZoneIds.has('forest');
+    if (zoneId === 'ice') return this.completedZoneIds.has('desert');
+    return true;
+  }
+
+  markZoneCompleted(zoneId: string) {
+    this.completedZoneIds.add(zoneId);
   }
 
   getHpMult(zone: ZoneConfig): number {

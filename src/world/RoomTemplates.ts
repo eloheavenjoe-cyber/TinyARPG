@@ -250,7 +250,7 @@ export const TEMPLATE_FOREST_3: RoomTemplate = {
     { x: 0, y: 400, width: 600, height: 40 },
     { x: 600, y: 200, width: 40, height: 240 },
   ],
-  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'forest', targetRoom: 3 }],
   portals: [],
   spawnZones: [
     { x: 64, y: 64, width: 500, height: 300 },
@@ -356,7 +356,7 @@ export const TEMPLATE_DESERT_3: RoomTemplate = {
 
 export const TEMPLATE_DESERT_4: RoomTemplate = {
   walls: [],
-  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'desert', targetRoom: 4 }],
   portals: [],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   decorationRects: [
@@ -479,7 +479,7 @@ export const TEMPLATE_ICE_5: RoomTemplate = {
     { x: 680, y: 516, width: 40, height: 40 },
     { x: 880, y: 516, width: 40, height: 40 },
   ],
-  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'ice', targetRoom: 5 }],
   portals: [],
   spawnZones: [
     { x: 64, y: 64, width: 550, height: 200 },

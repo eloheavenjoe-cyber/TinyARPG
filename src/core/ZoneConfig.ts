@@ -60,6 +60,7 @@ export interface ZoneConfig {
   name: string;
   biome: BiomeId;
   roomCount: number;
+  bossId?: string;
   enemyPool: EnemyType[];
   enemyHpMult: number;
   enemyDmgMult: number;

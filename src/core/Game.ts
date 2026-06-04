@@ -196,7 +196,7 @@ export class Game {
     const zone = state.config;
     const template = state.currentTemplate;
 
-    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs);
+    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone));
     this.gameContainer.addChild(this.room.container);
 
     // Re-add player and combat text above the new room (room floor tiles would cover them)
@@ -489,7 +489,7 @@ export class Game {
         const cx = portal.rect.x + portal.rect.width / 2;
         const cy = portal.rect.y + portal.rect.height / 2;
         const distToPlayer = Math.hypot(this.player!.x - cx, this.player!.y - cy);
-        if (distToPlayer < 150 && Math.hypot(mouseWX - cx, mouseWY - cy) < 60) {
+        if (distToPlayer < 150 && Math.hypot(mouseWX - cx, mouseWY - cy) < 60 && this.zoneManager.isZoneUnlocked(portal.targetZone)) {
           this.zoneManager.transitionTo(portal.targetZone);
           this.buildCurrentZoneRoom();
           clickedItem = true;
@@ -585,6 +585,9 @@ export class Game {
           }
         } else {
           this.zoneManager.transitionTo(door.targetZone);
+          if (zone?.id === 'tutorial') {
+            this.zoneManager.markZoneCompleted('tutorial');
+          }
         }
         this.buildCurrentZoneRoom();
         break;
@@ -1376,6 +1379,7 @@ export class Game {
     this.vfx = [];
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();
+    this.zoneManager.completedZoneIds = new Set();
     if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
     this.dash = null;
     this.combatText.destroy();

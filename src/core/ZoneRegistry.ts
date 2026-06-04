@@ -3,6 +3,7 @@ import {
   TEMPLATE_FOREST_1, TEMPLATE_FOREST_2, TEMPLATE_FOREST_3,
   TEMPLATE_DESERT_1, TEMPLATE_DESERT_2, TEMPLATE_DESERT_3, TEMPLATE_DESERT_4,
   TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5,
+  TEMPLATE_FOREST_BOSS, TEMPLATE_DESERT_BOSS, TEMPLATE_ICE_BOSS,
 } from '../world/RoomTemplates';
 import { ZoneConfig } from './ZoneConfig';
 
@@ -33,27 +34,27 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
   },
   forest: {
     id: 'forest', name: 'Verdant Forest', biome: 'forest',
-    roomCount: 3, enemyPool: ['grunt', 'archer'],
+    roomCount: 4, enemyPool: ['grunt', 'archer'],
     enemyHpMult: 1.0, enemyDmgMult: 1.0, enemyXpMult: 1.0,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
-    enemyCount: { min: 3, max: 5 },
-    templates: [TEMPLATE_FOREST_1, TEMPLATE_FOREST_2, TEMPLATE_FOREST_3],
+    enemyCount: { min: 3, max: 5 }, bossId: 'golem',
+    templates: [TEMPLATE_FOREST_1, TEMPLATE_FOREST_2, TEMPLATE_FOREST_3, TEMPLATE_FOREST_BOSS],
   },
   desert: {
     id: 'desert', name: 'Scorched Desert', biome: 'desert',
-    roomCount: 4, enemyPool: ['grunt', 'archer', 'juggernaut'],
+    roomCount: 5, enemyPool: ['grunt', 'archer', 'juggernaut'],
     enemyHpMult: 1.5, enemyDmgMult: 1.3, enemyXpMult: 1.5,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 4, max: 6 },
-    templates: [TEMPLATE_DESERT_1, TEMPLATE_DESERT_2, TEMPLATE_DESERT_3, TEMPLATE_DESERT_4],
+    templates: [TEMPLATE_DESERT_1, TEMPLATE_DESERT_2, TEMPLATE_DESERT_3, TEMPLATE_DESERT_4, TEMPLATE_DESERT_BOSS],
   },
   ice: {
     id: 'ice', name: 'Frozen Wastes', biome: 'ice',
-    roomCount: 5, enemyPool: ['grunt', 'archer', 'juggernaut', 'cultist'],
+    roomCount: 6, enemyPool: ['grunt', 'archer', 'juggernaut', 'cultist'],
     enemyHpMult: 2.5, enemyDmgMult: 2.0, enemyXpMult: 2.5,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
-    enemyCount: { min: 5, max: 7 },
-    templates: [TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5],
+    enemyCount: { min: 5, max: 7 }, bossId: 'reaper',
+    templates: [TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5, TEMPLATE_ICE_BOSS],
   },
   endless_dungeon: {
     id: 'endless_dungeon', name: 'Endless Dungeon', biome: 'endless',
