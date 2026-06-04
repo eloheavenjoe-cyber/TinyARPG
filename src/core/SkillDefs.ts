@@ -268,3 +268,9 @@ export const MONK_SUPPORT: SkillDef[] = [
 ];
 
 export const MONK_DEFAULT_SUPPORT_IDS: string[] = [];
+
+export const ALL_SKILLS: SkillDef[] = [
+  ...WARRIOR_MAIN, ...WARRIOR_SUPPORT,
+  ...RANGER_MAIN, ...RANGER_SUPPORT,
+  ...MONK_MAIN, ...MONK_SUPPORT,
+];

@@ -10,7 +10,7 @@ import { DeathScreen } from '../ui/DeathScreen';
 import { HUD } from '../ui/HUD';
 import { SkillBar } from '../ui/SkillBar';
 import { Room, ROOM_WIDTH, ROOM_HEIGHT, rectsOverlap } from '../world/Room';
-import { Player } from '../entities/Player';
+import { Player, InventorySlot, EquipSlot } from '../entities/Player';
 import { Enemy, EnemyType } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
@@ -21,8 +21,8 @@ import { Breakable } from '../entities/Breakable';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
-import { generateItemDrop, generateOrbDrop } from './ItemGenerator';
-import { Slot, ITEM_BASES } from './ItemDefs';
+import { generateItemDrop, generateOrbDrop, GeneratedItem } from './ItemGenerator';
+import { Slot, ITEM_BASES, AFFIXES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
@@ -30,6 +30,11 @@ import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, load
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 import { Minimap } from '../ui/Minimap';
+import { SaveManager, SaveData, SerializedInventorySlot, SerializedItem } from './SaveManager';
+import { EscapeMenu } from '../ui/EscapeMenu';
+import { SaveSlotScreen } from '../ui/SaveSlotScreen';
+import { SettingsPlaceholder } from '../ui/SettingsPlaceholder';
+import { ALL_SKILLS } from './SkillDefs';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -99,6 +104,13 @@ export class Game {
   private bossHpBar?: BossHpBar;
   private minimap?: Minimap;
   private bossSpawned = false;
+  private currentSaveSlot: number | null = null;
+  private autoSaveTimer = 0;
+  private escapeMenuOpen = false;
+  private escapeMenu?: EscapeMenu;
+  private saveSlotScreen?: SaveSlotScreen;
+  private settingsPlaceholder?: SettingsPlaceholder;
+  private wasEscapeKeyDown = false;
 
   constructor(app: Application) {
     this.app = app;
@@ -166,6 +178,11 @@ export class Game {
     this.state = State.Menu;
     this.mainMenu = new MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT);
     this.mainMenu.onStart(() => this.showClassSelect());
+    this.mainMenu.onContinue(() => {
+      const slot = SaveManager.getFirstOccupiedSlot();
+      if (slot >= 0) this.loadGame(slot);
+    });
+    this.mainMenu.onLoadGame(() => this.showSaveSlotScreen('load'));
     this.app.stage.addChild(this.mainMenu.container);
   }
 
@@ -204,6 +221,8 @@ export class Game {
       this.abilitySelect = undefined;
     }
     this.state = State.Playing;
+    this.currentSaveSlot = SaveManager.getFirstEmptySlot();
+    this.autoSaveTimer = 0;
     this.gameContainer = new Container();
     this.camera = new Camera(SCREEN_WIDTH, SCREEN_HEIGHT, ROOM_WIDTH, ROOM_HEIGHT);
     this.gameContainer.x = 0;
@@ -228,6 +247,342 @@ export class Game {
     this.tutorialKeyWasDown = new Set();
     this.tutorialScreen = new TutorialScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
     this.app.stage.addChild(this.tutorialScreen.container);
+  }
+
+  private loadGame(slotIndex: number) {
+    const data = SaveManager.loadFromSlot(slotIndex);
+    if (!data) return;
+
+    this.state = State.Playing;
+    this.currentSaveSlot = slotIndex;
+    this.autoSaveTimer = 0;
+
+    this.gameContainer = new Container();
+    this.camera = new Camera(SCREEN_WIDTH, SCREEN_HEIGHT, ROOM_WIDTH, ROOM_HEIGHT);
+    this.gameContainer.x = 0;
+    this.gameContainer.y = 0;
+    this.app.stage.addChild(this.gameContainer);
+
+    this.room = new Room();
+    this.gameContainer.addChild(this.room.container);
+
+    // Create player with saved state
+    this.player = new Player(data.player.x, data.player.y, data.classType);
+    this.player.level = data.player.level;
+    this.player.xp = data.player.xp;
+    this.player.gold = data.player.gold;
+    this.player.health = data.player.health;
+    this.player.mana = data.player.mana;
+    this.player.attrs = { ...data.player.attrs };
+    this.player.unspentAttrPoints = data.player.unspentAttrPoints;
+    this.player.passivePoints = data.player.passivePoints;
+
+    // Restore passive tree allocations
+    for (const nodeId of data.player.passiveTree.allocatedNodeIds) {
+      this.player.passiveTree.allocate(nodeId);
+    }
+
+    // Restore inventory
+    this.player.inventory = this.deserializeInventory(data.player.inventory);
+
+    // Restore equipment
+    this.player.equipment = this.deserializeEquipment(data.player.equipment);
+
+    // Restore skill slots
+    for (let i = 0; i < data.player.skills.slotIds.length && i < 6; i++) {
+      const skillId = data.player.skills.slotIds[i];
+      if (skillId) {
+        const skill = ALL_SKILLS.find(s => s.id === skillId);
+        if (skill) this.player.skills.slots[i] = skill;
+      }
+    }
+    if (data.classType === 'monk' && data.player.skills.currentStance) {
+      this.player.skills.currentStance = data.player.skills.currentStance;
+    }
+    this.player.skills.mainAbility = this.player.skills.slots[0];
+
+    this.player.recalcStats();
+
+    this.gameContainer.addChild(this.player.sprite);
+    this.gameContainer.addChild(this.combatText.container);
+
+    this.hud = new HUD();
+    this.app.stage.addChild(this.hud.container);
+    this.skillBar = new SkillBar();
+    this.app.stage.addChild(this.skillBar.container);
+    this.minimap = new Minimap();
+    this.app.stage.addChild(this.minimap.container);
+
+    // Restore zone state
+    this.zoneManager = new ZoneManager();
+    for (const zoneId of data.zone.completedZoneIds) {
+      this.zoneManager.completedZoneIds.add(zoneId);
+    }
+    this.zoneManager.transitionTo(data.zone.currentZoneId, data.zone.currentRoomIndex);
+    this.buildCurrentZoneRoom();
+
+    Logger.log('game', `Loaded save slot ${slotIndex}: ${data.playerName} level ${data.level}`);
+  }
+
+  private saveGame() {
+    if (!this.player || this.currentSaveSlot === null) return;
+    const p = this.player;
+
+    const data: SaveData = {
+      version: 1,
+      timestamp: Date.now(),
+      playerName: p.classType.charAt(0).toUpperCase() + p.classType.slice(1),
+      level: p.level,
+      classType: p.classType,
+      zone: {
+        currentZoneId: this.zoneManager.zoneId,
+        currentRoomIndex: this.zoneManager.roomIndex,
+        completedZoneIds: [...this.zoneManager.completedZoneIds],
+      },
+      player: {
+        x: p.x, y: p.y,
+        health: p.health, mana: p.mana,
+        gold: p.gold,
+        level: p.level, xp: p.xp,
+        attrs: { ...p.attrs },
+        unspentAttrPoints: p.unspentAttrPoints,
+        passivePoints: p.passivePoints,
+        inventory: this.serializeInventory(p.inventory),
+        equipment: this.serializeEquipment(p.equipment),
+        skills: {
+          slotIds: p.skills.slots.map(s => s?.id ?? null),
+          currentStance: p.classType === 'monk' ? p.skills.currentStance : undefined,
+        },
+        passiveTree: {
+          allocatedNodeIds: [...p.passiveTree.allocated],
+        },
+      },
+    };
+
+    SaveManager.saveToSlot(this.currentSaveSlot, data);
+    Logger.log('game', `Saved to slot ${this.currentSaveSlot}`);
+  }
+
+  private serializeInventory(inv: InventorySlot[]): SerializedInventorySlot[] {
+    return inv.map(slot => {
+      if (!slot) return null;
+      if (slot.kind === 'orb') return { kind: 'orb', orbId: slot.orbId, count: slot.count };
+      const item = (slot as EquipSlot).item;
+      return {
+        kind: 'equip',
+        item: {
+          baseId: item.base.id,
+          rarity: item.rarity,
+          affixes: item.affixes.map((a: any) => ({ affixId: a.affix.id, roll: a.roll })),
+          uniqueId: item.uniqueId,
+          damageRoll: item.damageRoll,
+          computedName: item.computedName,
+          ilvl: item.ilvl,
+          levelReq: item.levelReq,
+        },
+      };
+    });
+  }
+
+  private deserializeInventory(data: SerializedInventorySlot[]): InventorySlot[] {
+    return data.map(slot => {
+      if (!slot) return null;
+      if (slot.kind === 'orb') return { kind: 'orb', orbId: slot.orbId, count: slot.count };
+      return {
+        kind: 'equip',
+        item: this.deserializeItem(slot.item),
+      };
+    });
+  }
+
+  private serializeEquipment(equip: Record<Slot, GeneratedItem | null>): Record<string, SerializedItem | null> {
+    const result: Record<string, SerializedItem | null> = {};
+    for (const [key, item] of Object.entries(equip)) {
+      if (!item) { result[key] = null; continue; }
+      result[key] = {
+        baseId: item.base.id,
+        rarity: item.rarity,
+        affixes: item.affixes.map(a => ({ affixId: a.affix.id, roll: a.roll })),
+        uniqueId: item.uniqueId,
+        damageRoll: item.damageRoll,
+        computedName: item.computedName,
+        ilvl: item.ilvl,
+        levelReq: item.levelReq,
+      };
+    }
+    return result;
+  }
+
+  private deserializeEquipment(data: Record<string, SerializedItem | null>): Record<Slot, GeneratedItem | null> {
+    const result: Record<Slot, GeneratedItem | null> = {
+      weapon: null, body: null, helmet: null, boots: null,
+      ring: null, ring2: null, amulet: null,
+    };
+    for (const [key, item] of Object.entries(data)) {
+      if (!item) continue;
+      if (key in result) {
+        (result as any)[key] = this.deserializeItem(item);
+      }
+    }
+    return result;
+  }
+
+  private deserializeItem(data: SerializedItem): GeneratedItem {
+    const base = ITEM_BASES.find(b => b.id === data.baseId);
+    if (!base) throw new Error(`Unknown base: ${data.baseId}`);
+    const affixes = data.affixes.map(a => {
+      const affix = AFFIXES.find(af => af.id === a.affixId);
+      if (!affix) throw new Error(`Unknown affix: ${a.affixId}`);
+      return { affix, roll: a.roll };
+    });
+    const stats: Record<string, number> = { ...base.innateStats };
+    if (data.damageRoll > 0) stats.damage = data.damageRoll;
+    for (const a of affixes) {
+      stats[a.affix.stat] = (stats[a.affix.stat] || 0) + a.roll;
+    }
+    return {
+      base,
+      rarity: data.rarity,
+      affixes,
+      uniqueId: data.uniqueId,
+      damageRoll: data.damageRoll,
+      computedName: data.computedName,
+      computedStats: stats,
+      ilvl: data.ilvl,
+      levelReq: data.levelReq,
+      id: `restored_${data.baseId}_${Date.now()}`,
+    };
+  }
+
+  private exitToMenu() {
+    this.saveGame();
+    this.cleanupGameSession();
+    this.currentSaveSlot = null;
+    this.autoSaveTimer = 0;
+    this.showMainMenu();
+  }
+
+  private cleanupGameSession() {
+    if (this.escapeMenuOpen) this.toggleEscapeMenu();
+    if (this.inventoryOpen) this.toggleInventory();
+    if (this.treeOpen) this.toggleTree();
+    if (this.deathScreen) {
+      this.app.stage.removeChild(this.deathScreen.container);
+      this.deathScreen.destroy();
+      this.deathScreen = undefined;
+    }
+    if (this.hud) { this.app.stage.removeChild(this.hud.container); this.hud.destroy(); this.hud = undefined; }
+    if (this.skillBar) { this.app.stage.removeChild(this.skillBar.container); this.skillBar.destroy(); this.skillBar = undefined; }
+    if (this.minimap) { this.app.stage.removeChild(this.minimap.container); this.minimap.destroy(); this.minimap = undefined; }
+    if (this.escapeMenu) { this.app.stage.removeChild(this.escapeMenu.container); this.escapeMenu.destroy(); this.escapeMenu = undefined; }
+    if (this.saveSlotScreen) { this.app.stage.removeChild(this.saveSlotScreen.container); this.saveSlotScreen.destroy(); this.saveSlotScreen = undefined; }
+    if (this.settingsPlaceholder) { this.app.stage.removeChild(this.settingsPlaceholder.container); this.settingsPlaceholder.destroy(); this.settingsPlaceholder = undefined; }
+    if (this.tutorialScreen) {
+      this.app.stage.removeChild(this.tutorialScreen.container);
+      this.tutorialScreen.destroy();
+      this.tutorialScreen = undefined;
+    }
+    this.tutorialStage = null;
+    this.tutorialKeys = new Set();
+    this.tutorialKeyWasDown = new Set();
+    if (this.boss) {
+      if (this.boss.sprite.parent && this.gameContainer) this.gameContainer.removeChild(this.boss.sprite);
+      if (this.boss.telegraphs.parent && this.gameContainer) this.gameContainer.removeChild(this.boss.telegraphs);
+      this.boss.destroy();
+      this.boss = null;
+    }
+    if (this.bossHpBar) {
+      this.app.stage.removeChild(this.bossHpBar.container);
+      this.bossHpBar.destroy();
+      this.bossHpBar = undefined;
+    }
+    this.bossSpawned = false;
+    if (this.gameContainer) {
+      this.app.stage.removeChild(this.gameContainer);
+      this.gameContainer.destroy({ children: true });
+      this.gameContainer = undefined;
+    }
+    this.devConsole.hide();
+    this.enemies = [];
+    for (const p of this.projectiles) { p.destroy(); }
+    this.projectiles = [];
+    this.itemDrops = [];
+    this.vfx = [];
+    this.waveCooldown = 0;
+    this.zoneManager = new ZoneManager();
+    if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
+    this.dash = null;
+    this.combatText.destroy();
+    this.combatText = new CombatTextManager();
+    this.player = undefined;
+    this.room = undefined;
+    this.input.reset();
+    this.lastKeys.clear();
+    this.escapeMenuOpen = false;
+  }
+
+  private toggleEscapeMenu() {
+    if (!this.player) return;
+    this.escapeMenuOpen = !this.escapeMenuOpen;
+    if (this.escapeMenuOpen) {
+      this.escapeMenu = new EscapeMenu(SCREEN_WIDTH, SCREEN_HEIGHT);
+      this.escapeMenu.onResumeCallback(() => this.toggleEscapeMenu());
+      this.escapeMenu.onSaveCallback(() => {
+        this.saveGame();
+        this.escapeMenu?.showSaveToast();
+      });
+      this.escapeMenu.onSettingsCallback(() => this.showSettingsPlaceholder());
+      this.escapeMenu.onSaveAndExitCallback(() => this.exitToMenu());
+      this.app.stage.addChild(this.escapeMenu.container);
+    } else {
+      if (this.settingsPlaceholder) {
+        this.app.stage.removeChild(this.settingsPlaceholder.container);
+        this.settingsPlaceholder.destroy();
+        this.settingsPlaceholder = undefined;
+      }
+      if (this.escapeMenu) {
+        this.app.stage.removeChild(this.escapeMenu.container);
+        this.escapeMenu.destroy();
+        this.escapeMenu = undefined;
+      }
+    }
+  }
+
+  private showSettingsPlaceholder() {
+    if (!this.settingsPlaceholder) {
+      this.settingsPlaceholder = new SettingsPlaceholder(SCREEN_WIDTH, SCREEN_HEIGHT);
+      this.settingsPlaceholder.onBackCallback(() => {
+        if (this.settingsPlaceholder) {
+          this.app.stage.removeChild(this.settingsPlaceholder.container);
+          this.settingsPlaceholder.destroy();
+          this.settingsPlaceholder = undefined;
+        }
+      });
+      this.app.stage.addChild(this.settingsPlaceholder.container);
+    }
+  }
+
+  private showSaveSlotScreen(mode: 'load' | 'save') {
+    this.saveSlotScreen = new SaveSlotScreen(SCREEN_WIDTH, SCREEN_HEIGHT, mode);
+    this.saveSlotScreen.onSelectCallback((index: number) => {
+      if (this.saveSlotScreen) {
+        this.app.stage.removeChild(this.saveSlotScreen.container);
+        this.saveSlotScreen.destroy();
+        this.saveSlotScreen = undefined;
+      }
+      if (mode === 'load') {
+        this.loadGame(index);
+      }
+    });
+    this.saveSlotScreen.onBackCallback(() => {
+      if (this.saveSlotScreen) {
+        this.app.stage.removeChild(this.saveSlotScreen.container);
+        this.saveSlotScreen.destroy();
+        this.saveSlotScreen = undefined;
+      }
+      this.showMainMenu();
+    });
+    this.app.stage.addChild(this.saveSlotScreen.container);
   }
 
   private buildCurrentZoneRoom() {
@@ -586,6 +941,24 @@ export class Game {
       }
       if (this.devConsole.isVisible()) return;
 
+      // Escape key handling
+      if (this.input.isKeyDown('Escape')) {
+        if (!this.wasEscapeKeyDown) {
+          if (!this.inventoryOpen && !this.treeOpen) {
+            this.toggleEscapeMenu();
+          } else if (this.inventoryOpen) {
+            this.toggleInventory();
+          }
+          this.wasEscapeKeyDown = true;
+        }
+      } else {
+        this.wasEscapeKeyDown = false;
+      }
+      if (this.escapeMenuOpen) {
+        this.escapeMenu?.update();
+        return;
+      }
+
       // Tutorial progression
       if (this.tutorialStage) {
         if (this.tutorialStage === 'move') {
@@ -615,9 +988,7 @@ export class Game {
         }
       }
 
-      if (this.inventoryOpen && this.input.isKeyDown('Escape')) {
-        this.toggleInventory();
-      } else if (this.inventoryOpen) {
+      if (this.inventoryOpen) {
         const iDown = this.input.isKeyDown('KeyI');
         if (iDown && !this.wasIKeyDown) this.toggleInventory();
         this.wasIKeyDown = iDown;
@@ -652,6 +1023,13 @@ export class Game {
 
   private updateGameplay(dt: number) {
     if (!this.player?.alive || !this.room) return;
+
+    // Auto-save every 3600 frames (60s)
+    this.autoSaveTimer += dt;
+    if (this.autoSaveTimer >= 3600 && this.currentSaveSlot !== null) {
+      this.autoSaveTimer = 0;
+      this.saveGame();
+    }
 
     let mouseWX = this.input.mouseX;
     let mouseWY = this.input.mouseY;
