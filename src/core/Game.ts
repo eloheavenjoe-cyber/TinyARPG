@@ -986,7 +986,12 @@ export class Game {
     for (const code of now) {
       if (this.lastKeys.has(code)) continue;
       const idx = parseInt(code.replace('Digit', '')) - 1;
-      if (idx === 0) continue;
+      if (idx === 0) {
+        if (this.player?.classType === 'monk') {
+          this.useMainAbility();
+        }
+        continue;
+      }
       this.useSupportSkill(idx, mouseWX, mouseWY);
     }
     this.lastKeys = now;
@@ -1103,6 +1108,7 @@ export class Game {
 
     // Monk combat techniques
     if (this.player.classType === 'monk' && (result.effectType === 'single' || result.effectType === 'cone')) {
+      this.player.mana -= result.manaCost;
       this.player.executeTechnique(result, this.enemies);
       return;
     }

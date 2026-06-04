@@ -578,11 +578,6 @@ export class Player {
   }
 
   executeTechnique(skill: SkillDef, enemies: Enemy[]): boolean {
-    const slotIdx = this.skills.slots.indexOf(skill);
-    if (slotIdx === -1) return false;
-    const result = this.skills.consume(slotIdx, this.mana);
-    if (!result) return false;
-    this.mana -= result.manaCost;
     this.triggerAttackAnimation(skill.id);
     this.applySkillDamage(skill, enemies);
     return true;
