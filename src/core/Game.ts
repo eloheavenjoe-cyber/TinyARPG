@@ -302,6 +302,84 @@ export class Game {
       this.gameContainer.addChild(brk.container);
     }
 
+    // Hub-specific detailed visuals
+    if (zone.id === 'hub') {
+      // Stone pathway tiles from portals to center
+      const pathY = 1792;
+      for (let x = 1800; x < 4600; x += 32) {
+        const tile = new Sprite(Sprites.pathTile);
+        tile.x = x;
+        tile.y = pathY;
+        this.gameContainer.addChild(tile);
+        this.decorationSprites.push(tile);
+      }
+      // Vertical path
+      for (let y = 1120; y < 2400; y += 32) {
+        const tileL = new Sprite(Sprites.pathTile);
+        tileL.x = 1800;
+        tileL.y = y;
+        this.gameContainer.addChild(tileL);
+        this.decorationSprites.push(tileL);
+        const tileR = new Sprite(Sprites.pathTile);
+        tileR.x = 4600;
+        tileR.y = y;
+        this.gameContainer.addChild(tileR);
+        this.decorationSprites.push(tileR);
+      }
+
+      // Detailed building sprites (overlay on Graphics buildings)
+      const vendorSprite = new Sprite(Sprites.buildVendor);
+      vendorSprite.x = 2700;
+      vendorSprite.y = 1100;
+      vendorSprite.scale.set(2.5, 2.5);
+      this.gameContainer.addChild(vendorSprite);
+      this.decorationSprites.push(vendorSprite);
+
+      const stashSprite = new Sprite(Sprites.buildStash);
+      stashSprite.x = 3300;
+      stashSprite.y = 1100;
+      stashSprite.scale.set(2.5, 2.5);
+      this.gameContainer.addChild(stashSprite);
+      this.decorationSprites.push(stashSprite);
+
+      // Fountain at town center
+      const fountainSprite = new Sprite(Sprites.fountain);
+      fountainSprite.anchor.set(0.5, 0.5);
+      fountainSprite.x = 3200;
+      fountainSprite.y = 1792;
+      this.gameContainer.addChild(fountainSprite);
+      this.decorationSprites.push(fountainSprite);
+      // Fountain water VFX (animated spray)
+      this.addVfx((g, t) => {
+        g.clear();
+        const cx = 3200, cy = 1792;
+        const spin = this.portalAngle;
+        g.lineStyle(2, 0x66ccff, 0.3);
+        for (let i = 0; i < 6; i++) {
+          const a = spin + (i / 6) * Math.PI * 2;
+          const len = 10 + 8 * Math.abs(Math.sin(a));
+          g.moveTo(cx, cy - 16);
+          g.lineTo(cx + Math.cos(a) * len, cy - 16 + Math.sin(a) * len);
+        }
+        // Water droplets
+        for (let i = 0; i < 4; i++) {
+          const a = spin * 2 + (i / 4) * Math.PI * 2;
+          const dist = 12 + 6 * Math.sin(a);
+          g.beginFill(0x88ddff, 0.5 - 0.4 * Math.abs(Math.sin(a)));
+          g.drawCircle(cx + Math.cos(a) * dist, cy - 20 + Math.sin(a) * dist, 2);
+          g.endFill();
+        }
+      }, 99999);
+
+      // Statue near fountain
+      const statueSprite = new Sprite(Sprites.statue);
+      statueSprite.anchor.set(0.5, 1);
+      statueSprite.x = 3200;
+      statueSprite.y = 1740;
+      this.gameContainer.addChild(statueSprite);
+      this.decorationSprites.push(statueSprite);
+    }
+
     // Re-add player and combat text above the new room (room floor tiles would cover them)
     this.gameContainer.removeChild(this.player.sprite);
     this.gameContainer.addChild(this.player.sprite);

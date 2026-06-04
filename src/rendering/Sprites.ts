@@ -20,8 +20,14 @@ export class Sprites {
   static breakableBarrel: Texture;
   static grassTuft: Texture;
   static flower: Texture;
+  static buildVendor: Texture;
+  static buildStash: Texture;
+  static fountain: Texture;
+  static statue: Texture;
+  static pathTile: Texture;
 
   static generateAll(): void {
+
     Sprites.player = Sprites.createTexture(32, 32, (ctx) => {
       ctx.fillStyle = '#5a7ab5';
       ctx.fillRect(10, 0, 12, 6);
@@ -333,6 +339,275 @@ export class Sprites {
       ctx.ellipse(ox, oy + 28, 24, 8, 0, 0, Math.PI * 2);
       ctx.fill();
     });
+
+
+Sprites.buildVendor = Sprites.createTexture(160, 100, (ctx) => {
+  // Wall — warm brown stone
+  const wc = '#8a7a5a';
+  ctx.fillStyle = wc;
+  ctx.fillRect(0, 30, 160, 70);
+  // Brick pattern
+  ctx.strokeStyle = '#7a6a4a';
+  ctx.lineWidth = 1;
+  for (let row = 0; row < 7; row++) {
+    const y = 30 + row * 10;
+    const offset = row % 2 === 0 ? 0 : 8;
+    for (let col = -1; col < 20; col++) {
+      const x = col * 16 + offset;
+      ctx.strokeRect(x, y, 16, 10);
+    }
+  }
+  // Roof — dark brown tiles
+  ctx.fillStyle = '#5a3a1a';
+  ctx.beginPath();
+  ctx.moveTo(0, 30);
+  ctx.lineTo(80, 0);
+  ctx.lineTo(160, 30);
+  ctx.closePath();
+  ctx.fill();
+  // Roof tile lines
+  ctx.strokeStyle = '#4a2a0a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const t = (i + 1) / 7;
+    const lx = 80 * (1 - t);
+    const rx = 160 - lx;
+    const ly = 30 * (1 - t);
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(rx, ly);
+    ctx.stroke();
+  }
+  // Roof ridge line
+  ctx.strokeStyle = '#4a2a0a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 28);
+  ctx.lineTo(80, 2);
+  ctx.lineTo(160, 28);
+  ctx.stroke();
+  // Door — centered, wooden
+  ctx.fillStyle = '#6a4a2a';
+  ctx.fillRect(68, 65, 24, 35);
+  ctx.strokeStyle = '#4a2a0a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(68, 65, 24, 35);
+  // Door handle
+  ctx.fillStyle = '#ffcc44';
+  ctx.fillRect(86, 80, 3, 3);
+  // Windows
+  ctx.fillStyle = '#88bbff';
+  ctx.fillRect(22, 40, 24, 24);
+  ctx.fillRect(114, 40, 24, 24);
+  ctx.strokeStyle = '#6a4a2a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(22, 40, 24, 24);
+  ctx.strokeRect(114, 40, 24, 24);
+  // Window cross
+  ctx.beginPath();
+  ctx.moveTo(34, 40); ctx.lineTo(34, 64);
+  ctx.moveTo(22, 52); ctx.lineTo(46, 52);
+  ctx.moveTo(126, 40); ctx.lineTo(126, 64);
+  ctx.moveTo(114, 52); ctx.lineTo(138, 52);
+  ctx.stroke();
+  // Window glow
+  ctx.fillStyle = '#ffeeaa';
+  ctx.globalAlpha = 0.15;
+  ctx.fillRect(23, 41, 22, 22);
+  ctx.fillRect(115, 41, 22, 22);
+  ctx.globalAlpha = 1;
+  // Awning
+  ctx.fillStyle = '#7a3a2a';
+  ctx.fillRect(16, 34, 128, 8);
+  ctx.fillStyle = '#6a2a1a';
+  ctx.fillRect(16, 34, 128, 2);
+  // Sign
+  ctx.fillStyle = '#4a3a2a';
+  ctx.fillRect(62, 30, 36, 16);
+  ctx.fillStyle = '#ffcc88';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SHOP', 80, 42);
+});
+
+Sprites.buildStash = Sprites.createTexture(160, 100, (ctx) => {
+  // Wall — cool gray stone
+  ctx.fillStyle = '#6a7a7a';
+  ctx.fillRect(0, 30, 160, 70);
+  // Stone block pattern
+  ctx.strokeStyle = '#5a6a6a';
+  ctx.lineWidth = 1;
+  for (let row = 0; row < 5; row++) {
+    const y = 38 + row * 12;
+    const offset = row % 2 === 0 ? 0 : 12;
+    for (let col = -1; col < 12; col++) {
+      const x = col * 24 + offset;
+      ctx.strokeRect(x, y, 24, 12);
+    }
+  }
+  // Roof — slate blue
+  ctx.fillStyle = '#3a4a5a';
+  ctx.beginPath();
+  ctx.moveTo(0, 30);
+  ctx.lineTo(80, 0);
+  ctx.lineTo(160, 30);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#2a3a4a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const t = (i + 1) / 7;
+    const lx = 80 * (1 - t);
+    const rx = 160 - lx;
+    const ly = 30 * (1 - t);
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(rx, ly);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = '#2a3a4a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 28);
+  ctx.lineTo(80, 2);
+  ctx.lineTo(160, 28);
+  ctx.stroke();
+  // Double door
+  ctx.fillStyle = '#5a4a3a';
+  ctx.fillRect(64, 65, 14, 35);
+  ctx.fillRect(82, 65, 14, 35);
+  ctx.strokeStyle = '#3a2a1a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(64, 65, 14, 35);
+  ctx.strokeRect(82, 65, 14, 35);
+  // Door handles
+  ctx.fillStyle = '#ffcc44';
+  ctx.fillRect(75, 80, 3, 3);
+  ctx.fillRect(83, 80, 3, 3);
+  // Windows — barred
+  ctx.fillStyle = '#446688';
+  ctx.fillRect(20, 40, 22, 22);
+  ctx.fillRect(118, 40, 22, 22);
+  ctx.strokeStyle = '#5a6a7a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(20, 40, 22, 22);
+  ctx.strokeRect(118, 40, 22, 22);
+  // Bars
+  ctx.strokeStyle = '#5a6a7a';
+  ctx.lineWidth = 1;
+  for (let bar = 0; bar < 3; bar++) {
+    const bx = 20 + 6 + bar * 5;
+    ctx.beginPath();
+    ctx.moveTo(bx, 40); ctx.lineTo(bx, 62);
+    ctx.moveTo(bx + 98, 40); ctx.lineTo(bx + 98, 62);
+    ctx.stroke();
+  }
+  // Awning
+  ctx.fillStyle = '#2a4a5a';
+  ctx.fillRect(14, 34, 132, 8);
+  ctx.fillStyle = '#1a3a4a';
+  ctx.fillRect(14, 34, 132, 2);
+  // Sign
+  ctx.fillStyle = '#3a4a4a';
+  ctx.fillRect(60, 30, 40, 16);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('STASH', 80, 42);
+});
+
+Sprites.fountain = Sprites.createTexture(64, 48, (ctx) => {
+  // Base — wide stone ring
+  ctx.fillStyle = '#6a6a7a';
+  ctx.beginPath();
+  ctx.ellipse(32, 40, 28, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#7a7a8a';
+  ctx.beginPath();
+  ctx.ellipse(32, 38, 24, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Middle tier
+  ctx.fillStyle = '#5a5a6a';
+  ctx.beginPath();
+  ctx.ellipse(32, 32, 18, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#6a6a7a';
+  ctx.beginPath();
+  ctx.ellipse(32, 30, 16, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Center pillar
+  ctx.fillStyle = '#8a8a9a';
+  ctx.fillRect(28, 10, 8, 24);
+  ctx.fillStyle = '#9a9aaa';
+  ctx.fillRect(30, 8, 4, 6);
+  // Water surface — blue tint
+  ctx.fillStyle = '#4488cc';
+  ctx.globalAlpha = 0.4;
+  ctx.beginPath();
+  ctx.ellipse(32, 36, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  // Stone rim highlight
+  ctx.strokeStyle = '#8a8a9a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(32, 38, 24, 8, 0, 0, Math.PI * 2);
+  ctx.stroke();
+});
+
+Sprites.statue = Sprites.createTexture(24, 40, (ctx) => {
+  // Pedestal
+  ctx.fillStyle = '#7a7a6a';
+  ctx.fillRect(4, 28, 16, 12);
+  ctx.fillStyle = '#8a8a7a';
+  ctx.fillRect(2, 30, 20, 8);
+  // Body
+  ctx.fillStyle = '#9a9a8a';
+  ctx.fillRect(7, 12, 10, 18);
+  // Head
+  ctx.fillStyle = '#aaaa8a';
+  ctx.fillRect(8, 4, 8, 10);
+  // Arms
+  ctx.fillRect(3, 14, 5, 3);
+  ctx.fillRect(16, 14, 5, 3);
+  // Sword (right arm held out)
+  ctx.strokeStyle = '#ccccaa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(18, 15);
+  ctx.lineTo(22, 6);
+  ctx.stroke();
+  // Base shadow
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = 0.15;
+  ctx.beginPath();
+  ctx.ellipse(12, 40, 10, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+});
+
+Sprites.pathTile = Sprites.createTexture(32, 32, (ctx) => {
+  // Stone tile base
+  ctx.fillStyle = '#7a7a6a';
+  ctx.fillRect(0, 0, 32, 32);
+  // Stone texture noise
+  ctx.fillStyle = '#6a6a5a';
+  ctx.fillRect(2, 2, 12, 14);
+  ctx.fillRect(18, 4, 10, 10);
+  ctx.fillRect(4, 20, 20, 8);
+  ctx.fillRect(26, 16, 4, 14);
+  // Mortar lines
+  ctx.strokeStyle = '#5a5a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0, 0, 32, 32);
+  ctx.strokeRect(0, 15, 32, 1);
+  ctx.strokeRect(15, 0, 1, 32);
+  // Highlight
+  ctx.fillStyle = '#8a8a7a';
+  ctx.fillRect(1, 1, 6, 6);
+  ctx.fillRect(16, 16, 6, 6);
+});
+
   }
 
   private static createTexture(width: number, height: number, draw: (ctx: CanvasRenderingContext2D) => void): Texture {
