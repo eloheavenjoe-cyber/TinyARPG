@@ -857,15 +857,17 @@ export class Game {
 
   private spawnLoot(x: number, y: number) {
     const pending: { drop: ItemDrop }[] = [];
+    const iq = 1 + ((this.player?.computedStats.itemQuantityPct || 0) / 100);
+    const mf = this.player?.computedStats.magicFindPct || 0;
 
-    for (const drop of createRandomLoot(x, y)) {
+    for (const drop of createRandomLoot(x, y, iq)) {
       pending.push({ drop });
     }
-    if (Math.random() < 0.4) {
-      const gen = generateItemDrop(this.player?.level);
+    if (Math.random() < 0.4 * iq) {
+      const gen = generateItemDrop(this.player?.level, mf);
       pending.push({ drop: createItemDrop(x, y, gen) });
     }
-    if (Math.random() < 0.05) {
+    if (Math.random() < 0.05 * iq) {
       const orb = generateOrbDrop();
       pending.push({ drop: createOrbDrop(x, y, orb.orbId, orb.name) });
     }

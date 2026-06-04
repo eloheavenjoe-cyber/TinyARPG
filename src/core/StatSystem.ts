@@ -60,6 +60,8 @@ export function computeStats(
     coldDmg: 0,
     lightningDmg: 0,
     additionalProjectiles: 0,
+    magicFindPct: 0,
+    itemQuantityPct: 0,
   };
 
   for (const [key, val] of Object.entries(otherEquip)) {
@@ -81,6 +83,8 @@ export function computeStats(
     else if (key === 'coldDmg') base.coldDmg += val;
     else if (key === 'lightningDmg') base.lightningDmg += val;
     else if (key === 'additionalProjectiles') base.additionalProjectiles += val;
+    else if (key === 'magicFindPct') base.magicFindPct += val;
+    else if (key === 'itemQuantityPct') base.itemQuantityPct += val;
   }
 
   return base;

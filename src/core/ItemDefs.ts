@@ -149,6 +149,14 @@ export const AFFIXES: ItemAffix[] = [
   { id: 'of_endurance', name: 'of Endurance', type: 'suffix', stat: 'skillDurationPct', min: 5, max: 15, tier: 1 },
   { id: 'of_persistence', name: 'of Persistence', type: 'suffix', stat: 'skillDurationPct', min: 10, max: 25, tier: 2 },
   { id: 'of_permanence', name: 'of Permanence', type: 'suffix', stat: 'skillDurationPct', min: 18, max: 35, tier: 3 },
+  // Magic Find %
+  { id: 'lucky', name: 'Lucky', type: 'prefix', stat: 'magicFindPct', min: 8, max: 15, tier: 1 },
+  { id: 'fortunate', name: 'Fortunate', type: 'prefix', stat: 'magicFindPct', min: 16, max: 25, tier: 2 },
+  { id: 'auspicious', name: 'Auspicious', type: 'prefix', stat: 'magicFindPct', min: 26, max: 40, tier: 3 },
+  // Item Quantity %
+  { id: 'of_bounty', name: 'of Bounty', type: 'suffix', stat: 'itemQuantityPct', min: 8, max: 12, tier: 1 },
+  { id: 'of_abundance', name: 'of Abundance', type: 'suffix', stat: 'itemQuantityPct', min: 13, max: 20, tier: 2 },
+  { id: 'of_prosperity', name: 'of Prosperity', type: 'suffix', stat: 'itemQuantityPct', min: 21, max: 30, tier: 3 },
   // Mana Regen %
   { id: 'of_meditation', name: 'of Meditation', type: 'suffix', stat: 'manaRegenPct', min: 5, max: 15, tier: 1 },
   { id: 'of_clarity', name: 'of Clarity', type: 'suffix', stat: 'manaRegenPct', min: 10, max: 25, tier: 2 },

@@ -29,12 +29,15 @@ function generateName(affixes: { affix: ItemAffix; roll: number }[], baseName: s
   return [...prefixes, baseName, ...suffixes].join(' ');
 }
 
-export function generateItemDrop(playerLevel?: number): GeneratedItem {
-  const rarityRoll = Math.random();
+export function generateItemDrop(playerLevel?: number, magicFind: number = 0): GeneratedItem {
+  const mf = 1 + magicFind / 100;
+  const weights = { normal: 50, magic: 30 * mf, rare: 15 * mf, unique: 5 * mf };
+  const total = weights.normal + weights.magic + weights.rare + weights.unique;
+  const roll = Math.random() * total;
   let rarity: Rarity;
-  if (rarityRoll < 0.50) rarity = 'normal';
-  else if (rarityRoll < 0.80) rarity = 'magic';
-  else if (rarityRoll < 0.95) rarity = 'rare';
+  if (roll < weights.normal) rarity = 'normal';
+  else if (roll < weights.normal + weights.magic) rarity = 'magic';
+  else if (roll < weights.normal + weights.magic + weights.rare) rarity = 'rare';
   else rarity = 'unique';
 
   if (rarity === 'unique') {

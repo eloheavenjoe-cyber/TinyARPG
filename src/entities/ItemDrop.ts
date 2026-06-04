@@ -111,39 +111,47 @@ export function createItemDrop(x: number, y: number, generated: GeneratedItem): 
   });
 }
 
-export function createRandomLoot(x: number, y: number): ItemDrop[] {
+export function createRandomLoot(x: number, y: number, quantityMult: number = 1): ItemDrop[] {
   const drops: ItemDrop[] = [];
 
-  const goldAmount = 1 + Math.floor(Math.random() * 6);
-  drops.push(new ItemDrop(x, y, {
-    type: 'gold',
-    name: `${goldAmount} Gold`,
-    color: 0xffd700,
-    value: goldAmount,
-  }));
-
-  if (Math.random() < 0.35) {
-    drops.push(new ItemDrop(x + (Math.random() - 0.5) * 30, y + 20, {
-      type: 'healthPotion',
-      name: 'Health Potion',
-      color: 0xff4444,
-      value: 30,
+  const goldAmount = Math.round((1 + Math.floor(Math.random() * 6)) * quantityMult);
+  if (goldAmount > 0) {
+    drops.push(new ItemDrop(x, y, {
+      type: 'gold',
+      name: `${goldAmount} Gold`,
+      color: 0xffd700,
+      value: goldAmount,
     }));
   }
 
-  if (Math.random() < 0.2) {
-    drops.push(new ItemDrop(x + (Math.random() - 0.5) * 30, y - 20, {
-      type: 'manaPotion',
-      name: 'Mana Potion',
-      color: 0x4488ff,
-      value: 20,
-    }));
+  for (let i = 0; i < Math.ceil(quantityMult); i++) {
+    if (Math.random() < 0.35) {
+      drops.push(new ItemDrop(x + (Math.random() - 0.5) * 30, y + 20, {
+        type: 'healthPotion',
+        name: 'Health Potion',
+        color: 0xff4444,
+        value: 30,
+      }));
+    }
   }
 
-  if (Math.random() < 0.08) {
-    drops.push(new ItemDrop(x + (Math.random() - 0.5) * 30, y + 30, {
-      type: 'portalScroll', name: 'Portal Scroll', color: 0xaa66ff, value: 1,
-    }));
+  for (let i = 0; i < Math.ceil(quantityMult); i++) {
+    if (Math.random() < 0.2) {
+      drops.push(new ItemDrop(x + (Math.random() - 0.5) * 30, y - 20, {
+        type: 'manaPotion',
+        name: 'Mana Potion',
+        color: 0x4488ff,
+        value: 20,
+      }));
+    }
+  }
+
+  for (let i = 0; i < Math.ceil(quantityMult); i++) {
+    if (Math.random() < 0.08) {
+      drops.push(new ItemDrop(x + (Math.random() - 0.5) * 30, y + 30, {
+        type: 'portalScroll', name: 'Portal Scroll', color: 0xaa66ff, value: 1,
+      }));
+    }
   }
 
   return drops;
