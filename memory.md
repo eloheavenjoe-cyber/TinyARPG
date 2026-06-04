@@ -359,6 +359,9 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Decoration sprites tracked in `decorationSprites[]` and cleaned up on zone transition (fixes sprite leak).
 - `rectsOverlap` reused from Room.ts (no duplication in RoomDecorator).
 - Camera edge-clamped post-lerp to prevent void bleed.
+- Hub town shrunk to ~3200×1792 playable area (from 6400×3584) via filler walls and repositioned buildings/portals/NPCs.
+- Camera supports optional `clampBounds` to constrain view to an active area within the room.
+- Minimap (Minimap.ts): semi-transparent overlay at bottom-right (200×112px). Shows walls, player (white dot), enemies (red), chests (yellow), breakables (gray).
 
 ## Next Up
 
