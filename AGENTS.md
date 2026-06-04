@@ -70,5 +70,5 @@ src/
 4. I verify integration, then commit and deploy
 
 ## Deployment
-- `npm run deploy` builds + publishes to GitHub Pages
+- `npm run deploy` builds the project (CI pushes to GitHub Pages automatically on push to master)
 - Live at: https://eloheavenjoe-cyber.github.io/TinyARPG/
