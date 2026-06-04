@@ -549,6 +549,96 @@ export function playArcherAnimation(sprite: AnimatedSprite, name: ArcherAnimName
   sprite.gotoAndPlay(0);
 }
 
+// --- Vendor NPC animated sprite (4 separate images for idle) ---
+let vendorFrames: Texture[] | null = null;
+let pendingVendorSprites: AnimatedSprite[] = [];
+
+export async function loadVendorAnimations(): Promise<void> {
+  if (vendorFrames) return;
+  try {
+    const frames = await Promise.all([1, 2, 3, 4].map(async (i) => {
+      const img = await loadImage(`sprites/npcs/${i}.png`);
+      return new Texture(new BaseTexture(img));
+    }));
+    vendorFrames = frames;
+  } catch {
+    const canvas = document.createElement('canvas');
+    canvas.width = 94; canvas.height = 91;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#44aa66';
+    ctx.fillRect(0, 0, 94, 91);
+    vendorFrames = [Texture.from(canvas)];
+  }
+  for (const sprite of pendingVendorSprites) {
+    if (vendorFrames.length > 0) { sprite.textures = vendorFrames; sprite.animationSpeed = 0.1; sprite.play(); }
+  }
+  pendingVendorSprites = [];
+}
+
+export function createVendorSprite(): AnimatedSprite {
+  if (vendorFrames && vendorFrames.length > 0) {
+    const sprite = new AnimatedSprite(vendorFrames);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.1;
+    sprite.play();
+    return sprite;
+  }
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x44aa66;
+  pendingVendorSprites.push(sprite);
+  return sprite;
+}
+
+// --- StashGuy NPC animated sprite (multi-row sheet, rows 2+3 only) ---
+type StashAnimName = 'idle' | 'wave';
+let stashFrames: Record<StashAnimName, Texture[]> | null = null;
+let pendingStashSprites: AnimatedSprite[] = [];
+
+const STASH_SHEET_URL = 'sprites/npcs/StashGuy.png';
+const STASH_FRAME_W = 80;
+const STASH_FRAME_H = 80;
+
+export async function loadStashAnimations(): Promise<void> {
+  if (stashFrames) return;
+  try {
+    const img = await loadImage(STASH_SHEET_URL);
+    const base = new BaseTexture(img);
+    stashFrames = {
+      idle: Array.from({ length: 6 }, (_, i) => new Texture(base, new Rectangle(i * STASH_FRAME_W, 1 * STASH_FRAME_H, STASH_FRAME_W, STASH_FRAME_H))),
+      wave: Array.from({ length: 10 }, (_, i) => new Texture(base, new Rectangle(i * STASH_FRAME_W, 2 * STASH_FRAME_H, STASH_FRAME_W, STASH_FRAME_H))),
+    };
+  } catch {
+    const canvas = document.createElement('canvas');
+    canvas.width = 80; canvas.height = 80;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#4488cc';
+    ctx.fillRect(0, 0, 80, 80);
+    const f = [Texture.from(canvas)];
+    stashFrames = { idle: f, wave: f };
+  }
+  for (const sprite of pendingStashSprites) {
+    const f = stashFrames.idle;
+    if (f.length > 0) { sprite.textures = f; sprite.animationSpeed = 0.1; sprite.play(); }
+  }
+  pendingStashSprites = [];
+}
+
+export function createStashSprite(): AnimatedSprite {
+  if (stashFrames && stashFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(stashFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.1;
+    sprite.play();
+    return sprite;
+  }
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x4488cc;
+  pendingStashSprites.push(sprite);
+  return sprite;
+}
+
 export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true, classType: 'warrior' | 'ranger' | 'monk' = 'warrior') {
   if (classType === 'monk') return;
   const frames = getFrames(classType);

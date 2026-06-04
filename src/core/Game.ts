@@ -26,7 +26,7 @@ import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
-import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, playMonkAnimation } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation } from '../rendering/SpriteAnimator';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 import { Minimap } from '../ui/Minimap';
@@ -142,6 +142,8 @@ export class Game {
       loadMonkAnimations(),
       loadCultistAnimations(),
       loadArcherAnimations(),
+      loadVendorAnimations(),
+      loadStashAnimations(),
     ]);
 
     barFill.clear();
@@ -412,6 +414,19 @@ export class Game {
       statueSprite.y = 1730;
       this.gameContainer.addChild(statueSprite);
       this.decorationSprites.push(statueSprite);
+
+      // Animated NPC sprites (overlay on Graphics NPCs)
+      const vendorNpc = createVendorSprite();
+      vendorNpc.x = 2900;
+      vendorNpc.y = 1380;
+      this.gameContainer.addChild(vendorNpc);
+      this.decorationSprites.push(vendorNpc);
+
+      const stashNpc = createStashSprite();
+      stashNpc.x = 3500;
+      stashNpc.y = 1380;
+      this.gameContainer.addChild(stashNpc);
+      this.decorationSprites.push(stashNpc);
     }
 
     // Re-add player and combat text above the new room (room floor tiles would cover them)
