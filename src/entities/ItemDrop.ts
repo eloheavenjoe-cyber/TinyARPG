@@ -3,7 +3,7 @@ import { Logger } from '../core/Logger';
 import { GeneratedItem } from '../core/ItemGenerator';
 
 export interface ConsumableItem {
-  type: 'gold' | 'healthPotion' | 'manaPotion';
+  type: 'gold' | 'healthPotion' | 'manaPotion' | 'portalScroll';
   name: string;
   color: number;
   value: number;
@@ -98,6 +98,10 @@ export function isOrbDrop(drop: ItemDrop): drop is ItemDrop & { item: OrbItem } 
   return drop.item.type === 'orb';
 }
 
+export function isPortalScrollDrop(drop: ItemDrop): drop is ItemDrop & { item: ConsumableItem } {
+  return drop.item.type === 'portalScroll';
+}
+
 export function createItemDrop(x: number, y: number, generated: GeneratedItem): ItemDrop {
   return new ItemDrop(x, y, {
     type: 'item',
@@ -133,6 +137,12 @@ export function createRandomLoot(x: number, y: number): ItemDrop[] {
       name: 'Mana Potion',
       color: 0x4488ff,
       value: 20,
+    }));
+  }
+
+  if (Math.random() < 0.08) {
+    drops.push(new ItemDrop(x + (Math.random() - 0.5) * 30, y + 30, {
+      type: 'portalScroll', name: 'Portal Scroll', color: 0xaa66ff, value: 1,
     }));
   }
 

@@ -144,18 +144,22 @@ export class Room {
 
   private renderPortals() {
     for (const portal of this.portals) {
-      const g = new Graphics();
       const cx = portal.rect.x + portal.rect.width / 2;
       const cy = portal.rect.y + portal.rect.height / 2;
-      const r = Math.min(portal.rect.width, portal.rect.height) / 2;
-      g.beginFill(0x8844ff, 0.3);
+      const r = Math.min(portal.rect.width, portal.rect.height) / 2 - 4;
+      // Static ring background
+      const g = new Graphics();
+      g.lineStyle(2, 0xaa66ff, 0.5);
       g.drawCircle(cx, cy, r);
-      g.endFill();
-      g.lineStyle(2, 0xaa66ff, 0.8);
-      g.drawCircle(cx, cy, r);
-      g.lineStyle(1, 0xcc88ff, 0.5);
+      g.lineStyle(1, 0xcc88ff, 0.3);
       g.drawCircle(cx, cy, r * 0.6);
       this.container.addChild(g);
+      // Label
+      const label = new Text(portal.label, { fontFamily: 'monospace', fontSize: 13, fill: 0xcc88ff });
+      label.anchor.set(0.5, 0);
+      label.x = cx;
+      label.y = cy + r + 6;
+      this.container.addChild(label);
     }
   }
 

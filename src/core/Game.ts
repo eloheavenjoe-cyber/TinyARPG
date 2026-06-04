@@ -13,7 +13,7 @@ import { Player } from '../entities/Player';
 import { Enemy, EnemyType } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
-import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, isOrbDrop, createOrbDrop } from '../entities/ItemDrop';
+import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, isOrbDrop, createOrbDrop, isPortalScrollDrop } from '../entities/ItemDrop';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
@@ -66,6 +66,8 @@ export class Game {
   private vfx: VfxEffect[] = [];
   private dash: DashState | null = null;
   private zoneManager: ZoneManager = new ZoneManager();
+  private portalAngle = 0;
+  private recallPortal: { x: number; y: number; graphic: Graphics; active: boolean } | null = null;
 
   private lastKeys: Set<string> = new Set();
   private wasPKeyDown = false;
@@ -164,6 +166,11 @@ export class Game {
     this.itemDrops = [];
     this.vfx = [];
     this.dash = null;
+    if (this.recallPortal) {
+      if (this.recallPortal.graphic.parent) this.gameContainer.removeChild(this.recallPortal.graphic);
+      this.recallPortal.graphic.destroy();
+      this.recallPortal = null;
+    }
 
     // Remove old room visuals
     this.gameContainer.removeChild(this.room.container);
@@ -194,6 +201,24 @@ export class Game {
     for (const e of enemies) {
       this.enemies.push(e);
       this.gameContainer.addChild(e.sprite);
+    }
+
+    // Add animated portal VFX
+    for (const portal of this.room.portals) {
+      const cx = portal.rect.x + portal.rect.width / 2;
+      const cy = portal.rect.y + portal.rect.height / 2;
+      const r = Math.min(portal.rect.width, portal.rect.height) / 2 - 4;
+      this.addVfx((g, t) => {
+        const spin = this.portalAngle + Math.PI * 2;
+        g.clear();
+        for (let i = 0; i < 6; i++) {
+          const a = spin + (i / 6) * Math.PI * 2;
+          const len = r * (0.4 + 0.6 * Math.abs(Math.sin(a)));
+          g.lineStyle(2, 0xaa66ff, 0.3 + 0.4 * Math.abs(Math.sin(a)));
+          g.moveTo(cx, cy);
+          g.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+        }
+      }, 99999);
     }
 
     // Reset wave cooldown for arena mode
@@ -310,6 +335,33 @@ export class Game {
     }
 
     this.combatText.update(dt);
+    this.portalAngle += dt * 0.03;
+
+    // Recall portal drawing and collision
+    if (this.recallPortal?.active) {
+      const rp = this.recallPortal;
+      const g = rp.graphic;
+      g.clear();
+      const cx = rp.x;
+      const cy = rp.y;
+      const spin = this.portalAngle;
+      g.lineStyle(2, 0xaa66ff, 0.5);
+      g.drawCircle(cx, cy, 24);
+      for (let i = 0; i < 8; i++) {
+        const a = spin + (i / 8) * Math.PI * 2;
+        const len = 8 + 16 * Math.abs(Math.sin(a));
+        g.lineStyle(2, 0xcc88ff, 0.3 + 0.5 * Math.abs(Math.sin(a)));
+        g.moveTo(cx, cy);
+        g.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+      }
+      if (this.player && Math.hypot(this.player.x - cx, this.player.y - cy) < 40) {
+        this.recallPortal.active = false;
+        this.gameContainer!.removeChild(rp.graphic);
+        rp.graphic.destroy();
+        this.zoneManager.transitionTo('hub');
+        this.buildCurrentZoneRoom();
+      }
+    }
 
     // Update VFX
     for (let i = this.vfx.length - 1; i >= 0; i--) {
@@ -379,12 +431,13 @@ export class Game {
     this.handleSkillKeys(mouseWX, mouseWY);
 
     if (this.input.consumeClick()) {
-      // Portal click check (game coords)
+      // Portal click check (game coords, must be near portal)
       let clickedItem = false;
       for (const portal of this.room?.portals ?? []) {
         const cx = portal.rect.x + portal.rect.width / 2;
         const cy = portal.rect.y + portal.rect.height / 2;
-        if (Math.hypot(mouseWX - cx, mouseWY - cy) < 60) {
+        const distToPlayer = Math.hypot(this.player!.x - cx, this.player!.y - cy);
+        if (distToPlayer < 150 && Math.hypot(mouseWX - cx, mouseWY - cy) < 60) {
           this.zoneManager.transitionTo(portal.targetZone);
           this.buildCurrentZoneRoom();
           clickedItem = true;
@@ -845,6 +898,7 @@ export class Game {
           case 'healthPotion': this.player!.health = Math.min(this.player!.maxHealth, this.player!.health + item.value); break;
           case 'manaPotion': this.player!.mana = Math.min(this.player!.maxMana, this.player!.mana + item.value); break;
           case 'orb': this.player!.pickupOrb(item.orbId, item.count); break;
+          case 'portalScroll': this.player!.pickupOrb('portal_scroll', item.value); break;
         }
         this.gameContainer!.removeChild(drop.container);
         drop.destroy();
@@ -988,6 +1042,27 @@ export class Game {
           this.player.computedStats, this.input,
         );
         return success;
+      });
+      this.inventoryScreen.onConsumePortalScrollCallback(() => {
+        if (!this.player || !this.gameContainer) return;
+        const idx = this.player.inventory.findIndex(
+          s => s !== null && s.kind === 'orb' && s.orbId === 'portal_scroll'
+        );
+        if (idx === -1) return;
+        const slot = this.player.inventory[idx] as any;
+        slot.count--;
+        if (slot.count <= 0) this.player.inventory[idx] = null;
+        // Create recall portal at player position
+        this.recallPortal?.graphic.destroy();
+        this.recallPortal = {
+          x: this.player.x, y: this.player.y,
+          graphic: new Graphics(),
+          active: true,
+        };
+        this.gameContainer.addChild(this.recallPortal.graphic);
+        this.inventoryOpen = false;
+        this.toggleInventory();
+        Logger.log('system', 'Portal Scroll used — recall portal opened');
       });
       this.app.stage.addChild(this.inventoryScreen.container);
     } else {
@@ -1231,6 +1306,7 @@ export class Game {
     this.vfx = [];
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();
+    if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
     this.dash = null;
     this.combatText.destroy();
     this.combatText = new CombatTextManager();

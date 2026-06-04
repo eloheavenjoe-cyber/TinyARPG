@@ -41,8 +41,10 @@ export class InventoryScreen {
   private craftMessageText: Text;
   private onCraftOrb: (orbId: string, slot: Slot) => boolean = () => false;
   private onCraftOrbGrid: (orbId: string, gridIndex: number) => boolean = () => false;
+  private onConsumePortalScroll: () => void = () => {};
   onCraftOrbCallback(cb: (orbId: string, slot: Slot) => boolean) { this.onCraftOrb = cb; }
   onCraftOrbGridCallback(cb: (orbId: string, gridIndex: number) => boolean) { this.onCraftOrbGrid = cb; }
+  onConsumePortalScrollCallback(cb: () => void) { this.onConsumePortalScroll = cb; }
 
   constructor(
     screenW: number, screenH: number,
@@ -529,6 +531,10 @@ export class InventoryScreen {
       if (mx >= g.bg.x && mx <= g.bg.x + 50 && my >= g.bg.y && my <= g.bg.y + 50) {
         const entry = inventory[g.index];
         if (entry && entry.kind === 'orb') {
+          if (entry.orbId === 'portal_scroll') {
+            this.onConsumePortalScroll();
+            return;
+          }
           this.activeOrb = this.activeOrb === entry.orbId ? null : entry.orbId;
           this.selectedIndex = this.activeOrb ? g.index : -1;
         }
