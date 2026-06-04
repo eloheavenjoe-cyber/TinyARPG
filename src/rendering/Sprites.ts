@@ -1,7 +1,6 @@
-import { Application, Graphics, Texture } from 'pixi.js';
+import { Texture } from 'pixi.js';
 
 export class Sprites {
-  static app: Application;
   static player: Texture;
   static ranger: Texture;
   static enemy: Texture;
@@ -163,57 +162,67 @@ export class Sprites {
       ctx.fillRect(23, 24, 1, 8);
     });
 
-    // Stone Golem — floating upper torso, broad shoulders, massive fists
-    const golemG = new Graphics();
-    golemG.beginFill(0x6a5a4a);
-    golemG.drawRect(-32, -20, 64, 50);
-    golemG.beginFill(0x7a6a5a);
-    golemG.drawRect(-16, -40, 32, 24);
-    golemG.beginFill(0xff8844);
-    golemG.drawRect(-10, -34, 6, 4);
-    golemG.drawRect(4, -34, 6, 4);
-    golemG.beginFill(0x6a5a4a);
-    golemG.drawRect(-42, -16, 12, 36);
-    golemG.drawRect(30, -16, 12, 36);
-    golemG.beginFill(0x7a6a5a);
-    golemG.drawRect(-44, 16, 16, 12);
-    golemG.drawRect(28, 16, 16, 12);
-    golemG.lineStyle(1, 0xff8844, 0.5);
-    golemG.moveTo(-8, -6);
-    golemG.lineTo(0, 4);
-    golemG.lineTo(8, -6);
-    golemG.lineStyle(0);
-    golemG.beginFill(0x000000, 0.2);
-    golemG.drawEllipse(0, 28, 28, 6);
-    golemG.endFill();
-    Sprites.golem = Sprites.app.renderer.generateTexture(golemG, {resolution: 1});
+    Sprites.golem = Sprites.createTexture(90, 80, (ctx) => {
+      const ox = 44, oy = 44;
+      ctx.fillStyle = '#6a5a4a';
+      ctx.fillRect(ox - 32, oy - 20, 64, 50);
+      ctx.fillStyle = '#7a6a5a';
+      ctx.fillRect(ox - 16, oy - 40, 32, 24);
+      ctx.fillStyle = '#ff8844';
+      ctx.fillRect(ox - 10, oy - 34, 6, 4);
+      ctx.fillRect(ox + 4, oy - 34, 6, 4);
+      ctx.fillStyle = '#6a5a4a';
+      ctx.fillRect(ox - 42, oy - 16, 12, 36);
+      ctx.fillRect(ox + 30, oy - 16, 12, 36);
+      ctx.fillStyle = '#7a6a5a';
+      ctx.fillRect(ox - 44, oy + 16, 16, 12);
+      ctx.fillRect(ox + 28, oy + 16, 16, 12);
+      ctx.strokeStyle = '#ff8844';
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(ox - 8, oy - 6);
+      ctx.lineTo(ox, oy + 4);
+      ctx.lineTo(ox + 8, oy - 6);
+      ctx.stroke();
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(ox, oy + 28, 28, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
-    // Death Reaper
-    const reaperG = new Graphics();
-    reaperG.beginFill(0x2a1a2a);
-    reaperG.drawRect(-16, -12, 32, 40);
-    reaperG.beginFill(0x1a0a1a);
-    reaperG.drawRect(-14, -24, 28, 20);
-    reaperG.beginFill(0x334444);
-    reaperG.drawRect(-6, -18, 4, 6);
-    reaperG.drawRect(2, -18, 4, 6);
-    reaperG.beginFill(0xff2222);
-    reaperG.drawRect(-5, -17, 2, 2);
-    reaperG.drawRect(3, -17, 2, 2);
-    reaperG.lineStyle(2, 0x5a3a2a);
-    reaperG.moveTo(18, -20);
-    reaperG.lineTo(-4, 28);
-    reaperG.lineStyle(0);
-    reaperG.beginFill(0x888899);
-    reaperG.moveTo(20, -22);
-    reaperG.lineTo(32, -12);
-    reaperG.lineTo(14, -2);
-    reaperG.closePath();
-    reaperG.endFill();
-    reaperG.beginFill(0x442244, 0.3);
-    reaperG.drawEllipse(0, 28, 24, 8);
-    reaperG.endFill();
-    Sprites.reaper = Sprites.app.renderer.generateTexture(reaperG, {resolution: 1});
+    Sprites.reaper = Sprites.createTexture(64, 68, (ctx) => {
+      const ox = 24, oy = 40;
+      ctx.fillStyle = '#2a1a2a';
+      ctx.fillRect(ox - 16, oy - 12, 32, 40);
+      ctx.fillStyle = '#1a0a1a';
+      ctx.fillRect(ox - 14, oy - 24, 28, 20);
+      ctx.fillStyle = '#334444';
+      ctx.fillRect(ox - 6, oy - 18, 4, 6);
+      ctx.fillRect(ox + 2, oy - 18, 4, 6);
+      ctx.fillStyle = '#ff2222';
+      ctx.fillRect(ox - 5, oy - 17, 2, 2);
+      ctx.fillRect(ox + 3, oy - 17, 2, 2);
+      ctx.strokeStyle = '#5a3a2a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ox + 18, oy - 20);
+      ctx.lineTo(ox - 4, oy + 28);
+      ctx.stroke();
+      ctx.fillStyle = '#888899';
+      ctx.beginPath();
+      ctx.moveTo(ox + 20, oy - 22);
+      ctx.lineTo(ox + 32, oy - 12);
+      ctx.lineTo(ox + 14, oy - 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#442244';
+      ctx.beginPath();
+      ctx.ellipse(ox, oy + 28, 24, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   private static createTexture(width: number, height: number, draw: (ctx: CanvasRenderingContext2D) => void): Texture {
