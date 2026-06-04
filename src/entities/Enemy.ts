@@ -1,6 +1,6 @@
 import { Sprite, Texture, AnimatedSprite } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
-import { createCultistSprite, playCultistAnimation, CultistAnimName } from '../rendering/SpriteAnimator';
+import { createCultistSprite, playCultistAnimation, CultistAnimName, createArcherSprite, playArcherAnimation, ArcherAnimName } from '../rendering/SpriteAnimator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Projectile } from './Projectile';
@@ -75,7 +75,9 @@ export class Enemy {
     this.deaggroRange = cfg.deaggroRange;
     this.wobblePhase = Math.random() * Math.PI * 2;
 
-    this.sprite = type === 'cultist' ? createCultistSprite() : new Sprite(cfg.sprite);
+    if (type === 'cultist') this.sprite = createCultistSprite();
+    else if (type === 'archer') this.sprite = createArcherSprite();
+    else this.sprite = new Sprite(cfg.sprite);
     this.sprite.anchor.set(0.5);
     this.sprite.tint = 0xffffff;
     this.updateSprite();
@@ -119,12 +121,8 @@ export class Enemy {
 
     // Facing
     const faceAngle = Math.atan2(playerY - this.y, playerX - this.x);
-    if (this.type === 'cultist') {
-      const wasMoving = this.animState === 'run';
+    if (this.type === 'cultist' || this.type === 'archer') {
       this.sprite.scale.x = Math.abs(faceAngle) > Math.PI / 2 ? -1 : 1;
-      if (!wasMoving && this.animState === 'run') {
-        playCultistAnimation(this.sprite as AnimatedSprite, 'run');
-      }
     } else {
       this.sprite.rotation = faceAngle;
     }
@@ -135,7 +133,21 @@ export class Enemy {
       if (!this.alive) {
         this.animState = 'death';
       } else if (this.animState !== 'attack') {
-        this.animState = isMoving ? 'run' : 'idle';
+        const newState: 'idle' | 'run' = isMoving ? 'run' : 'idle';
+        if (newState !== this.animState) {
+          this.animState = newState;
+          playCultistAnimation(this.sprite as AnimatedSprite, this.animState);
+        }
+      }
+    } else if (this.type === 'archer') {
+      if (!this.alive) {
+        this.animState = 'death';
+      } else if (this.animState !== 'attack') {
+        const newState: 'idle' | 'run' = isMoving ? 'run' : 'idle';
+        if (newState !== this.animState) {
+          this.animState = newState;
+          playArcherAnimation(this.sprite as AnimatedSprite, this.animState);
+        }
       }
     }
 
@@ -186,6 +198,13 @@ export class Enemy {
       const p = new Projectile(this.x, this.y, angle, 4, this.damage, false, true, 0xcc3333);
       p.lifetime = 90;
       this.projectiles.push(p);
+      // Attack animation
+      this.animState = 'attack';
+      playArcherAnimation(this.sprite as AnimatedSprite, 'attack', false);
+      (this.sprite as AnimatedSprite).onComplete = () => {
+        this.animState = 'idle';
+        playArcherAnimation(this.sprite as AnimatedSprite, 'idle');
+      };
     }
   }
 

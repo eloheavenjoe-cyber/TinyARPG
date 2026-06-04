@@ -477,6 +477,78 @@ export function createRangerSprite(): AnimatedSprite {
   return sprite;
 }
 
+// --- Archer animated sprite ---
+export type ArcherAnimName = 'idle' | 'run' | 'attack' | 'death';
+
+let archerFrames: Record<ArcherAnimName, Texture[]> | null = null;
+let pendingArcherSprites: AnimatedSprite[] = [];
+
+const ARCHER_SHEETS: Record<ArcherAnimName, { url: string; frameW: number; frameH: number; frames: number; cols: number }> = {
+  idle: { url: 'sprites/archer/Idle.png', frameW: 100, frameH: 100, frames: 10, cols: 10 },
+  run: { url: 'sprites/archer/Run.png', frameW: 100, frameH: 100, frames: 8, cols: 8 },
+  attack: { url: 'sprites/archer/Attack.png', frameW: 100, frameH: 100, frames: 6, cols: 6 },
+  death: { url: 'sprites/archer/Death.png', frameW: 100, frameH: 100, frames: 10, cols: 10 },
+};
+
+export async function loadArcherAnimations(): Promise<void> {
+  if (archerFrames) return;
+  const entries = Object.entries(ARCHER_SHEETS) as [ArcherAnimName, typeof ARCHER_SHEETS[ArcherAnimName]][];
+
+  const results = await Promise.all(entries.map(async ([name, cfg]) => {
+    try {
+      return { name, frames: await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols) };
+    } catch {
+      const canvas = document.createElement('canvas');
+      canvas.width = cfg.frameW;
+      canvas.height = cfg.frameH;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#44aa44';
+      ctx.fillRect(0, 0, cfg.frameW, cfg.frameH);
+      return { name, frames: [Texture.from(canvas)] };
+    }
+  }));
+
+  const result = {} as Record<ArcherAnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
+  archerFrames = result;
+
+  for (const sprite of pendingArcherSprites) {
+    const f = archerFrames.idle;
+    if (f.length > 0) {
+      sprite.textures = f;
+      sprite.animationSpeed = 0.12;
+      sprite.play();
+    }
+  }
+  pendingArcherSprites = [];
+}
+
+export function createArcherSprite(): AnimatedSprite {
+  if (archerFrames && archerFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(archerFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.12;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x44aa44;
+  pendingArcherSprites.push(sprite);
+  return sprite;
+}
+
+export function playArcherAnimation(sprite: AnimatedSprite, name: ArcherAnimName, loop = true) {
+  if (!archerFrames) return;
+  const f = archerFrames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === 'attack' ? 0.15 : 0.12;
+  sprite.gotoAndPlay(0);
+}
+
 export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true, classType: 'warrior' | 'ranger' | 'monk' = 'warrior') {
   if (classType === 'monk') return;
   const frames = getFrames(classType);
