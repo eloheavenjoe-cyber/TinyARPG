@@ -34,7 +34,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     RoomTemplates.ts          Pre-defined room layout templates (5 base + hub/tutorial/arena/dungeon/dev + 12 story zone + buildings/NPCs)
   rendering/
     Sprites.ts                Programmatic pixel-art textures (player, enemy, archer, cultist, juggernaut, floor, wall)
-    SpriteAnimator.ts         Sprite sheet loader + frame slicer + animation manager (warrior animated sprites)
+    SpriteAnimator.ts         Sprite sheet loader + frame slicer + animation manager (warrior, ranger, reaper, golem, monk, cultist, archer, vendor, stash animated sprites)
   ui/
     MainMenu.ts               Title screen
     ClassSelect.ts            Class picker (Warrior/Ranger)
@@ -362,6 +362,20 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Hub town shrunk to ~3200×1792 playable area (from 6400×3584) via filler walls and repositioned buildings/portals/NPCs.
 - Camera supports optional `clampBounds` to constrain view to an active area within the room.
 - Minimap (Minimap.ts): semi-transparent overlay at bottom-right (200×112px). Shows walls, player (white dot), enemies (red), chests (yellow), breakables (gray).
+- Hub visual overhaul: detailed building facades with brick/stone textures, tiled roofs, windows with cross-bars, awnings, signs. Vendor (warm brown), Stash (cool gray slate).
+- Stone pathway tiles connecting portal columns to town center (originally single-tile, widened to 3 tiles (96px) for main axes).
+- Fountain at center: multi-tiered stone base with animated water spray VFX (2x scale, 8 jets + 6 droplets). Warrior statue on pedestal with sword (2.5x scale).
+- Buildings have collision walls (player can't walk through Vendor/Stash).
+- Stone pillars added between portals and paths at all 6 portal positions.
+- Portals repositioned (left from 1750→1640, right from 4550→4680, 80×80) to avoid clipping the widened paths.
+- Monster density increased 2-3x: Forest (8-14), Desert (10-18), Ice (12-20), Endless Dungeon (10-14), Endless Arena (6-10).
+- **Aggro system** (Enemy.ts): each enemy type has `detectRange` and `deaggroRange`. Player enters detectRange → enemy aggros. Player leaves deaggroRange (~1.5x) → enemy de-aggros and stops in place. Grunt (400/600), Archer (500/750), Juggernaut (350/525), Cultist (450/675).
+- Loading speed optimized: all 6 (+ archer, vendor, stash) animation loaders run in parallel (was sequential). Each loader's internal file fetches also parallelized. Removed console.log overhead (~50+ calls per load).
+- Tutorial door: bright yellow border + "▶ Exit Town" label added. Debug logging for door lock state and collision detection.
+- Archer animated sprites (archer enemy, 4 sheets at 100×100): Idle (10), Run (8), Attack (6), Death (10). Uses scale.x flip for facing, attack anim triggers on arrow fire.
+- Vendor NPC animated sprite: 4 individual images (94×91 each) for idle animation.
+- StashGuy NPC animated sprite: multi-row sheet (800×400, 80×80 frames) — idle (row 2, 6 frames) + wave (row 3, 10 frames). Uses custom row-sliced texture loading.
+- Juggernaut sprite sheet attempt **reverted** — programmatic texture restored.
 
 ## Next Up
 
@@ -373,7 +387,9 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 
 ### Phase 6 — More Monster Sprites
 - Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
-- Pattern established in cultist implementation
+- Archer completed (2026-06-05): 4 sheets (idle/run/attack/death, 100×100 frames)
+- Juggernaut attempted and reverted — programmatic texture still in use
+- Grunt still pending
 
 ### Phase 7 — Polish & Expansion
 - Hub NPC interactions (vendor buy/sell, stash deposit/withdraw)
@@ -402,6 +418,7 @@ without explicit approval. See AGENTS.md for full coordination rules.
 - **Projectile positioning:** projectiles are children of gameContainer (offset 160,92), so use game-local coords, not screen coords.
 - **Inventory type:** `InventorySlot` union type (`EquipSlot | OrbInfo | null`) — any code accessing inventory must check `.kind` before accessing `.item` or `.orbId`.
 - **Zone transitions:** doors use overlap detection (`rectsOverlap`), portals use click detection with game-local coords
+- **Door visibility:** Doors are Graphics rects on the floor. Add a label (Text "▶ Exit Town") to make them visible. Keep debug logging for door collision (`Logger.log('system', ...)`) to diagnose transition issues.
 - **Door Y position:** fixed at 828 (walkable area bottom) to avoid wall overlap
 - **Room templates:** deep-cloned via `cloneTemplate()` to prevent mutation of shared constants
 - **Endless scaling:** dungeon uses `endlessRoomCount`, arena uses `endlessWave`
@@ -411,6 +428,7 @@ without explicit approval. See AGENTS.md for full coordination rules.
 - **Enemy repulsion:** Enemies push apart in update loop. Repulsion uses `minDist` from combined widths. Must iterate with `for (const other of enemies)` including self-check.
 - **Enemy projectiles:** Archer/cultist push Projectile objects to `this.projectiles[]` array. Game.ts collects and adds to container after enemy update.
 - **Culling strike in Enemy.takeDamage:** Checked BEFORE damage is applied. If enemy HP is already at threshold, they die without taking damage.
+- **Aggro timing:** Enemy aggro check runs per-frame in `Enemy.update()`. When de-aggroed, enemy stands still — skip all AI (including cooldown decay). This means enemies always have abilities ready when re-aggroing.
 - **Wave spawning:** `spawnWave()` creates enemies in loose cluster. `waveCooldown = 120` (2s) triggers after all enemies die. Reset in `restartGame()`.
 - **Unique skill effects:** skillAoePct, lifeLeechPct, fortifyOnHit, cullingStrikePct, explodeOnKillPct are unique-only affix stats on special unique items. Wired through StatSystem and combat code.
 - **Orb crafting:** orbs modify `GeneratedItem` in-place (mutates `item.affixes` and `item.computedStats`). The `equipment` record holds the same reference, so `recalcStats()` picks up changes.
