@@ -704,6 +704,8 @@ export class Game {
       if (!result) return;
       this.player.mana -= result.manaCost;
 
+      this.player.triggerAttackAnimation();
+
       if (isProjectileType) {
         const newProjectiles = this.player.fireProjectile(this.player.x, this.player.y, angle, result, this.projectiles);
         for (const p of newProjectiles) {

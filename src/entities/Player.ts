@@ -500,6 +500,18 @@ export class Player {
     Logger.log('combat', `Player healed for ${amount} (hp: ${this.health}/${this.maxHealth})`);
   }
 
+  triggerAttackAnimation() {
+    this.animState = 'attack';
+    playAnimation(this.sprite, 'attack', false, this.classType);
+    const resetAnim = () => {
+      if (this.animState === 'attack') {
+        this.animState = 'idle';
+        playAnimation(this.sprite, 'idle', true, this.classType);
+      }
+    };
+    this.sprite.onComplete = resetAnim;
+  }
+
   useMainAbility(enemies: Enemy[]): boolean {
     const skill = this.skills.mainAbility;
     if (!skill) return false;
@@ -508,11 +520,7 @@ export class Player {
     if (!result) return false;
     this.mana -= result.manaCost;
 
-    // Trigger attack animation
-    this.animState = 'attack';
-    playAnimation(this.sprite, 'attack', false, this.classType);
-    const resetAnim = () => { if (this.animState === 'attack') { this.animState = 'idle'; playAnimation(this.sprite, 'idle', true, this.classType); } };
-    this.sprite.onComplete = resetAnim;
+    this.triggerAttackAnimation();
 
     const aoeMult = 1 + ((this._computedStats.skillAoePct || 0) / 100);
     const leechPct = this._computedStats.lifeLeechPct || 0;
