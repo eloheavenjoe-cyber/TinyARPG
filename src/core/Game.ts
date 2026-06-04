@@ -1013,9 +1013,15 @@ export class Game {
     // Door overlap check
     for (const door of this.room?.doors ?? []) {
       // Tutorial door is locked until tutorial is complete
-      if (zone?.id === 'tutorial' && this.tutorialStage !== 'complete') continue;
+      if (zone?.id === 'tutorial' && this.tutorialStage !== 'complete') {
+        Logger.log('system', `Tutorial door locked (stage=${this.tutorialStage})`);
+        continue;
+      }
+
+      Logger.log('system', `Door check: zone=${zone?.id} stage=${this.tutorialStage} player=(${Math.round(this.player?.x ?? 0)},${Math.round(this.player?.y ?? 0)}) door=(${door.rect.x},${door.rect.y},${door.rect.width},${door.rect.height})`);
 
       if (this.player && rectsOverlap(this.player.getBounds(), door.rect)) {
+        Logger.log('system', 'Door collision detected!');
         if (zone && door.targetZone === zone.id) {
           const next = this.zoneManager.nextRoom();
           if (!next) {

@@ -138,9 +138,19 @@ export class Room {
       g.beginFill(0x000000, 0.6);
       g.drawRect(door.rect.x, door.rect.y, door.rect.width, door.rect.height);
       g.endFill();
-      g.lineStyle(2, 0x888888, 0.8);
+      g.lineStyle(2, 0xffff44, 0.9);
       g.drawRect(door.rect.x, door.rect.y, door.rect.width, door.rect.height);
       this.container.addChild(g);
+
+      // Label
+      const cx = door.rect.x + door.rect.width / 2;
+      const label = new Text('▶ Exit ' + (door.targetZone !== 'hub' ? door.targetZone : 'Town'), {
+        fontFamily: 'monospace', fontSize: 14, fill: '#ffff88',
+      });
+      label.anchor.set(0.5, 1);
+      label.x = cx;
+      label.y = door.rect.y - 8;
+      this.container.addChild(label);
     }
   }
 
