@@ -221,15 +221,65 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Player sprite**: always `AnimatedSprite` type. Warrior uses sprite sheets, Ranger uses single-frame AnimatedSprite from programmatic texture
 - **Sprite folder**: `public/sprites/warrior/` (created via `New-Item -ItemType Directory`)
 - **Critical gotcha (Windows)**: NTFS is case-insensitive. `git mv IDLE.png idle.png` is a no-op! Must use two-step with temp name: `git mv IDLE.png tmp.png && git mv tmp.png idle.png` to force git to track the rename.
-#### Animation file sizes (warrior sprite sheets):
-- `attack.png`: 576×84 (6 frames), 4295 bytes
-- `idle.png`: 672×84 (7 frames), 3627 bytes
-- `walk.png`: 768×84 (8 frames), 5529 bytes
 
-#### Ranger individual PNGs:
-- `idle_1`..`idle_12`: 12 frames, 288×128 each
-- `run_1`..`run_10`: 10 frames, 288×128 each
-- `2_atk_1`..`2_atk_15`: 15 frames, 288×128 each
+### Phase 5e — Boss Fights & Zone Progression (2026-06-04)
+- **Boss entity**: `src/entities/Boss.ts` — separate class from Enemy with phase-based AI
+- **Two bosses**: Stone Golem (Forest, 96×96, 500 HP) and Death Reaper (Ice, 110×110, 800 HP)
+- **Boss config**: `getBossConfig()` returns HP, size, speed, damage, sprite per bossId
+- **Telegraph system**: attacks show warning zone (line/circle/cone) for ~1s before execution
+- **Telegraph drawing**: multi-line for boulder width (28px), double ring for circle, filled cone with inner arc
+- **Phases**: 4 phases based on HP (100-75%, 75-50%, 50-25%, 25-0%) — each adds new attacks
+- **Golem attacks**: Ground Slam (cone), Boulder Toss (line projectile), Stomp (circle AoE)
+- **Reaper attacks**: Scythe Sweep (cone), Teleport Slam (circle + teleport), Summon Cultists (spawn adds)
+- **Boss HP bar**: `src/ui/BossHpBar.ts` — screen-space overlay at Y=60, 600px wide, colored per boss
+- **Boss spawning**: `Game.spawnBoss()` creates boss at room center, wires spawn callback, adds HP bar
+- **Projectile hit tracking**: `Projectile.hitTargets: Set<object>` prevents piercing projectiles from multi-hitting the same target
+- **Attack damage delivery**: Boss has `pendingAttackDamage` field; Game.ts reads it once after boss.update() to apply cone/circle damage
+- **Contact damage**: `rectsOverlap(player, boss)` per frame with boss.damage value
+- **Boss death**: marks zone completed, spawns 3 loot piles, grants XP, removes HP bar
+- **Zone progression**: `ZoneManager.completedZoneIds` tracks cleared zones; `isZoneUnlocked()` checks chain
+- **Hub portal locking**: locked portals show chains + padlock, don't respond to clicks
+- **Tutorial cleanup**: `buildCurrentZoneRoom()` cleans up tutorial when entering non-tutorial zone
+- **Boss sprites**: golem uses individual PNGs (idle:6, walk:10, attack:14, death:16); reaper uses multi-row sheets
+- **`/boss` dev command**: teleports to boss room for testing (`/boss forest`, `/boss desert`, `/boss ice`)
+- **Boulder VFX**: 14px multi-toned rock projectile, telegraph shows 28px-wide path
+- **Stomp VFX**: expanding orange shockwave ring + starburst ground crack
+- **Reaper teleport VFX**: dark purple expanding ring at landing point
+
+### Phase 5f — Loading Screen (2026-06-04)
+- Progress bar with 5 steps (warrior → ranger → reaper → golem → monk → cultist)
+- Sequential awaiting (not Promise.all) so bar fills step by step
+- "Loading..." text centered above bar
+
+### Phase 5g — Monk Class (2026-06-04)
+- **3 stances**: Tiger (+40% dmg, -10% def), Tortoise (-40% taken, -20% dealt), Crane (25% lifesteal, -15% dealt)
+- **Stance system**: `SkillManager.currentStance`, `cycleStance()`, stance modifier methods
+- **6 fixed slots**: Basic Strike (key1), Dragon Palm (key2), Whirlwind Kick (key3), Tiger Uppercut (key4), Meditate (key5), Stance Toggle (key6)
+- **SkillManager monk constructor**: directly populates all 6 slots (no "pick a main ability")
+- **`selectMainAbility()`** fixed to handle 'monk' classType (was falling through to RANGER_MAIN)
+- **Monk animation**: individual PNG frames per animation. Tiger uppercut reuses dragon palm frames.
+- **`executeTechnique()`**: extracted method on Player that handles consume + damage + animation for slot 1-5 skills
+- **`applySkillDamage()`**: extracted from `useMainAbility()` to share damage logic with techniques
+- **Double consume bug**: `executeTechnique()` was calling `consume()` again after Game.ts already consumed — fixed
+- **Digit1 handler**: `handleSkillKeys` skips idx=0 for warrior/ranger (main ability on click), but routes to `useMainAbility()` for monk
+- **Meditate**: 60-frame channel → heal 25% HP → +20% damage buff for 2s. Interrupted by damage. Movement blocked during channel.
+- **Knockback**: Tiger Uppercut pushes enemy 80px away
+- **Stance VFX**: colored aura ring on toggle (orange/blue/green)
+- **Class select**: redesigned with programmatic icons (sword/bow/monk silhouette), taller cards (300×180), dynamic centering
+- **Z-order bug**: icons were added before button background, hidden by opaque fill — fixed by reordering addChild
+
+### Phase 5h — Cultist Animated Sprites (2026-06-04)
+- Single-row sheets: Idle (6), Run (8), Attack1 (8), Death (7) — all 231×190 frames
+- First enemy with animated sprites (others still use programmatic textures)
+- Idle when stationary, Run when moving, Attack on fire, Death on kill (stays visible)
+- Uses `sprite.scale.x` flip instead of rotation
+
+### Phase 5i — Bug Fixes (2026-06-04)
+- **Tutorial text persisting**: `buildCurrentZoneRoom()` now cleans up tutorial on zone exit
+- **Piercing multi-hit**: `Projectile.hitTargets` prevents piercing from hitting same target every frame
+- **Boss telegraph damage**: replaced `chosenAttack`/`attacking` flag system with `pendingAttackDamage` field
+- **Attacking flag**: boss `attacking` was never set to true, telegraphs never executed — fixed telegraph phase logic
+- **Cone angle**: monk whirlwind_kick used raw `120` instead of `120 * D` (radians vs degrees)
 
 ## Architecture Notes (current state)
 - Zone system: ZoneConfig (types + registry) + ZoneRegistry (templates merged) + ZoneManager (state machine)
@@ -246,6 +296,17 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - `loadRangerAnimations()` loads individual frame PNGs using filename patterns; `loadWarriorAnimations()` loads sprite sheets
 - `playAnimation()` and `isLoaded()` accept a `classType` parameter to select the correct cache
 - `Player.triggerAttackAnimation()` extracted as public method, called by both melee and projectile skill paths
+- Boss sprites use AnimatedSprite for reaper (multi-row sheets), golem uses individual PNG frames per animation
+- Reaper uses multi-row sheets: idle2 (100×100, 2×4), attacking (100×100, 2×6+2), death (125×100, 8+2), summon (100×100, 4+1)
+- Golem uses individual PNGs: idle (6), walk (10), attack (14), death (16). Tiger uppercut reuses dragon palm frames.
+- Monk uses individual PNGs: idle (6), run (8), basic_strike (6), dragon_palm (12), whirlwind_kick (7), meditate (16)
+- Cultist uses single-row sheets (231×190): Idle (6), Run (8), Attack1 (8), Death (7)
+- `loadMultiRowSheet(url, frameW, frameH, totalFrames, cols)` is the general-purpose multi-row sheet loader
+- `loadRangerFrames(baseUrl, name, pattern, count)` is the general-purpose individual-PNG loader
+- Cultist is the first enemy to use animated sprites; other enemies still use programmatic textures
+- Enemy.ts uses `animState` for cultist, checks `type === 'cultist'` to route animation calls
+- Enemy facing: non-cultist uses `sprite.rotation`, cultist uses `sprite.scale.x` flip (like player)
+- Cultist death animation plays on kill instead of instantly hiding sprite
 
 ## Key Constants
 - Canvas: 1920×1080, Room: 1600×896 at offset (160,92)
@@ -271,24 +332,33 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Drag-to-equip not implemented (click-only equip/unequip)
 - No save/load (localStorage planned)
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
-- No max orb stack size (stacks grow indefinitely, fine for current scope)
+- No max orb stack size (stacks indefinitely, fine for current scope)
 - Level requirements displayed but not enforced (player can equip above level)
 - Hub NPCs/vendor/stash are placeholders only (no interactions yet)
 - Endless Dungeon uses single template (no per-room rotation)
-- No animation for support skills (only main ability triggers attack animation)
+- No animation for support skills (only main ability triggers attack animation — monk techniques use executeTechnique)
 - Sprites loaded from `public/` using `fetch + blob + createObjectURL` — not Vite-bundled, so no hash-based cache busting
+- Monk tiger uppercut reuses dragon palm animation frames
+- Monk basic_strike (slot 0) only usable via left-click or key 1 (Digit1 handler added for monk specifically)
+- Class select icons are programmatic PixiJS Graphics (no SVG files)
+- Weapon swapping not implemented (monk uses all techniques, no weapon slots for stances)
+- Enemy sprite files must be tracked in git (case-sensitive on Linux deployment)
+- Golem was missing from git (PNGs existed locally but weren't committed)
 
 ## Next Up
 
-### Phase 4d — Save/Load (still pending)
+### Phase 5e — Save/Load (still pending)
 - Save player state (level, XP, inventory, equipment, passive tree, gold, orbs) to localStorage
 - Auto-save on close/interval, manual save option
 - Load on game start, continue from saved state
 - Needed before adding more permanent progression systems
 
-### Phase 6 — Polish & Expansion
+### Phase 6 — More Monster Sprites
+- Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
+- Pattern established in cultist implementation
+
+### Phase 7 — Polish & Expansion
 - Hub NPC interactions (vendor buy/sell, stash deposit/withdraw)
-- Boss encounters with unique mechanics
 - Map modifiers (affixes on map items)
 - More room templates for variety
 - Balance pass on difficulty scaling
