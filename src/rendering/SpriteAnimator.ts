@@ -1,4 +1,4 @@
-import { Assets, Texture, AnimatedSprite, Rectangle } from 'pixi.js';
+import { Texture, AnimatedSprite, Rectangle, BaseTexture } from 'pixi.js';
 
 const FRAME_W = 96;
 const FRAME_H = 84;
@@ -17,15 +17,24 @@ export function isLoaded(): boolean {
   return cachedFrames !== null;
 }
 
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load: ${url}`));
+    img.src = url;
+  });
+}
+
 export async function loadWarriorAnimations(): Promise<void> {
   if (cachedFrames) return;
   const result = {} as Record<AnimName, Texture[]>;
-  const entries = Object.entries(ANIM_URLS) as [AnimName, string][];
 
-  for (const [name, url] of entries) {
+  for (const [name, url] of Object.entries(ANIM_URLS) as [AnimName, string][]) {
     try {
-      const tex = await Assets.load(url);
-      const base = tex.baseTexture;
+      const img = await loadImage(url);
+      const base = new BaseTexture(img);
       const frameCount = Math.floor(base.width / FRAME_W);
       const frames: Texture[] = [];
       for (let i = 0; i < frameCount; i++) {
@@ -37,17 +46,13 @@ export async function loadWarriorAnimations(): Promise<void> {
       canvas.width = FRAME_W;
       canvas.height = FRAME_H;
       const ctx = canvas.getContext('2d')!;
-      ctx.fillStyle = name === 'idle' ? '#4466aa' : name === 'walk' ? '#4488cc' : '#cc6644';
+      ctx.fillStyle = '#8844aa';
       ctx.fillRect(0, 0, FRAME_W, FRAME_H);
       ctx.fillStyle = '#ffffff';
       ctx.font = '16px monospace';
       ctx.fillText(name, 24, 48);
-      const placeholder = Texture.from(canvas);
-      const frames: Texture[] = [];
-      for (let i = 0; i < 8; i++) {
-        frames.push(placeholder);
-      }
-      result[name] = frames;
+      const tex = Texture.from(canvas);
+      result[name] = [tex, tex, tex, tex, tex, tex, tex, tex];
     }
   }
 
@@ -56,22 +61,14 @@ export async function loadWarriorAnimations(): Promise<void> {
 
 export function createWarriorSprite(): AnimatedSprite {
   if (!cachedFrames) {
-    const canvas = document.createElement('canvas');
-    canvas.width = FRAME_W;
-    canvas.height = FRAME_H;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#8844aa';
-    ctx.fillRect(0, 0, FRAME_W, FRAME_H);
-    const placeholder = Texture.from(canvas);
-    const sprite = new AnimatedSprite([placeholder]);
+    const sprite = new AnimatedSprite([Texture.WHITE]);
     sprite.anchor.set(0.5, 0.5);
-    sprite.animationSpeed = 0.15;
+    sprite.tint = 0x8844aa;
     return sprite;
   }
-
   const sprite = new AnimatedSprite(cachedFrames.idle);
   sprite.anchor.set(0.5, 0.5);
-  sprite.animationSpeed = 0.15;
+  sprite.animationSpeed = 0.12;
   sprite.play();
   return sprite;
 }
@@ -79,7 +76,7 @@ export function createWarriorSprite(): AnimatedSprite {
 export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true) {
   if (!cachedFrames) return;
   const frames = cachedFrames[name];
-  if (!frames || sprite.textures === frames) return;
+  if (!frames || frames.length === 0 || sprite.textures === frames) return;
   sprite.textures = frames;
   sprite.loop = loop;
   sprite.animationSpeed = name === 'attack' ? 0.2 : 0.12;
