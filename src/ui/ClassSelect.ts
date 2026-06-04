@@ -15,30 +15,30 @@ interface ClassOption {
 }
 
 function drawSword(g: Graphics) {
-  g.lineStyle(3, 0xc0a060);
+  g.lineStyle(3, 0x8a6a3a);
   // Blade
   g.beginFill(0xd0d0e0);
-  g.moveTo(0, -36);
-  g.lineTo(6, -4);
+  g.moveTo(0, -38);
+  g.lineTo(7, -4);
   g.lineTo(0, 0);
-  g.lineTo(-6, -4);
+  g.lineTo(-7, -4);
   g.closePath();
   g.endFill();
   // Blade center highlight
-  g.lineStyle(1, 0xffffff, 0.4);
-  g.moveTo(0, -34);
+  g.lineStyle(1.5, 0xffffff, 0.5);
+  g.moveTo(0, -36);
   g.lineTo(0, -2);
   // Guard
-  g.lineStyle(3, 0x8a6a3a);
-  g.moveTo(-12, 0);
-  g.lineTo(12, 0);
+  g.lineStyle(3.5, 0x8a6a3a);
+  g.moveTo(-13, 0);
+  g.lineTo(13, 0);
   // Handle
   g.lineStyle(3, 0x6a4a2a);
   g.moveTo(0, 0);
-  g.lineTo(0, 14);
+  g.lineTo(0, 15);
   // Pommel
   g.beginFill(0x8a6a3a);
-  g.drawCircle(0, 17, 3);
+  g.drawCircle(0, 18, 3.5);
   g.endFill();
 }
 
@@ -155,10 +155,13 @@ export class ClassSelect {
 
     const btnW = 300;
     const btnH = 180;
+    const btnGap = 20;
+    const totalW = CLASSES.length * btnW + (CLASSES.length - 1) * btnGap;
+    const startX = (screenWidth - totalW) / 2;
 
     for (let i = 0; i < CLASSES.length; i++) {
       const cls = CLASSES[i];
-      const btnX = (screenWidth / 2 - 320) + i * 320;
+      const btnX = startX + i * (btnW + btnGap);
       const btnY = 300;
 
       const btn = new Graphics();
