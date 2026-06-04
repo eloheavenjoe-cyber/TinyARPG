@@ -21,6 +21,7 @@ import { generateItemDrop, generateOrbDrop } from './ItemGenerator';
 import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
+import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
 import { loadWarriorAnimations, loadRangerAnimations } from '../rendering/SpriteAnimator';
 
 export const SCREEN_WIDTH = 1920;
@@ -80,6 +81,10 @@ export class Game {
   private passiveTreeScreen?: PassiveTreeScreen;
   private inventoryScreen?: InventoryScreen;
   private devConsole: DeveloperConsole;
+  private tutorialStage: TutorialStage | null = null;
+  private tutorialKeys: Set<string> = new Set();
+  private tutorialScreen?: TutorialScreen;
+  private tutorialKeyWasDown: Set<string> = new Set();
 
   constructor(app: Application) {
     this.app = app;
@@ -153,8 +158,13 @@ export class Game {
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
     this.app.stage.addChild(this.skillBar.container);
-    this.zoneManager.transitionTo('hub');
+    this.zoneManager.transitionTo('tutorial');
     this.buildCurrentZoneRoom();
+    this.tutorialStage = 'move';
+    this.tutorialKeys = new Set();
+    this.tutorialKeyWasDown = new Set();
+    this.tutorialScreen = new TutorialScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
+    this.app.stage.addChild(this.tutorialScreen.container);
   }
 
   private buildCurrentZoneRoom() {
@@ -199,11 +209,13 @@ export class Game {
     this.player.x = template.playerStart.x;
     this.player.y = template.playerStart.y;
 
-    // Spawn enemies
-    const enemies = this.zoneManager.spawnEnemies(zone, template, state.roomIndex);
-    for (const e of enemies) {
-      this.enemies.push(e);
-      this.gameContainer.addChild(e.sprite);
+    // Spawn enemies (skip if tutorial is in move stage)
+    if (zone.id !== 'tutorial' || this.tutorialStage !== 'move') {
+      const enemies = this.zoneManager.spawnEnemies(zone, template, state.roomIndex);
+      for (const e of enemies) {
+        this.enemies.push(e);
+        this.gameContainer!.addChild(e.sprite);
+      }
     }
 
     // Add animated portal VFX
@@ -232,6 +244,16 @@ export class Game {
     Logger.log('system', `Room built: ${zone.name}, room ${state.roomIndex + 1}/${zone.roomCount}`);
   }
 
+  private spawnTutorialEnemies() {
+    const state = this.zoneManager.state;
+    if (!state) return;
+    const enemies = this.zoneManager.spawnEnemies(state.config, state.currentTemplate, state.roomIndex);
+    for (const e of enemies) {
+      this.enemies.push(e);
+      this.gameContainer!.addChild(e.sprite);
+    }
+  }
+
   private update(dt: number) {
     if (this.state === State.Playing) {
       // Dev console toggle
@@ -244,6 +266,35 @@ export class Game {
         this._consoleKeyWasDown = false;
       }
       if (this.devConsole.isVisible()) return;
+
+      // Tutorial progression
+      if (this.tutorialStage) {
+        if (this.tutorialStage === 'move') {
+          for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD']) {
+            if (this.input.isKeyDown(key)) {
+              if (!this.tutorialKeyWasDown.has(key)) {
+                this.tutorialKeyWasDown.add(key);
+                this.tutorialKeys.add(key);
+                this.tutorialScreen?.updateKeys(this.tutorialKeys);
+              }
+            } else {
+              this.tutorialKeyWasDown.delete(key);
+            }
+          }
+          if (this.tutorialKeys.size >= 4) {
+            this.tutorialStage = 'combat';
+            this.tutorialScreen?.setStage('combat');
+            this.spawnTutorialEnemies();
+          }
+        }
+
+        if (this.tutorialStage === 'combat') {
+          if (this.enemies.length === 0) {
+            this.tutorialStage = 'complete';
+            this.tutorialScreen?.setStage('complete');
+          }
+        }
+      }
 
       if (this.inventoryOpen && this.input.isKeyDown('Escape')) {
         this.toggleInventory();
@@ -522,6 +573,9 @@ export class Game {
 
     // Door overlap check
     for (const door of this.room?.doors ?? []) {
+      // Tutorial door is locked until tutorial is complete
+      if (zone?.id === 'tutorial' && this.tutorialStage !== 'complete') continue;
+
       if (this.player && rectsOverlap(this.player.getBounds(), door.rect)) {
         if (zone && door.targetZone === zone.id) {
           const next = this.zoneManager.nextRoom();
@@ -1307,6 +1361,14 @@ export class Game {
       this.gameContainer = undefined;
     }
     this.devConsole.hide();
+    if (this.tutorialScreen) {
+      this.app.stage.removeChild(this.tutorialScreen.container);
+      this.tutorialScreen.destroy();
+      this.tutorialScreen = undefined;
+    }
+    this.tutorialStage = null;
+    this.tutorialKeys = new Set();
+    this.tutorialKeyWasDown = new Set();
     this.enemies = [];
     for (const p of this.projectiles) { p.destroy(); }
     this.projectiles = [];
