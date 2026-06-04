@@ -21,7 +21,6 @@ import { generateItemDrop, generateOrbDrop } from './ItemGenerator';
 import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
-import { ZONE_REGISTRY } from './ZoneConfig';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -465,7 +464,11 @@ export class Game {
     for (const door of this.room?.doors ?? []) {
       if (this.player && rectsOverlap(this.player.getBounds(), door.rect)) {
         if (zone && door.targetZone === zone.id) {
-          this.zoneManager.nextRoom();
+          const next = this.zoneManager.nextRoom();
+          if (!next) {
+            Logger.log('system', 'No next room — staying');
+            break;
+          }
         } else {
           this.zoneManager.transitionTo(door.targetZone);
         }
