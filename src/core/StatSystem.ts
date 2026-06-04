@@ -11,9 +11,21 @@ export function computeStats(
 
   const add = (key: keyof NodeEffects) => treeEffects[key] || 0;
 
-  const str = attrs.str + add('str');
-  const dex = attrs.dex + add('dex');
-  const int = attrs.int + add('int');
+  // Separate attribute stats from equipment so they feed into derived stat calculations
+  let equipStr = 0, equipDex = 0, equipInt = 0;
+  const otherEquip: Record<string, number> = {};
+  if (equipmentStats) {
+    for (const [key, val] of Object.entries(equipmentStats)) {
+      if (key === 'str') equipStr = val;
+      else if (key === 'dex') equipDex = val;
+      else if (key === 'int') equipInt = val;
+      else otherEquip[key] = val;
+    }
+  }
+
+  const str = attrs.str + add('str') + equipStr;
+  const dex = attrs.dex + add('dex') + equipDex;
+  const int = attrs.int + add('int') + equipInt;
 
   let maxHp = baseHp + str * 2 + add('hp');
   maxHp = Math.round(maxHp * (1 + (add('hpPct') || 0) / 100));
@@ -39,17 +51,15 @@ export function computeStats(
     hpRegen: add('hpRegen') || 0,
   };
 
-  if (equipmentStats) {
-    for (const [key, val] of Object.entries(equipmentStats)) {
-      if (key === 'hp') base.maxHp += val;
-      else if (key === 'mana') base.maxMana += val;
-      else if (key === 'damageReduction') base.damageReduction = Math.min(50, base.damageReduction + val);
-      else if (key === 'attackSpeedPct') base.attackSpeedMult += val / 100;
-      else if (key === 'moveSpeedPct') base.moveSpeedMult += val / 100;
-      else if (key === 'meleeDmgPct') base.meleeDmgMult += val / 100;
-      else if (key === 'projectileDmgPct') base.projectileDmgMult += val / 100;
-      else if (key === 'hpRegen') base.hpRegen += val;
-    }
+  for (const [key, val] of Object.entries(otherEquip)) {
+    if (key === 'hp') base.maxHp += val;
+    else if (key === 'mana') base.maxMana += val;
+    else if (key === 'damageReduction') base.damageReduction = Math.min(50, base.damageReduction + val);
+    else if (key === 'attackSpeedPct') base.attackSpeedMult += val / 100;
+    else if (key === 'moveSpeedPct') base.moveSpeedMult += val / 100;
+    else if (key === 'meleeDmgPct') base.meleeDmgMult += val / 100;
+    else if (key === 'projectileDmgPct') base.projectileDmgMult += val / 100;
+    else if (key === 'hpRegen') base.hpRegen += val;
   }
 
   return base;
