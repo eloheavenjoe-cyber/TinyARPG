@@ -377,13 +377,21 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - StashGuy NPC animated sprite: multi-row sheet (800×400, 80×80 frames) — idle (row 2, 6 frames) + wave (row 3, 10 frames). Uses custom row-sliced texture loading.
 - Juggernaut sprite sheet attempt **reverted** — programmatic texture restored.
 
-## Next Up
-
-### Phase 5e — Save/Load (still pending)
-- Save player state (level, XP, inventory, equipment, passive tree, gold, orbs) to localStorage
-- Auto-save on close/interval, manual save option
-- Load on game start, continue from saved state
-- Needed before adding more permanent progression systems
+### Phase 5k — Save/Load System (completed 2026-06-05)
+- 5 save slots via localStorage with `TinyARPG_save_0` through `TinyARPG_save_4` keys + `TinyARPG_meta` for slot metadata
+- Slot metadata: character name, class, level, timestamp, zone name
+- Save manager (`src/core/SaveManager.ts`): static class with getAllSlots/getSlotMeta/saveToSlot/loadFromSlot/deleteSlot/getFirstOccupiedSlot/getFirstEmptySlot
+- Serialization: player position, HP/mana, gold, level, XP, attributes, inventory (equip + orbs), equipment (7 slots), skill slots (6), passive tree allocations, zone state (current zone/room, completed zones)
+- Object references (ItemBase, ItemAffix, SkillDef) stored as IDs, resolved on load
+- All localStorage writes wrapped in try/catch; version check on load
+- `loadGame()` reconstructs full player state: re-hydrates items, skill slots, passive tree
+- `saveGame()` called from: escape menu manual save, auto-save (every 3600 frames/~60s), save & exit
+- Escape key toggles escape menu (blocks gameplay when open)
+- ~~SaveSlotScreen: 5 slot cards with class/level/timestamp/zone, delete with confirmation~~
+- ~~EscapeMenu: Resume/Save/Settings/Save & Exit buttons, "Game Saved!" toast~~
+- ~~SettingsPlaceholder: visual-only Audio/Graphics/Controls panels (not wired)~~
+- ~~MainMenu updated: New Game, Continue (loads first occupied), Load Game (opens slot picker)~~
+- ~~Inline implementation via subagent-driven development~~
 
 ### Phase 6 — More Monster Sprites
 - Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
