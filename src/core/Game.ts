@@ -707,7 +707,9 @@ export class Game {
       this.player.triggerAttackAnimation();
 
       if (isProjectileType) {
-        const newProjectiles = this.player.fireProjectile(this.player.x, this.player.y, angle, result, this.projectiles);
+        const px = this.player.x + Math.cos(angle) * 20;
+        const py = this.player.y + Math.sin(angle) * 20;
+        const newProjectiles = this.player.fireProjectile(px, py, angle, result, this.projectiles);
         for (const p of newProjectiles) {
           this.projectiles.push(p);
           this.gameContainer!.addChild(p.sprite);
@@ -771,7 +773,9 @@ export class Game {
 
     if (isProjectileType) {
       const angle = Math.atan2(mouseWY - this.player.y, mouseWX - this.player.x);
-      const newProjectiles = this.player.fireProjectile(this.player.x, this.player.y, angle, result, this.projectiles);
+      const px = this.player.x + Math.cos(angle) * 20;
+      const py = this.player.y + Math.sin(angle) * 20;
+      const newProjectiles = this.player.fireProjectile(px, py, angle, result, this.projectiles);
       for (const p of newProjectiles) {
         this.projectiles.push(p);
         this.gameContainer!.addChild(p.sprite);
