@@ -4,9 +4,12 @@ import { Logger } from './Logger';
 import { Sprites } from '../rendering/Sprites';
 import { MainMenu } from '../ui/MainMenu';
 import { DeathScreen } from '../ui/DeathScreen';
+import { HUD } from '../ui/HUD';
 import { Room, ROOM_WIDTH, ROOM_HEIGHT, rectsOverlap } from '../world/Room';
 import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
+import { CombatTextManager } from '../entities/CombatText';
+import { ItemDrop, createRandomLoot } from '../entities/ItemDrop';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -26,10 +29,13 @@ export class Game {
 
   private mainMenu?: MainMenu;
   private deathScreen?: DeathScreen;
+  private hud?: HUD;
   private gameContainer?: Container;
   private room?: Room;
   private player?: Player;
   private enemies: Enemy[] = [];
+  private itemDrops: ItemDrop[] = [];
+  private combatText: CombatTextManager = new CombatTextManager();
 
   constructor(app: Application) {
     this.app = app;
@@ -72,6 +78,10 @@ export class Game {
 
     this.player = new Player(ROOM_WIDTH / 2, ROOM_HEIGHT / 2);
     this.gameContainer.addChild(this.player.sprite);
+    this.gameContainer.addChild(this.combatText.container);
+
+    this.hud = new HUD();
+    this.app.stage.addChild(this.hud.container);
 
     this.spawnEnemy();
     Logger.log('game', `Game world ready: room=(${ROOM_WIDTH}x${ROOM_HEIGHT}), offset=(${ROOM_OFFSET_X}, ${ROOM_OFFSET_Y})`);
@@ -126,27 +136,77 @@ export class Game {
       }
     }
 
+    this.combatText.update(dt);
+
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
       if (rectsOverlap(this.player.getBounds(), enemy.getBounds())) {
-        this.player.takeDamage(8);
+        const dmg = 8;
+        this.player.takeDamage(dmg);
+        this.combatText.showDamage(this.player.x, this.player.y - 20, dmg, 0xff6666);
       }
     }
 
     if (this.input.consumeClick()) {
       this.player.meleeAttack(this.enemies);
+      if (this.player.lastHitInfo) {
+        const h = this.player.lastHitInfo;
+        this.combatText.showDamage(h.x, h.y - 20, h.damage, 0xffcc00);
+        this.player.lastHitInfo = null;
+      }
     }
 
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       if (!this.enemies[i].alive) {
         const dead = this.enemies.splice(i, 1)[0];
         this.gameContainer!.removeChild(dead.sprite);
+        this.spawnLoot(dead.x, dead.y);
         this.spawnEnemy();
       }
     }
 
+    this.tryPickupItems();
+
+    this.hud?.update(this.player);
+
     if (!this.player.alive) {
       this.showDeathScreen();
+    }
+  }
+
+  private spawnLoot(x: number, y: number) {
+    const drops = createRandomLoot(x, y);
+    for (const drop of drops) {
+      this.itemDrops.push(drop);
+      this.gameContainer!.addChild(drop.container);
+    }
+    Logger.log('combat', `Spawned ${drops.length} item(s) at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+  }
+
+  private tryPickupItems() {
+    if (!this.player) return;
+    const pickupRange = 50;
+    for (let i = this.itemDrops.length - 1; i >= 0; i--) {
+      const drop = this.itemDrops[i];
+      if (drop.pickedUp) continue;
+      const dist = Math.hypot(drop.x - this.player.x, drop.y - this.player.y);
+      if (dist < pickupRange) {
+        const item = drop.pickup();
+        switch (item.type) {
+          case 'gold':
+            this.player!.gold += item.value;
+            break;
+          case 'healthPotion':
+            this.player!.health = Math.min(this.player!.maxHealth, this.player!.health + item.value);
+            break;
+          case 'manaPotion':
+            this.player!.mana = Math.min(this.player!.maxMana, this.player!.mana + item.value);
+            break;
+        }
+        this.gameContainer!.removeChild(drop.container);
+        drop.destroy();
+        this.itemDrops.splice(i, 1);
+      }
     }
   }
 
@@ -168,6 +228,12 @@ export class Game {
       this.deathScreen = undefined;
     }
 
+    if (this.hud) {
+      this.app.stage.removeChild(this.hud.container);
+      this.hud.destroy();
+      this.hud = undefined;
+    }
+
     if (this.gameContainer) {
       this.app.stage.removeChild(this.gameContainer);
       this.gameContainer.destroy({ children: true });
@@ -175,6 +241,9 @@ export class Game {
     }
 
     this.enemies = [];
+    this.itemDrops = [];
+    this.combatText.destroy();
+    this.combatText = new CombatTextManager();
     this.player = undefined;
     this.room = undefined;
     this.input.reset();

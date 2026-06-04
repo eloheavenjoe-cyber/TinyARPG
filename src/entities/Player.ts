@@ -12,6 +12,9 @@ export class Player {
   readonly height = 28;
   health = 100;
   maxHealth = 100;
+  mana = 50;
+  maxMana = 50;
+  gold = 0;
   speed = 6;
   alive = true;
 
@@ -21,6 +24,9 @@ export class Player {
   private readonly attackRange = 65;
   private readonly attackDamage = 30;
   private readonly attackCooldownFrames = 20;
+  private readonly attackManaCost = 10;
+  private readonly manaRegenPerSec = 8;
+  lastHitInfo: { x: number; y: number; damage: number } | null = null;
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -75,6 +81,8 @@ export class Player {
       this.attackCooldown -= dt;
     }
 
+    this.mana = Math.min(this.maxMana, this.mana + this.manaRegenPerSec * (dt / 60));
+
     this.updateSprite();
   }
 
@@ -94,11 +102,12 @@ export class Player {
     return false;
   }
 
-  meleeAttack(enemies: Enemy[]) {
-    if (this.attackCooldown > 0 || !this.alive) return;
+  meleeAttack(enemies: Enemy[]): boolean {
+    if (this.attackCooldown > 0 || !this.alive || this.mana < this.attackManaCost) return false;
     this.attackCooldown = this.attackCooldownFrames;
+    this.mana -= this.attackManaCost;
 
-    Logger.log('combat', 'Player melee attack');
+    Logger.log('combat', `Player melee attack (mana: ${this.mana}/${this.maxMana})`);
 
     for (const enemy of enemies) {
       if (!enemy.alive) continue;
@@ -113,11 +122,14 @@ export class Player {
 
       if (dist < this.attackRange && Math.abs(angleDiff) < Math.PI / 2) {
         enemy.takeDamage(this.attackDamage);
+        this.lastHitInfo = { x: enemy.x, y: enemy.y, damage: this.attackDamage };
+        Logger.log('combat', `Hit enemy for ${this.attackDamage} damage`);
         break;
       }
     }
 
     this.updateSprite();
+    return true;
   }
 
   getBounds(): Rect {
