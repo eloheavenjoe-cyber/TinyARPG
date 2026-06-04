@@ -288,6 +288,10 @@ export class InventoryScreen {
     this.mouseX = input.mouseX;
     this.mouseY = input.mouseY;
 
+    if (input.consumeRightClick()) {
+      this.handleRightClick(inventory);
+    }
+
     if (input.consumeClick()) {
       this.handleClick(inventory, equipment);
     }
@@ -381,6 +385,22 @@ export class InventoryScreen {
     this.refreshStats(computedStats, statsX, statsY);
   }
 
+  private handleRightClick(inventory: InventorySlot[]) {
+    const mx = this.mouseX;
+    const my = this.mouseY;
+
+    for (const g of this.gridSlots) {
+      if (mx >= g.bg.x && mx <= g.bg.x + 50 && my >= g.bg.y && my <= g.bg.y + 50) {
+        const entry = inventory[g.index];
+        if (entry && entry.kind === 'orb') {
+          this.activeOrb = this.activeOrb === entry.orbId ? null : entry.orbId;
+          this.selectedIndex = this.activeOrb ? g.index : -1;
+        }
+        return;
+      }
+    }
+  }
+
   private handleClick(inventory: InventorySlot[], equipment: Record<Slot, GeneratedItem | null>) {
     const mx = this.mouseX;
     const my = this.mouseY;
@@ -390,10 +410,7 @@ export class InventoryScreen {
       if (mx >= g.bg.x && mx <= g.bg.x + 50 && my >= g.bg.y && my <= g.bg.y + 50) {
         const entry = inventory[g.index];
         if (entry) {
-          if (entry.kind === 'orb') {
-            this.activeOrb = this.activeOrb === entry.orbId ? null : entry.orbId;
-            this.selectedIndex = this.activeOrb ? g.index : -1;
-          } else if (entry.kind === 'equip') {
+          if (entry.kind === 'equip') {
             if (this.activeOrb) {
               this.activeOrb = null;
               this.selectedIndex = -1;

@@ -5,6 +5,7 @@ export class InputManager {
   mouseX = 0;
   mouseY = 0;
   private mouseClicked = false;
+  private mouseRightClicked = false;
 
   constructor(canvas: HTMLCanvasElement) {
     window.addEventListener('keydown', (e) => {
@@ -28,6 +29,9 @@ export class InputManager {
       if (e.button === 0) {
         this.mouseClicked = true;
         Logger.log('input', `Mouse clicked at (${this.mouseX.toFixed(0)}, ${this.mouseY.toFixed(0)})`);
+      } else if (e.button === 2) {
+        this.mouseRightClicked = true;
+        Logger.log('input', `Right-click at (${this.mouseX.toFixed(0)}, ${this.mouseY.toFixed(0)})`);
       }
     });
 
@@ -46,8 +50,17 @@ export class InputManager {
     return false;
   }
 
+  consumeRightClick(): boolean {
+    if (this.mouseRightClicked) {
+      this.mouseRightClicked = false;
+      return true;
+    }
+    return false;
+  }
+
   reset(): void {
     this.keys.clear();
     this.mouseClicked = false;
+    this.mouseRightClicked = false;
   }
 }
