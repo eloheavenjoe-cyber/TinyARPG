@@ -179,6 +179,12 @@ export class Game {
     this.room = new Room(zone.biome, template.doors, template.portals);
     this.gameContainer.addChild(this.room.container);
 
+    // Re-add player and combat text above the new room (room floor tiles would cover them)
+    this.gameContainer.removeChild(this.player.sprite);
+    this.gameContainer.addChild(this.player.sprite);
+    this.gameContainer.removeChild(this.combatText.container);
+    this.gameContainer.addChild(this.combatText.container);
+
     // Position player at template start point
     this.player.x = template.playerStart.x;
     this.player.y = template.playerStart.y;
