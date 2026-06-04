@@ -72,7 +72,8 @@ export class ZoneManager {
         type = pool[Math.floor(Math.random() * pool.length)];
       }
 
-      const sz = template.spawnZones[Math.floor(Math.random() * template.spawnZones.length)];
+      const sp = template.spawnZones;
+      const sz = sp.length > 0 ? sp[Math.floor(Math.random() * sp.length)] : { x: 64, y: 64, width: ROOM_WIDTH - 128, height: ROOM_HEIGHT - 128 };
       let x = sz.x + 32 + Math.random() * (sz.width - 64);
       let y = sz.y + 32 + Math.random() * (sz.height - 64);
       x = Math.max(64, Math.min(ROOM_WIDTH - 64, x));
