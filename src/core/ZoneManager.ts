@@ -1,7 +1,8 @@
 import { ROOM_WIDTH, ROOM_HEIGHT } from '../world/Room';
 import { Enemy, EnemyType } from '../entities/Enemy';
 import { Logger } from './Logger';
-import { ZoneConfig, ZONE_REGISTRY, RoomTemplate } from './ZoneConfig';
+import { ZoneConfig, RoomTemplate } from './ZoneConfig';
+import { ZONE_REGISTRY } from './ZoneRegistry';
 import { cloneTemplate } from '../world/RoomTemplates';
 import * as Templates from '../world/RoomTemplates';
 
