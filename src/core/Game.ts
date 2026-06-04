@@ -793,26 +793,26 @@ export class Game {
           );
         }
       });
-      this.inventoryScreen.onCraftOrbCallback((orbId: string, slot: Slot) => {
-        if (this.player) {
-          let success = false;
-          if (orbId === 'empowerment') success = this.player.empowerItem(slot);
-          else if (orbId === 'flux') success = this.player.fluxItem(slot);
-          if (success) {
-            const orbIdx = this.player.inventory.findIndex(
-              s => s !== null && s.kind === 'orb' && s.orbId === orbId
-            );
-            if (orbIdx >= 0) {
-              const orbSlot = this.player.inventory[orbIdx] as any;
-              orbSlot.count--;
-              if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
-            }
-          }
-          this.inventoryScreen?.update(
-            this.player.inventory, this.player.equipment,
-            this.player.computedStats, this.input,
+      this.inventoryScreen.onCraftOrbCallback((orbId: string, slot: Slot): boolean => {
+        if (!this.player) return false;
+        let success = false;
+        if (orbId === 'empowerment') success = this.player.empowerItem(slot);
+        else if (orbId === 'flux') success = this.player.fluxItem(slot);
+        if (success) {
+          const orbIdx = this.player.inventory.findIndex(
+            s => s !== null && s.kind === 'orb' && s.orbId === orbId
           );
+          if (orbIdx >= 0) {
+            const orbSlot = this.player.inventory[orbIdx] as any;
+            orbSlot.count--;
+            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
+          }
         }
+        this.inventoryScreen?.update(
+          this.player.inventory, this.player.equipment,
+          this.player.computedStats, this.input,
+        );
+        return success;
       });
       this.app.stage.addChild(this.inventoryScreen.container);
     } else {

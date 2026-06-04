@@ -36,8 +36,11 @@ export class InventoryScreen {
   private mouseX = 0;
   private mouseY = 0;
   private activeOrb: string | null = null;
-  private onCraftOrb: (orbId: string, slot: Slot) => void = () => {};
-  onCraftOrbCallback(cb: (orbId: string, slot: Slot) => void) { this.onCraftOrb = cb; }
+  private craftMessage: string | null = null;
+  private craftMessageTimer = 0;
+  private craftMessageText: Text;
+  private onCraftOrb: (orbId: string, slot: Slot) => boolean = () => false;
+  onCraftOrbCallback(cb: (orbId: string, slot: Slot) => boolean) { this.onCraftOrb = cb; }
 
   constructor(
     screenW: number, screenH: number,
@@ -188,6 +191,15 @@ export class InventoryScreen {
     this.container.addChild(header);
 
     this.refreshStats(computedStats, statsX, statsY);
+
+    this.craftMessageText = new Text('', new TextStyle({
+      fontFamily: 'monospace', fontSize: 14, fill: '#ffdd88',
+      stroke: '#000', strokeThickness: 3,
+    }));
+    this.craftMessageText.anchor.set(0.5, 0);
+    this.craftMessageText.x = screenW / 2;
+    this.craftMessageText.y = screenH - 40;
+    this.container.addChild(this.craftMessageText);
   }
 
   private refreshStats(computedStats: any, x: number, y: number) {
@@ -383,6 +395,14 @@ export class InventoryScreen {
     const statsX = 1920 / 2 + 200;
     const statsY = 80 + 7 * (60 + 10) + 30;
     this.refreshStats(computedStats, statsX, statsY);
+
+    // Craft message
+    if (this.craftMessageTimer > 0) {
+      this.craftMessageText.text = this.craftMessage || '';
+      this.craftMessageTimer--;
+    } else {
+      this.craftMessageText.text = '';
+    }
   }
 
   private handleRightClick(inventory: InventorySlot[]) {
@@ -433,7 +453,13 @@ export class InventoryScreen {
     for (const s of this.equipSlots) {
       if (mx >= s.bg.x && mx <= s.bg.x + 60 && my >= s.bg.y && my <= s.bg.y + 60) {
         if (this.activeOrb && equipment[s.slot]) {
-          this.onCraftOrb(this.activeOrb, s.slot);
+          const success = this.onCraftOrb(this.activeOrb, s.slot);
+          if (success) {
+            this.craftMessage = 'Orb applied!';
+          } else {
+            this.craftMessage = 'Item must be rare';
+          }
+          this.craftMessageTimer = 120;
           this.activeOrb = null;
           this.selectedIndex = -1;
         } else if (this.selectedIndex >= 0) {
