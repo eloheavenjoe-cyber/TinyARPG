@@ -14,6 +14,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     Game.ts                   State machine, game loop, dev console wiring, projectile management, zone transitions
     ZoneConfig.ts             Zone definitions, biome data, room template types, ZONE_REGISTRY
     ZoneManager.ts            Zone state, transitions, enemy spawning, endless scaling
+    ZoneRegistry.ts           ZONE_REGISTRY building (combined ZoneConfig types + RoomTemplates values, breaks circular dep)
     InputManager.ts           WASD + mouse, canvas-coordinate conversion, right-click support
     Logger.ts                 Categorized logging ([Input] [Combat] [Skill] etc)
     SkillDefs.ts              All Warrior + Ranger skill data (main + support skills)
@@ -29,10 +30,11 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     ItemDrop.ts               Ground loot nameplates (gold/potions/items/orbs) with rarity colors
     Projectile.ts             Projectiles with hostile flag, slow effect, colored orbs
   world/
-    Room.ts                   1600×896 room, wall collision resolver, biome-aware floor/walls, door/portal markers
-    RoomTemplates.ts          Pre-defined room layout templates (5 base + hub/tutorial/arena/dungeon/dev + 12 story zone)
+    Room.ts                   1600×896 room, wall collision resolver, biome-aware floor/walls, door/portal markers, buildings, NPCs, decorations
+    RoomTemplates.ts          Pre-defined room layout templates (5 base + hub/tutorial/arena/dungeon/dev + 12 story zone + buildings/NPCs)
   rendering/
     Sprites.ts                Programmatic pixel-art textures (player, enemy, archer, cultist, juggernaut, floor, wall)
+    SpriteAnimator.ts         Sprite sheet loader + frame slicer + animation manager (warrior animated sprites)
   ui/
     MainMenu.ts               Title screen
     ClassSelect.ts            Class picker (Warrior/Ranger)
@@ -169,26 +171,82 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Biome-aware Room: floor/wall colors per biome (hub/tutorial/forest/desert/ice/endless/dev)
 - Room templates: 5 base layouts (open, pillars, L-shape, cross, ring) + zone-specific templates (17 total)
 - Hub town with 6 clickable portals to all zones
+- Hub buildings: Vendor building (left) and Stash building (right) with roofs, doors, windows, labels
+- Hub NPCs: colored humanoid figures (green Vendor, blue Stash) with name labels standing outside buildings
+- NPCs rendered as Graphics (rounded rect body + circle head) via new `buildings`/`npcs` fields on RoomTemplate
 - Tutorial zone: single room, 2-3 weak grunts, exit door to hub
 - 3 story zones: Verdant Forest (3 rooms), Scorched Desert (4 rooms), Frozen Wastes (5 rooms) with progressive difficulty
 - Endless Arena: single-room wave-based, infinite scaling
 - Endless Dungeon: procedural rooms with progressive difficulty, exit portal to hub
 - Dev room: accessible via `/devroom` command, door back to hub
 - HUD zone name display, door/portal rendering
-- Commands: /additem, /addorb, /addgold, /addlevel, /addxp, /passivepoints, /attrpoints,
-  /heal, /killall, /spawn, /speed, /god, /help, /clear
-- Command history (up/down arrows), tab autocomplete
-- Pauses game input when open
-- Game.ts owns all state, runs game loop
-- All game objects inside `gameContainer` (offset 160,92)
-- UI components on `app.stage` in screen coords
-- VFX are temporary Graphics objects with draw function + lifetime
-- Damage numbers use CombatTextManager
-- Skill activation routes through Player.useMainAbility() and Game.useSupportSkill()
-- Logger categories: input, movement, collision, entity, combat, ui, game, system, skill
-- Inventory slots use discriminated union: `{ kind: 'equip', item } | { kind: 'orb', orbId, count } | null`
-- `computeStats()` accepts optional `equipmentStats` parameter for equipment-derived stat bonuses
-- Stats cascade from base → attributes → passive tree → equipment
+
+### Phase 5b — Hub Visuals & Portal Scrolls (2026-06-04)
+- Portal labels: zone name shown below each portal ring
+- Portal proximity: must be within 150px to click-activate
+- Portal animation: rotating spiral VFX drawn each frame using `portalAngle` counter + VFX system
+- RenderPortals in Room.ts now draws a static ring + label only; animation overlays come from Game.ts
+- Portal Scrolls: new consumable loot item (8% drop rate), cyan nameplates "Portal Scroll"
+- Walk-over pickup stores portal scrolls as orbs (`orbId: 'portal_scroll'`) in inventory
+- Right-click in inventory to consume: creates a recall portal (animated purple spiral) at player's feet
+- Recall portal: walk-over to teleport to hub, disappears on zone transition
+- Recall portal tracked via `recallPortal` field on Game.ts, drawn/checked each frame in updateGameplay
+
+### Phase 5c — Magic Find & Item Quantity (2026-06-04)
+- **Magic Find** (prefixes): Lucky (8-15%), Fortunate (16-25%), Auspicious (26-40%)
+  - Stat: `magicFindPct`, multiplies rarity weights in generateItemDrop()
+  - Base weights: normal=50, magic=30, rare=15, unique=5
+  - With 50% MF: magic=45, rare=22.5, unique=7.5 — shifts drops toward higher rarities
+- **Item Quantity** (suffixes): of Bounty (8-12%), of Abundance (13-20%), of Prosperity (21-30%)
+  - Stat: `itemQuantityPct`, multiplies gold amount and all drop rates
+  - Gold: `Math.round(baseGold * (1 + IQ/100))`
+  - Item drops: base 40% becomes `40% * (1 + IQ/100)`
+  - Orb drops: base 5% becomes `5% * (1 + IQ/100)`
+  - Potions/scrolls: extra rolls via `Math.ceil(quantityMult)` with per-roll probability
+- Both stats added to StatSystem.ts base computed stats and otherEquip handling
+- Passed through Game.spawnLoot() to generation functions
+
+### Phase 5d — Sprite Sheet Animation System (2026-06-04)
+- **File**: `src/rendering/SpriteAnimator.ts` — loads PNG sprite sheets from `public/sprites/warrior/`
+- **Sheet format**: 768×84 PNG with 8 frames of 96×84 each per animation state
+- **Loading**: uses `fetch()` → `blob` → `URL.createObjectURL()` → `Image` → `BaseTexture` (NOT `Assets.load()` which was unreliable)
+- **Frame slicing**: `Math.floor(base.width / 96)` dynamically determines frame count per sheet
+- **Three animations**: `idle.png`, `walk.png`, `attack.png` (different frame counts supported)
+- **Pending sprite pattern**: sprites created before loading finishes get auto-updated via `pendingSprites[]` array
+- **Animation switching** in `Player.ts`:
+  - `animState` tracks current animation ('idle' | 'walk' | 'attack')
+  - `update()` checks `isMoving` flag → switches idle↔walk
+  - `useMainAbility()` triggers attack animation (non-looping, `onComplete` callback resets to idle)
+  - `playAnimation()` sets new textures, adjusts speed (attack=0.2, idle/walk=0.12), calls `gotoAndPlay(0)`
+- **Player sprite**: always `AnimatedSprite` type. Warrior uses sprite sheets, Ranger uses single-frame AnimatedSprite from programmatic texture
+- **Sprite folder**: `public/sprites/warrior/` (created via `New-Item -ItemType Directory`)
+- **Critical gotcha (Windows)**: NTFS is case-insensitive. `git mv IDLE.png idle.png` is a no-op! Must use two-step with temp name: `git mv IDLE.png tmp.png && git mv tmp.png idle.png` to force git to track the rename.
+- **URL paths**: Use relative paths (`sprites/warrior/idle.png` NOT `/sprites/warrior/idle.png`) to work with GitHub Pages sub-path (`/TinyARPG/`). Vite's `base: './'` handles the rest.
+
+#### To add Ranger sprite sheets (next session):
+1. Place `idle.png`, `walk.png`, `attack.png` in `public/sprites/ranger/`
+2. In `SpriteAnimator.ts`, add `'ranger'` to `AnimName` type or create a separate loader
+3. In `Player.ts` constructor, when `classType === 'ranger'`, call the ranger sprite creator
+4. Update `loadWarriorAnimations()` to also load ranger sheets (or create `loadRangerAnimations()`)
+5. The AnimatedSprite system handles everything else (rotation, animation switching, tinting)
+
+#### Animation file sizes (committed):
+- `attack.png`: 576×84 (6 frames), 4295 bytes
+- `idle.png`: 672×84 (7 frames), 3627 bytes
+- `walk.png`: 768×84 (8 frames), 5529 bytes
+
+## Architecture Notes (current state)
+- Zone system: ZoneConfig (types + registry) + ZoneRegistry (templates merged) + ZoneManager (state machine)
+- ZoneRegistry.ts created to break circular dependency between ZoneConfig.ts ↔ RoomTemplates.ts ↔ Room.ts
+- Room constructor accepts `(biome, doors, portals, decorations, buildings, npcs)` — all optional with defaults
+- `cloneTemplate()` deep-clones all arrays (walls, doors, portals, spawnZones, decorations, buildings, npcs)
+- Hub buildings rendered as: wall body + triangle roof + door + 2 windows + label text
+- Hub NPCs rendered as: rounded rect body (tinted) + circle head + label text
+- Portal scrolls stored as `{ kind: 'orb', orbId: 'portal_scroll', count: number }` — reuses orb stacking
+- Recall portal is a separate Game.ts field (not a room child) to persist across zone transitions
+- Animated portals use the VFX system with high maxLife (99999) so they never expire
+- SpriteAnimator uses pending sprites pattern to handle async loading race conditions
+- Raw Image loading via fetch + createObjectURL is more reliable than PixiJS Assets.load()
 
 ## Key Constants
 - Canvas: 1920×1080, Room: 1600×896 at offset (160,92)
@@ -199,12 +257,16 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Enemy HP: 40, speed: 2.2, XP: 10
 - Inventory: 30 slots (5×6 grid), slot size 50px
 - Equipment: 7 slots (Weapon, Body, Helmet, Boots, Ring, Ring2, Amulet)
-- Orb drop rate: ~5%, item drop rate: ~40%
+- Orb drop rate: ~5% (× itemQuantityMult), item drop rate: ~40% (× itemQuantityMult)
+- Portal scroll drop rate: ~8% (× itemQuantityMult)
 - Enemy types: Grunt (40 HP, 2.2 spd, 10 XP), Archer (25 HP, 2.5 spd, 12 XP), Juggernaut (120 HP, 1.2 spd, 25 XP), Cultist (35 HP, 2.0 spd, 15 XP)
 - Enemy speed variance: ±15% (0.85-1.15 of base)
 - Wave size: 3-6 enemies, 2s delay between waves
 - Unique skill effect sources: Titan's Reach (sword), Blood Amulet (amulet), Herald of Ruin (ring)
 - Dev console: backtick toggle, DOM overlay, command history + autocomplete
+- Sprite sheet frames: 96×84 each, dynamic count from image width / 96
+- Magic Find affixes: prefix only, 3 tiers (8-15%, 16-25%, 26-40%)
+- Item Quantity affixes: suffix only, 3 tiers (8-12%, 13-20%, 21-30%)
 
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
@@ -212,8 +274,11 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
 - No max orb stack size (stacks grow indefinitely, fine for current scope)
 - Level requirements displayed but not enforced (player can equip above level)
-- Hub NPCs/vendor/stash are placeholders only
+- Hub NPCs/vendor/stash are placeholders only (no interactions yet)
 - Endless Dungeon uses single template (no per-room rotation)
+- Ranger still uses programmatic sprite (needs sprite sheets ported)
+- No animation for support skills (only main ability triggers attack animation)
+- Sprites loaded from `public/` using `fetch + blob + createObjectURL` — not Vite-bundled, so no hash-based cache busting
 
 ## Next Up
 
@@ -223,12 +288,21 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Load on game start, continue from saved state
 - Needed before adding more permanent progression systems
 
+### Phase 5e — Ranger Sprite Sheets
+- Add `idle.png`, `walk.png`, `attack.png` to `public/sprites/ranger/`
+- Create `loadRangerAnimations()` in SpriteAnimator.ts (parallel to warrior loader)
+- Add ranger variant to `createWarriorSprite()` or create `createRangerSprite()`
+- Update Player.ts constructor to pick correct sprite factory based on classType
+- Store ranger frames in a separate cache or unified cache with prefix
+
 ### Phase 6 — Polish & Expansion
-- Hub NPCs, vendor, stash interactions
+- Hub NPC interactions (vendor buy/sell, stash deposit/withdraw)
 - Boss encounters with unique mechanics
 - Map modifiers (affixes on map items)
 - More room templates for variety
 - Balance pass on difficulty scaling
+- Support skill animations (dash, buff, etc.)
+- Port ranger to sprite sheets
 
 ## Co-authoring
 This workspace may be shared between AI agents. Always read before writing —
@@ -262,3 +336,10 @@ without explicit approval. See AGENTS.md for full coordination rules.
 - **Unique skill effects:** skillAoePct, lifeLeechPct, fortifyOnHit, cullingStrikePct, explodeOnKillPct are unique-only affix stats on special unique items. Wired through StatSystem and combat code.
 - **Orb crafting:** orbs modify `GeneratedItem` in-place (mutates `item.affixes` and `item.computedStats`). The `equipment` record holds the same reference, so `recalcStats()` picks up changes.
 - **Loot stacking:** `spawnLoot()` spreads drops vertically with 25px spacing. Both `drop.y` and `drop.container.y` must be updated for correct hit detection and visual position.
+- **Sprite path gotcha (GitHub Pages):** Use relative paths (`sprites/warrior/idle.png`), not absolute (`/sprites/warrior/idle.png`). Absolute paths miss the `/TinyARPG/` sub-path prefix.
+- **Sprite loading:** Use `fetch + blob + createObjectURL` not `Assets.load()`. The PixiJS Assets loader had silent failures with certain PNG files.
+- **Pending sprites:** `createWarriorSprite()` can be called before async loading completes. The `pendingSprites[]` array holds references and updates them when loading finishes.
+- **NTFS case renames:** On Windows, `git mv IDLE.png idle.png` is a no-op. Must use two-step: `git mv IDLE.png tmp.png && git mv tmp.png idle.png`.
+- **AnimatedSprite vs Sprite:** Player sprite is always `AnimatedSprite` type. For non-animated classes (ranger), create single-frame AnimatedSprite from static texture.
+- **onComplete callback:** Attack animation uses `sprite.onComplete` to reset to idle. Must check `animState === 'attack'` before resetting to avoid race conditions.
+- **AnimatedSprite.anchor:** Must be set AFTER construction. For sprite sheets, anchor is (0.5, 0.5) to match the existing rotation-based aiming system.
