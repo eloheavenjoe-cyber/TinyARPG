@@ -45,12 +45,12 @@ export class SkillManager {
   }
 
   selectMainAbility(id: string) {
-    const mainSkills = this.classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
+    const isMonk = this.classType === 'monk';
+    const mainSkills = isMonk ? MONK_MAIN : this.classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
     const skill = mainSkills.find(s => s.id === id);
     if (!skill) return;
     this.mainAbility = skill;
     this.slots[0] = skill;
-    Logger.log('system', `Main ability selected: ${skill.name} (${skill.id})`);
   }
 
   getSkill(slot: number): SkillDef | null {

@@ -450,14 +450,22 @@ export class Player {
     this.facingAngle = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
     this.sprite.scale.x = Math.abs(this.facingAngle) > Math.PI / 2 ? -1 : 1;
 
-    // Animation state switching (warrior animated sprites only)
+    // Animation state switching
     const isMoving = dx !== 0 || dy !== 0;
     if (isMoving && this.animState === 'idle') {
       this.animState = 'walk';
-      playAnimation(this.sprite, 'walk', true, this.classType);
+      if (this.classType === 'monk') {
+        playMonkAnimation(this.sprite, 'run');
+      } else {
+        playAnimation(this.sprite, 'walk', true, this.classType);
+      }
     } else if (!isMoving && this.animState === 'walk') {
       this.animState = 'idle';
-      playAnimation(this.sprite, 'idle', true, this.classType);
+      if (this.classType === 'monk') {
+        playMonkAnimation(this.sprite, 'idle');
+      } else {
+        playAnimation(this.sprite, 'idle', true, this.classType);
+      }
     }
 
     if (this.invulnTimer > 0) {
