@@ -21,7 +21,7 @@ import { generateItemDrop, generateOrbDrop } from './ItemGenerator';
 import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
-import { loadWarriorAnimations } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations } from '../rendering/SpriteAnimator';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -88,6 +88,7 @@ export class Game {
     this.devConsole = new DeveloperConsole();
     this.setupConsoleCommands();
     loadWarriorAnimations();
+    loadRangerAnimations();
     Logger.log('game', 'TinyARPG initialized');
   }
 

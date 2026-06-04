@@ -5,11 +5,17 @@ const FRAME_H = 84;
 
 export type AnimName = 'idle' | 'walk' | 'attack';
 
-let cachedFrames: Record<AnimName, Texture[]> | null = null;
-let pendingSprites: AnimatedSprite[] = [];
+let warriorFrames: Record<AnimName, Texture[]> | null = null;
+let rangerFrames: Record<AnimName, Texture[]> | null = null;
+let pendingWarriorSprites: AnimatedSprite[] = [];
+let pendingRangerSprites: AnimatedSprite[] = [];
 
-export function isLoaded(): boolean {
-  return cachedFrames !== null;
+function getFrames(classType: 'warrior' | 'ranger'): Record<AnimName, Texture[]> | null {
+  return classType === 'ranger' ? rangerFrames : warriorFrames;
+}
+
+export function isLoaded(classType: 'warrior' | 'ranger' = 'warrior'): boolean {
+  return getFrames(classType) !== null;
 }
 
 async function loadImage(url: string): Promise<HTMLImageElement> {
@@ -37,8 +43,33 @@ async function loadSheet(name: AnimName, url: string): Promise<Texture[]> {
   return frames;
 }
 
+async function loadRangerFrames(baseUrl: string, name: AnimName, filePattern: string, count: number): Promise<Texture[]> {
+  const frames: Texture[] = [];
+  for (let i = 1; i <= count; i++) {
+    const url = `${baseUrl}/${filePattern.replace('{n}', String(i))}`;
+    try {
+      const img = await loadImage(url);
+      console.log(`[SpriteAnimator] ranger ${name} frame ${i}: ${img.width}x${img.height}`);
+      frames.push(new Texture(new BaseTexture(img)));
+    } catch {
+      console.warn(`[SpriteAnimator] fallback for ranger ${name} frame ${i}`);
+      const canvas = document.createElement('canvas');
+      canvas.width = 288;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#44aa44';
+      ctx.fillRect(0, 0, 288, 128);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px monospace';
+      ctx.fillText(`${name}_${i}`, 100, 64);
+      frames.push(Texture.from(canvas));
+    }
+  }
+  return frames;
+}
+
 export async function loadWarriorAnimations(): Promise<void> {
-  if (cachedFrames) return;
+  if (warriorFrames) return;
   const result = {} as Record<AnimName, Texture[]>;
   const entries: [AnimName, string][] = [
     ['attack', 'sprites/warrior/attack.png'],
@@ -64,10 +95,10 @@ export async function loadWarriorAnimations(): Promise<void> {
     }
   }
 
-  cachedFrames = result;
+  warriorFrames = result;
 
-  for (const sprite of pendingSprites) {
-    const f = cachedFrames.idle;
+  for (const sprite of pendingWarriorSprites) {
+    const f = warriorFrames.idle;
     if (f && f.length > 0) {
       sprite.textures = f;
       sprite.tint = 0xffffff;
@@ -75,12 +106,34 @@ export async function loadWarriorAnimations(): Promise<void> {
       sprite.play();
     }
   }
-  pendingSprites = [];
+  pendingWarriorSprites = [];
+}
+
+export async function loadRangerAnimations(): Promise<void> {
+  if (rangerFrames) return;
+  const result = {} as Record<AnimName, Texture[]>;
+
+  result.idle = await loadRangerFrames('sprites/ranger', 'idle', 'idle_{n}.png', 12);
+  result.walk = await loadRangerFrames('sprites/ranger', 'walk', 'run_{n}.png', 10);
+  result.attack = await loadRangerFrames('sprites/ranger', 'attack', '1_atk_{n}.png', 10);
+
+  rangerFrames = result;
+
+  for (const sprite of pendingRangerSprites) {
+    const f = rangerFrames.idle;
+    if (f && f.length > 0) {
+      sprite.textures = f;
+      sprite.tint = 0xffffff;
+      sprite.animationSpeed = 0.12;
+      sprite.play();
+    }
+  }
+  pendingRangerSprites = [];
 }
 
 export function createWarriorSprite(): AnimatedSprite {
-  if (cachedFrames && cachedFrames.idle.length > 0) {
-    const sprite = new AnimatedSprite(cachedFrames.idle);
+  if (warriorFrames && warriorFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(warriorFrames.idle);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.12;
     sprite.play();
@@ -90,15 +143,32 @@ export function createWarriorSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x8844aa;
-  pendingSprites.push(sprite);
+  pendingWarriorSprites.push(sprite);
   return sprite;
 }
 
-export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true) {
-  if (!cachedFrames) return;
-  const frames = cachedFrames[name];
-  if (!frames || frames.length === 0 || sprite.textures === frames) return;
-  sprite.textures = frames;
+export function createRangerSprite(): AnimatedSprite {
+  if (rangerFrames && rangerFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(rangerFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.12;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x44aa44;
+  pendingRangerSprites.push(sprite);
+  return sprite;
+}
+
+export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true, classType: 'warrior' | 'ranger' = 'warrior') {
+  const frames = getFrames(classType);
+  if (!frames) return;
+  const f = frames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
   sprite.loop = loop;
   sprite.animationSpeed = name === 'attack' ? 0.2 : 0.12;
   sprite.gotoAndPlay(0);

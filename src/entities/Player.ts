@@ -1,7 +1,7 @@
 import { AnimatedSprite, Texture } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
 import { InputManager } from '../core/InputManager';
-import { createWarriorSprite, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
+import { createWarriorSprite, createRangerSprite, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
 import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
 import { PassiveTree } from '../core/PassiveTree';
@@ -74,6 +74,8 @@ export class Player {
     this.y = y;
     if (classType === 'warrior' && isLoaded()) {
       this.sprite = createWarriorSprite();
+    } else if (classType === 'ranger' && isLoaded('ranger')) {
+      this.sprite = createRangerSprite();
     } else {
       const tex = classType === 'ranger' ? Sprites.ranger : Sprites.player;
       const s = new AnimatedSprite([tex]);
@@ -432,10 +434,10 @@ export class Player {
     const isMoving = dx !== 0 || dy !== 0;
     if (isMoving && this.animState === 'idle') {
       this.animState = 'walk';
-      playAnimation(this.sprite, 'walk');
+      playAnimation(this.sprite, 'walk', true, this.classType);
     } else if (!isMoving && this.animState === 'walk') {
       this.animState = 'idle';
-      playAnimation(this.sprite, 'idle');
+      playAnimation(this.sprite, 'idle', true, this.classType);
     }
 
     if (this.invulnTimer > 0) {
@@ -508,8 +510,8 @@ export class Player {
 
     // Trigger attack animation
     this.animState = 'attack';
-    playAnimation(this.sprite, 'attack', false);
-    const resetAnim = () => { if (this.animState === 'attack') { this.animState = 'idle'; playAnimation(this.sprite, 'idle'); } };
+    playAnimation(this.sprite, 'attack', false, this.classType);
+    const resetAnim = () => { if (this.animState === 'attack') { this.animState = 'idle'; playAnimation(this.sprite, 'idle', true, this.classType); } };
     this.sprite.onComplete = resetAnim;
 
     const aoeMult = 1 + ((this._computedStats.skillAoePct || 0) / 100);
