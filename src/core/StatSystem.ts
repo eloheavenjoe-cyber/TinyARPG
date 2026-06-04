@@ -49,6 +49,9 @@ export function computeStats(
     manaCostReductionPct: Math.min(40, add('manaCostReductionPct') || 0),
     manaRegenPct: add('manaRegenPct') || 0,
     hpRegen: add('hpRegen') || 0,
+    coldDmg: 0,
+    lightningDmg: 0,
+    additionalProjectiles: 0,
   };
 
   for (const [key, val] of Object.entries(otherEquip)) {
@@ -60,6 +63,9 @@ export function computeStats(
     else if (key === 'meleeDmgPct') base.meleeDmgMult += val / 100;
     else if (key === 'projectileDmgPct') base.projectileDmgMult += val / 100;
     else if (key === 'hpRegen') base.hpRegen += val;
+    else if (key === 'coldDmg') base.coldDmg += val;
+    else if (key === 'lightningDmg') base.lightningDmg += val;
+    else if (key === 'additionalProjectiles') base.additionalProjectiles += val;
   }
 
   return base;

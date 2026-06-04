@@ -313,6 +313,13 @@ export class InventoryScreen {
       }
     }
 
+    // Level requirement
+    if (item.levelReq > 1) {
+      cy += 2;
+      elems.push({ left: addText(`Requires Level ${item.levelReq}`, { fontSize: 10, fill: '#cc8866', fontStyle: 'italic' }) });
+      cy += 14;
+    }
+
     cy += pad;
 
     // Calculate width: find widest element

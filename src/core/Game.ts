@@ -667,7 +667,7 @@ export class Game {
       pending.push({ drop });
     }
     if (Math.random() < 0.4) {
-      const gen = generateItemDrop();
+      const gen = generateItemDrop(this.player?.level);
       pending.push({ drop: createItemDrop(x, y, gen) });
     }
     if (Math.random() < 0.05) {

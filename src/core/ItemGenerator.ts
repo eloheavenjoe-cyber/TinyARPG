@@ -9,6 +9,8 @@ export interface GeneratedItem {
   damageRoll: number;
   computedName: string;
   computedStats: Record<string, number>;
+  ilvl: number;
+  levelReq: number;
 }
 
 function pickWeighted(bases: ItemBase[]): ItemBase {
@@ -27,7 +29,7 @@ function generateName(affixes: { affix: ItemAffix; roll: number }[], baseName: s
   return [...prefixes, baseName, ...suffixes].join(' ');
 }
 
-export function generateItemDrop(): GeneratedItem {
+export function generateItemDrop(playerLevel?: number): GeneratedItem {
   const rarityRoll = Math.random();
   let rarity: Rarity;
   if (rarityRoll < 0.50) rarity = 'normal';
@@ -47,13 +49,15 @@ export function generateItemDrop(): GeneratedItem {
       id: crypto.randomUUID(),
       base, rarity: 'unique',
       affixes: Object.entries(unique.fixedAffixes).map(([stat, value]) => ({
-        affix: { id: stat, name: '', type: 'prefix' as const, stat, min: value, max: value },
+        affix: { id: stat, name: '', type: 'prefix' as const, stat, min: value, max: value, tier: 1 },
         roll: value,
       })),
       uniqueId: unique.id,
       damageRoll: dr,
       computedName: unique.name,
       computedStats: stats,
+      ilvl: playerLevel || 1,
+      levelReq: 1,
     };
   }
 
@@ -61,8 +65,11 @@ export function generateItemDrop(): GeneratedItem {
 
   const affixCount = rarity === 'magic' ? 2 : rarity === 'rare' ? 4 + Math.floor(Math.random() * 3) : 0;
 
-  const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
-  const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+  const maxTierRoll = Math.random();
+  const maxTier = maxTierRoll < 0.50 ? 1 : maxTierRoll < 0.85 ? 2 : 3;
+
+  const prefixes = AFFIXES.filter(a => a.type === 'prefix' && a.tier <= maxTier).sort(() => Math.random() - 0.5);
+  const suffixes = AFFIXES.filter(a => a.type === 'suffix' && a.tier <= maxTier).sort(() => Math.random() - 0.5);
   const picked: { affix: ItemAffix; roll: number }[] = [];
 
   const prefixCount = Math.min(Math.ceil(affixCount / 2), prefixes.length);
@@ -89,11 +96,16 @@ export function generateItemDrop(): GeneratedItem {
     stats[p.affix.stat] = (stats[p.affix.stat] || 0) + p.roll;
   }
 
+  const ilvl = playerLevel || 1;
+  const levelReq = maxTier * 4;
+
   const item: GeneratedItem = {
     id: crypto.randomUUID(),
     base, rarity, affixes: picked, damageRoll,
     computedName: generateName(picked, base.name),
     computedStats: stats,
+    ilvl,
+    levelReq,
   };
   return item;
 }
