@@ -319,7 +319,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Equipment: 7 slots (Weapon, Body, Helmet, Boots, Ring, Ring2, Amulet)
 - Orb drop rate: ~5% (× itemQuantityMult), item drop rate: ~40% (× itemQuantityMult)
 - Portal scroll drop rate: ~8% (× itemQuantityMult)
-- Enemy types: Grunt (40 HP, 2.2 spd, 10 XP), Archer (25 HP, 2.5 spd, 12 XP), Juggernaut (120 HP, 1.2 spd, 25 XP), Cultist (35 HP, 2.0 spd, 15 XP)
+- Enemy types: Grunt (40 HP, 2.2 spd, 10 XP, size 36, sprite 1.3x), Archer (25 HP, 2.5 spd, 12 XP, size 34, sprite 1.2x), Juggernaut (120 HP, 1.2 spd, 25 XP, size 55, sprite 1.7x), Cultist (35 HP, 2.0 spd, 15 XP, size 32, sprite 1.15x)
 - Enemy speed variance: ±15% (0.85-1.15 of base)
 - Wave size: 3-6 enemies, 2s delay between waves
 - Unique skill effect sources: Titan's Reach (sword), Blood Amulet (amulet), Herald of Ruin (ring)
@@ -391,7 +391,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
 - Archer completed (2026-06-05): 4 sheets (idle/run/attack/death, 100×100 frames)
 - Grunt completed (2026-06-05): skeleton sprites with per-animation frame sizes (idle 24×32, run 22×33, attack 43×37, death 33×32). Grunt uses `scale.x` flip for facing, triggers attack animation on contact damage via `attackAnimPlayed` flag, plays death animation on kill.
-- Juggernaut completed (2026-06-05): orc directional sprite — 4-row sheets (south/north/east/west), 64×64 frames. Idle: 256×256 (4 cols), Walk/Attack/Death: 512×256 (8 cols), Walk: 384×256 (6 cols). Uses `angleToDirection()` + `direction` field for facing (no rotation/flip). `Scale.set(1.6)` (was 1.3, +22.5% compound). Attack triggered on contact damage, death animation plays on kill.
+- Juggernaut completed (2026-06-05): orc directional sprite — 4-row sheets (south/north/east/west), 64×64 frames. Idle: 256×256 (4 cols), Walk/Attack/Death: 512×256 (8 cols), Walk: 384×256 (6 cols). Uses `angleToDirection()` + `direction` field for facing (no rotation/flip). `Scale.set(1.7)` (1.3 base × 1.3 growth). Attack triggered on contact damage, death animation plays on kill.
 
 ### Phase 5l — Dodge Roll Animation (completed 2026-06-05)
 - Ranger dodge roll animation: 8 individual PNGs (`roll_1.png`–`roll_8.png`) loaded via `loadRangerFrames` pattern
