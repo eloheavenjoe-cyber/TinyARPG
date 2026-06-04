@@ -1,6 +1,6 @@
 import { Sprite, Texture, AnimatedSprite } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
-import { createCultistSprite, playCultistAnimation, CultistAnimName, createJuggernautSprite, playJuggernautAnimation, JuggernautAnimName } from '../rendering/SpriteAnimator';
+import { createCultistSprite, playCultistAnimation, CultistAnimName } from '../rendering/SpriteAnimator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Projectile } from './Projectile';
@@ -75,9 +75,7 @@ export class Enemy {
     this.deaggroRange = cfg.deaggroRange;
     this.wobblePhase = Math.random() * Math.PI * 2;
 
-    if (type === 'cultist') this.sprite = createCultistSprite();
-    else if (type === 'juggernaut') this.sprite = createJuggernautSprite();
-    else this.sprite = new Sprite(cfg.sprite);
+    this.sprite = type === 'cultist' ? createCultistSprite() : new Sprite(cfg.sprite);
     this.sprite.anchor.set(0.5);
     this.sprite.tint = 0xffffff;
     this.updateSprite();
@@ -121,8 +119,12 @@ export class Enemy {
 
     // Facing
     const faceAngle = Math.atan2(playerY - this.y, playerX - this.x);
-    if (this.type === 'cultist' || this.type === 'juggernaut') {
+    if (this.type === 'cultist') {
+      const wasMoving = this.animState === 'run';
       this.sprite.scale.x = Math.abs(faceAngle) > Math.PI / 2 ? -1 : 1;
+      if (!wasMoving && this.animState === 'run') {
+        playCultistAnimation(this.sprite as AnimatedSprite, 'run');
+      }
     } else {
       this.sprite.rotation = faceAngle;
     }
@@ -133,21 +135,7 @@ export class Enemy {
       if (!this.alive) {
         this.animState = 'death';
       } else if (this.animState !== 'attack') {
-        const newState: 'idle' | 'run' = isMoving ? 'run' : 'idle';
-        if (newState !== this.animState) {
-          this.animState = newState;
-          playCultistAnimation(this.sprite as AnimatedSprite, this.animState);
-        }
-      }
-    } else if (this.type === 'juggernaut') {
-      if (!this.alive) {
-        this.animState = 'death';
-      } else if (this.animState !== 'attack') {
-        const newState: 'idle' | 'run' = isMoving ? 'run' : 'idle';
-        if (newState !== this.animState) {
-          this.animState = newState;
-          playJuggernautAnimation(this.sprite as AnimatedSprite, this.animState);
-        }
+        this.animState = isMoving ? 'run' : 'idle';
       }
     }
 
@@ -206,15 +194,6 @@ export class Enemy {
       const moveX = (dx / dist) * this.speed * dt;
       const moveY = (dy / dist) * this.speed * dt;
       this.applyMovement(moveX, moveY, dt);
-    }
-    // Trigger attack animation when close to player
-    if (dist < 48 && this.attackCooldown <= 0 && this.animState !== 'attack') {
-      this.animState = 'attack';
-      playJuggernautAnimation(this.sprite as AnimatedSprite, 'attack', false);
-      (this.sprite as AnimatedSprite).onComplete = () => {
-        this.animState = 'idle';
-        playJuggernautAnimation(this.sprite as AnimatedSprite, 'idle');
-      };
     }
   }
 
