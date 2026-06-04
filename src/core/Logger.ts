@@ -7,6 +7,7 @@ const PREFIXES = {
   ui: '[UI]',
   game: '[Game]',
   system: '[System]',
+  skill: '[Skill]',
 } as const;
 
 type Category = keyof typeof PREFIXES;
