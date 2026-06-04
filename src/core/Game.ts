@@ -1,4 +1,4 @@
-import { Application, Container, Point, Graphics } from 'pixi.js';
+import { Application, Container, Point, Graphics, Text, TextStyle } from 'pixi.js';
 import { InputManager } from './InputManager';
 import { Logger } from './Logger';
 import { Sprites } from '../rendering/Sprites';
@@ -97,13 +97,27 @@ export class Game {
     Sprites.generateAll();
     this.devConsole = new DeveloperConsole();
     this.setupConsoleCommands();
-    loadWarriorAnimations();
-    loadRangerAnimations();
-    loadReaperAnimations();
     Logger.log('game', 'TinyARPG initialized');
   }
 
-  start() {
+  async start() {
+    const loadingText = new Text('Loading...', new TextStyle({
+      fontFamily: 'Georgia, serif', fontSize: 28, fill: '#aaaacc',
+    }));
+    loadingText.anchor.set(0.5);
+    loadingText.x = SCREEN_WIDTH / 2;
+    loadingText.y = SCREEN_HEIGHT / 2;
+    this.app.stage.addChild(loadingText);
+
+    await Promise.all([
+      loadWarriorAnimations(),
+      loadRangerAnimations(),
+      loadReaperAnimations(),
+    ]);
+
+    this.app.stage.removeChild(loadingText);
+    loadingText.destroy();
+
     this.app.ticker.add((dt) => this.update(dt));
     this.showMainMenu();
   }

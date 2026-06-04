@@ -17,9 +17,10 @@ async function bootstrap() {
   Logger.log('game', `Canvas ${SCREEN_WIDTH}x${SCREEN_HEIGHT} mounted`);
 
   const game = new Game(app);
-  game.start();
+  await game.start();
 }
 
 bootstrap().catch((err) => {
   Logger.error('game', 'Bootstrap failed', err);
+  document.body.innerHTML = `<pre style="color:#f66;background:#111;padding:2rem;font-size:1.2rem">Failed to load: ${err instanceof Error ? err.message : err}</pre>`;
 });
