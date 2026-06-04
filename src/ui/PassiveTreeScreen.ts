@@ -17,7 +17,9 @@ export class PassiveTreeScreen {
   private infoText: Text;
   private pointsText: Text;
   private attrTexts: { str: Text; dex: Text; int: Text };
+  private attrBtns: { bg: Graphics; stat: 'str' | 'dex' | 'int' }[];
   private hoveredNode: string | null = null;
+  private hoveredAttr: 'str' | 'dex' | 'int' | null = null;
 
   constructor(screenWidth: number, screenHeight: number, tree: PassiveTree, points: number, attrs: { str: number; dex: number; int: number }, unspentAttrs: number) {
     this.container = new Container();
@@ -44,10 +46,11 @@ export class PassiveTreeScreen {
     this.container.addChild(header);
 
     this.pointsText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 16, fill: '#ffdd88',
+      fontFamily: 'monospace', fontSize: 18, fill: '#ffdd88',
+      stroke: '#000', strokeThickness: 2,
     }));
-    this.pointsText.x = 20;
-    this.pointsText.y = 55;
+    this.pointsText.x = 30;
+    this.pointsText.y = 60;
     this.container.addChild(this.pointsText);
 
     const closeHint = new Text('Press P to close', new TextStyle({
@@ -100,12 +103,55 @@ export class PassiveTreeScreen {
     this.container.addChild(this.infoText);
 
     // Attribute panel
+    this.attrBtns = [];
     this.attrTexts = { str: new Text(''), dex: new Text(''), int: new Text('') };
-    const attrY = screenHeight - 100;
-    this.attrTexts.str = this.makeAttrText('STR', this.attrs.str, 0xdd8844, 40, attrY);
-    this.attrTexts.dex = this.makeAttrText('DEX', this.attrs.dex, 0x44dd88, 200, attrY);
-    this.attrTexts.int = this.makeAttrText('INT', this.attrs.int, 0x4488dd, 360, attrY);
-    for (const t of Object.values(this.attrTexts)) this.container.addChild(t);
+    const attrPanelY = screenHeight - 80;
+    const attrPanelH = 60;
+    const attrLabels: { stat: 'str' | 'dex' | 'int'; label: string; color: number }[] = [
+      { stat: 'str', label: 'STR', color: 0xdd8844 },
+      { stat: 'dex', label: 'DEX', color: 0x44dd88 },
+      { stat: 'int', label: 'INT', color: 0x4488dd },
+    ];
+    const btnW = 160;
+
+    const panelBg = new Graphics();
+    panelBg.beginFill(0x0c0c1a, 0.9);
+    panelBg.drawRoundedRect(20, attrPanelY - 10, screenWidth - 40, attrPanelH + 20, 6);
+    panelBg.endFill();
+    this.container.addChild(panelBg);
+
+    for (let i = 0; i < attrLabels.length; i++) {
+      const { stat, label, color } = attrLabels[i];
+      const bx = 60 + i * (btnW + 30);
+      const by = attrPanelY;
+
+      const btn = new Graphics();
+      btn.beginFill(0x1a1a30);
+      btn.lineStyle(1, color, 0.5);
+      btn.drawRoundedRect(0, 0, btnW, attrPanelH, 4);
+      btn.endFill();
+      btn.x = bx;
+      btn.y = by;
+      this.container.addChild(btn);
+      this.attrBtns.push({ bg: btn, stat });
+
+      const labelTxt = new Text(`${label}: ${this.attrs[stat]}`, new TextStyle({
+        fontFamily: 'monospace', fontSize: 18, fill: color,
+        stroke: '#000', strokeThickness: 2,
+      }));
+      labelTxt.x = bx + 10;
+      labelTxt.y = by + 8;
+      this.container.addChild(labelTxt);
+      this.attrTexts[stat] = labelTxt;
+
+      const hint = new Text('+', new TextStyle({
+        fontFamily: 'monospace', fontSize: 22, fill: '#ffffff',
+        stroke: '#000', strokeThickness: 2,
+      }));
+      hint.x = bx + btnW - 28;
+      hint.y = by + 6;
+      this.container.addChild(hint);
+    }
 
     this.redraw();
     Logger.log('ui', 'Passive tree screen opened');
@@ -137,6 +183,7 @@ export class PassiveTreeScreen {
 
   private handleHover(input: InputManager) {
     this.hoveredNode = null;
+    this.hoveredAttr = null;
     for (const [id, gfx] of this.nodeGfx) {
       const r = this.getNodeRadius(this.tree.getNode(id)!);
       const dx = input.mouseX - gfx.bg.x;
@@ -149,6 +196,14 @@ export class PassiveTreeScreen {
       }
     }
     this.infoText.text = '';
+
+    for (const btn of this.attrBtns) {
+      if (input.mouseX >= btn.bg.x && input.mouseX <= btn.bg.x + 160 &&
+          input.mouseY >= btn.bg.y && input.mouseY <= btn.bg.y + 60) {
+        this.hoveredAttr = btn.stat;
+        return;
+      }
+    }
   }
 
   private handleClick(input: InputManager) {
@@ -169,14 +224,10 @@ export class PassiveTreeScreen {
     }
 
     // Check attribute clicks
-    const attrCfg = [
-      { x: 40, label: 'STR', stat: 'str' as const },
-      { x: 200, label: 'DEX', stat: 'dex' as const },
-      { x: 360, label: 'INT', stat: 'int' as const },
-    ];
-    for (const cfg of attrCfg) {
-      if (input.mouseX >= cfg.x && input.mouseX <= cfg.x + 140 && input.mouseY >= 540 && input.mouseY <= 580) {
-        this.onAttrChange(cfg.stat, 1);
+    for (const btn of this.attrBtns) {
+      if (input.mouseX >= btn.bg.x && input.mouseX <= btn.bg.x + 160 &&
+          input.mouseY >= btn.bg.y && input.mouseY <= btn.bg.y + 60) {
+        this.onAttrChange(btn.stat, 1);
         return;
       }
     }
@@ -248,7 +299,18 @@ export class PassiveTreeScreen {
       }
     }
 
-    this.pointsText.text = `Passive Points: ${this.points}  |  Attributes Remaining: ${this.unspentAttrs}`;
+    this.pointsText.text = `Passive Points: ${this.points}  |  Attributes Remaining: ${this.unspentAttrs}  (click the + button below to spend)`;
+
+    // Attribute button hover
+    for (const btn of this.attrBtns) {
+      const isHover = this.hoveredAttr === btn.stat;
+      btn.bg.clear();
+      const color = btn.stat === 'str' ? 0xdd8844 : btn.stat === 'dex' ? 0x44dd88 : 0x4488dd;
+      btn.bg.beginFill(isHover ? 0x2a2a44 : 0x1a1a30);
+      btn.bg.lineStyle(2, isHover ? color : 0x333355, isHover ? 0.9 : 0.5);
+      btn.bg.drawRoundedRect(0, 0, 160, 60, 4);
+      btn.bg.endFill();
+    }
   }
 
   private getNodeRadius(node: PassiveNode): number {
