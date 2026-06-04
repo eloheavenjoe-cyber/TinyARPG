@@ -106,19 +106,47 @@ export class Game {
     }));
     loadingText.anchor.set(0.5);
     loadingText.x = SCREEN_WIDTH / 2;
-    loadingText.y = SCREEN_HEIGHT / 2;
+    loadingText.y = SCREEN_HEIGHT / 2 - 40;
     this.app.stage.addChild(loadingText);
 
-    await Promise.all([
-      loadWarriorAnimations(),
-      loadRangerAnimations(),
-      loadReaperAnimations(),
-      loadGolemAnimations(),
-      loadMonkAnimations(),
-    ]);
+    const barBg = new Graphics();
+    barBg.beginFill(0x222233, 0.8);
+    barBg.drawRoundedRect(0, 0, 400, 20, 4);
+    barBg.endFill();
+    barBg.x = SCREEN_WIDTH / 2 - 200;
+    barBg.y = SCREEN_HEIGHT / 2 + 10;
+    this.app.stage.addChild(barBg);
+
+    const barFill = new Graphics();
+    barFill.x = barBg.x + 2;
+    barFill.y = barBg.y + 2;
+    barFill.beginFill(0xcc8844);
+    barFill.drawRect(0, 0, 0, 16);
+    barFill.endFill();
+    this.app.stage.addChild(barFill);
+
+    const loaders = [
+      loadWarriorAnimations,
+      loadRangerAnimations,
+      loadReaperAnimations,
+      loadGolemAnimations,
+      loadMonkAnimations,
+    ];
+
+    for (let i = 0; i < loaders.length; i++) {
+      await loaders[i]();
+      barFill.clear();
+      barFill.beginFill(0xcc8844);
+      barFill.drawRect(0, 0, 396 * ((i + 1) / loaders.length), 16);
+      barFill.endFill();
+    }
 
     this.app.stage.removeChild(loadingText);
+    this.app.stage.removeChild(barBg);
+    this.app.stage.removeChild(barFill);
     loadingText.destroy();
+    barBg.destroy();
+    barFill.destroy();
 
     this.app.ticker.add((dt) => this.update(dt));
     this.showMainMenu();
