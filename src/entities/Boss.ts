@@ -80,6 +80,7 @@ export class Boss {
       this.sprite = new Sprite(cfg.sprite);
     }
     this.sprite.anchor.set(0.5);
+    this.sprite.scale.set(1.25);
     this.sprite.tint = 0xffffff;
     this.sprite.x = x;
     this.sprite.y = y;
