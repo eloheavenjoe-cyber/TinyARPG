@@ -181,7 +181,7 @@ export class Room {
         });
         lockLabel.anchor.set(0.5);
         lockLabel.x = cx;
-        lockLabel.y = cy + r + 14;
+        lockLabel.y = cy + r + 28;
         this.container.addChild(lockLabel);
       }
     }

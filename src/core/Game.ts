@@ -1379,7 +1379,6 @@ export class Game {
     this.vfx = [];
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();
-    this.zoneManager.completedZoneIds = new Set();
     if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
     this.dash = null;
     this.combatText.destroy();
