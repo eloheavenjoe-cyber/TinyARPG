@@ -1,12 +1,15 @@
-import { Texture } from 'pixi.js';
+import { Application, Graphics, Texture } from 'pixi.js';
 
 export class Sprites {
+  static app: Application;
   static player: Texture;
   static ranger: Texture;
   static enemy: Texture;
   static archer: Texture;
   static cultist: Texture;
   static juggernaut: Texture;
+  static golem: Texture;
+  static reaper: Texture;
   static wall: Texture;
   static floor: Texture;
 
@@ -159,6 +162,58 @@ export class Sprites {
       ctx.fillRect(7, 24, 1, 8);
       ctx.fillRect(23, 24, 1, 8);
     });
+
+    // Stone Golem — floating upper torso, broad shoulders, massive fists
+    const golemG = new Graphics();
+    golemG.beginFill(0x6a5a4a);
+    golemG.drawRect(-32, -20, 64, 50);
+    golemG.beginFill(0x7a6a5a);
+    golemG.drawRect(-16, -40, 32, 24);
+    golemG.beginFill(0xff8844);
+    golemG.drawRect(-10, -34, 6, 4);
+    golemG.drawRect(4, -34, 6, 4);
+    golemG.beginFill(0x6a5a4a);
+    golemG.drawRect(-42, -16, 12, 36);
+    golemG.drawRect(30, -16, 12, 36);
+    golemG.beginFill(0x7a6a5a);
+    golemG.drawRect(-44, 16, 16, 12);
+    golemG.drawRect(28, 16, 16, 12);
+    golemG.lineStyle(1, 0xff8844, 0.5);
+    golemG.moveTo(-8, -6);
+    golemG.lineTo(0, 4);
+    golemG.lineTo(8, -6);
+    golemG.lineStyle(0);
+    golemG.beginFill(0x000000, 0.2);
+    golemG.drawEllipse(0, 28, 28, 6);
+    golemG.endFill();
+    Sprites.golem = Sprites.app.renderer.generateTexture(golemG, {resolution: 1});
+
+    // Death Reaper
+    const reaperG = new Graphics();
+    reaperG.beginFill(0x2a1a2a);
+    reaperG.drawRect(-16, -12, 32, 40);
+    reaperG.beginFill(0x1a0a1a);
+    reaperG.drawRect(-14, -24, 28, 20);
+    reaperG.beginFill(0x334444);
+    reaperG.drawRect(-6, -18, 4, 6);
+    reaperG.drawRect(2, -18, 4, 6);
+    reaperG.beginFill(0xff2222);
+    reaperG.drawRect(-5, -17, 2, 2);
+    reaperG.drawRect(3, -17, 2, 2);
+    reaperG.lineStyle(2, 0x5a3a2a);
+    reaperG.moveTo(18, -20);
+    reaperG.lineTo(-4, 28);
+    reaperG.lineStyle(0);
+    reaperG.beginFill(0x888899);
+    reaperG.moveTo(20, -22);
+    reaperG.lineTo(32, -12);
+    reaperG.lineTo(14, -2);
+    reaperG.closePath();
+    reaperG.endFill();
+    reaperG.beginFill(0x442244, 0.3);
+    reaperG.drawEllipse(0, 28, 24, 8);
+    reaperG.endFill();
+    Sprites.reaper = Sprites.app.renderer.generateTexture(reaperG, {resolution: 1});
   }
 
   private static createTexture(width: number, height: number, draw: (ctx: CanvasRenderingContext2D) => void): Texture {

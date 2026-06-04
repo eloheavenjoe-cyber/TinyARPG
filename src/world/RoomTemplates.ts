@@ -499,3 +499,86 @@ export const TEMPLATE_ICE_5: RoomTemplate = {
   npcs: [],
   playerStart: { x: 800, y: 448 },
 };
+
+export const TEMPLATE_FOREST_BOSS: RoomTemplate = {
+  walls: [
+    { x: 200, y: 150, width: 60, height: 60 },
+    { x: 1340, y: 150, width: 60, height: 60 },
+    { x: 200, y: 686, width: 60, height: 60 },
+    { x: 1340, y: 686, width: 60, height: 60 },
+    { x: 500, y: 400, width: 50, height: 50 },
+    { x: 1050, y: 400, width: 50, height: 50 },
+  ],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  portals: [],
+  spawnZones: [],
+  decorationRects: [
+    { x: 140, y: 120, width: 14, height: 14 },
+    { x: 1300, y: 120, width: 12, height: 12 },
+    { x: 160, y: 660, width: 16, height: 16 },
+    { x: 1320, y: 660, width: 10, height: 10 },
+    { x: 400, y: 200, width: 12, height: 12 },
+    { x: 1100, y: 200, width: 14, height: 14 },
+    { x: 300, y: 600, width: 10, height: 10 },
+    { x: 1200, y: 600, width: 12, height: 12 },
+  ],
+  buildings: [],
+  npcs: [],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_DESERT_BOSS: RoomTemplate = {
+  walls: [
+    { x: 300, y: 200, width: 40, height: 40 },
+    { x: 1260, y: 200, width: 40, height: 40 },
+    { x: 300, y: 600, width: 40, height: 40 },
+    { x: 1260, y: 600, width: 40, height: 40 },
+    { x: 100, y: 400, width: 80, height: 16 },
+    { x: 1420, y: 400, width: 80, height: 16 },
+  ],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  portals: [],
+  spawnZones: [{ x: 200, y: 150, width: 1200, height: 600 }],
+  decorationRects: [
+    { x: 200, y: 180, width: 10, height: 16 },
+    { x: 250, y: 190, width: 8, height: 14 },
+    { x: 1300, y: 180, width: 12, height: 18 },
+    { x: 1350, y: 190, width: 8, height: 12 },
+    { x: 200, y: 600, width: 10, height: 18 },
+    { x: 250, y: 610, width: 8, height: 14 },
+    { x: 1300, y: 610, width: 12, height: 16 },
+    { x: 1350, y: 600, width: 8, height: 12 },
+  ],
+  buildings: [],
+  npcs: [],
+  playerStart: { x: 800, y: 448 },
+};
+
+export const TEMPLATE_ICE_BOSS: RoomTemplate = {
+  walls: [
+    { x: 400, y: 224, width: 50, height: 50 },
+    { x: 1150, y: 224, width: 50, height: 50 },
+    { x: 250, y: 500, width: 50, height: 50 },
+    { x: 1300, y: 500, width: 50, height: 50 },
+    { x: 700, y: 350, width: 40, height: 40 },
+    { x: 860, y: 350, width: 40, height: 40 },
+    { x: 700, y: 500, width: 40, height: 40 },
+    { x: 860, y: 500, width: 40, height: 40 },
+  ],
+  doors: [{ rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 }],
+  portals: [],
+  spawnZones: [],
+  decorationRects: [
+    { x: 150, y: 150, width: 16, height: 16 },
+    { x: 1350, y: 150, width: 14, height: 14 },
+    { x: 150, y: 700, width: 12, height: 12 },
+    { x: 1350, y: 700, width: 16, height: 16 },
+    { x: 500, y: 600, width: 10, height: 10 },
+    { x: 1000, y: 600, width: 12, height: 12 },
+    { x: 300, y: 300, width: 14, height: 14 },
+    { x: 1200, y: 300, width: 10, height: 10 },
+  ],
+  buildings: [],
+  npcs: [],
+  playerStart: { x: 800, y: 448 },
+};

@@ -89,6 +89,7 @@ export class Game {
   constructor(app: Application) {
     this.app = app;
     this.input = new InputManager(app.view as HTMLCanvasElement);
+    Sprites.app = app;
     Sprites.generateAll();
     this.devConsole = new DeveloperConsole();
     this.setupConsoleCommands();
