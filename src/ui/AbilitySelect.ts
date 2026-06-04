@@ -1,7 +1,7 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Logger } from '../core/Logger';
-import { WARRIOR_MAIN, RANGER_MAIN, SkillDef, ClassType } from '../core/SkillDefs';
+import { WARRIOR_MAIN, RANGER_MAIN, MONK_MAIN, SkillDef, ClassType } from '../core/SkillDefs';
 
 type PickCallback = (id: string) => void;
 
@@ -15,7 +15,7 @@ export class AbilitySelect {
     this.classType = classType;
     this.container = new Container();
 
-    const mainSkills = classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
+    const mainSkills = classType === 'monk' ? MONK_MAIN : classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
 
     const bg = new Graphics();
     bg.beginFill(0x0a0a1a);
@@ -23,55 +23,109 @@ export class AbilitySelect {
     bg.endFill();
     this.container.addChild(bg);
 
-    const titleText = `${classType === 'warrior' ? 'Warrior' : 'Ranger'} - Choose Your Main Ability`;
-    const title = new Text(titleText, new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
-      stroke: '#000', strokeThickness: 3, letterSpacing: 3,
-    }));
-    title.anchor.set(0.5);
-    title.x = screenWidth / 2;
-    title.y = 120;
-    this.container.addChild(title);
+    if (classType === 'monk') {
+      const title = new Text('Monk — All Techniques Available', new TextStyle({
+        fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
+        stroke: '#000', strokeThickness: 3, letterSpacing: 3,
+      }));
+      title.anchor.set(0.5);
+      title.x = screenWidth / 2;
+      title.y = 100;
+      this.container.addChild(title);
 
-    const startY = 220;
-    const gap = 100;
+      const infoLines = [
+        'Slot 1: Basic Strike',
+        'Slot 2: Dragon Palm',
+        'Slot 3: Whirlwind Kick',
+        'Slot 4: Tiger Uppercut',
+        'Slot 5: Meditate',
+        'Slot 6: Stance Toggle',
+      ];
 
-    for (let i = 0; i < mainSkills.length; i++) {
-      const skill = mainSkills[i];
-      const y = startY + i * gap;
-      const btnX = screenWidth / 2 - 250;
-      const btnY = y;
+      const vertStart = 220;
+      const lineGap = 40;
+      for (let i = 0; i < infoLines.length; i++) {
+        const line = new Text(infoLines[i], new TextStyle({
+          fontFamily: 'monospace', fontSize: 18, fill: '#888899',
+        }));
+        line.anchor.set(0.5);
+        line.x = screenWidth / 2;
+        line.y = vertStart + i * lineGap;
+        this.container.addChild(line);
+      }
 
+      const btnX = screenWidth / 2 - 120;
+      const btnY = screenHeight - 120;
       const btn = new Graphics();
-      btn.beginFill(0x1a1a2e);
-      btn.drawRoundedRect(0, 0, 500, 80, 6);
+      btn.beginFill(0x2e1a1a);
+      btn.drawRoundedRect(0, 0, 240, 60, 8);
       btn.endFill();
-      btn.lineStyle(1, 0x5a4a2a);
-      btn.drawRoundedRect(0, 0, 500, 80, 6);
+      btn.lineStyle(2, 0xc06020);
+      btn.drawRoundedRect(0, 0, 240, 60, 8);
       btn.x = btnX;
       btn.y = btnY;
 
-      const name = new Text(skill.name, new TextStyle({
+      const btnLabel = new Text('Begin Journey', new TextStyle({
         fontFamily: 'Georgia, serif', fontSize: 22, fill: '#c0a060',
+        stroke: '#000', strokeThickness: 1,
       }));
-      name.x = btnX + 20;
-      name.y = btnY + 8;
+      btnLabel.anchor.set(0.5);
+      btnLabel.x = btnX + 120;
+      btnLabel.y = btnY + 30;
 
-      const desc = new Text(skill.description, new TextStyle({
-        fontFamily: 'monospace', fontSize: 13, fill: '#888899',
+      this.container.addChild(btn, btnLabel);
+      this.buttons.push({ bg: btn, skill: { id: 'basic_strike', name: 'Begin Journey', description: '', manaCost: 0, cooldown: 0, range: 0, damageMult: 0, effectType: 'passive', category: 'main', classType: 'monk' } });
+    } else {
+      const titleText = `${classType === 'warrior' ? 'Warrior' : 'Ranger'} - Choose Your Main Ability`;
+      const title = new Text(titleText, new TextStyle({
+        fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
+        stroke: '#000', strokeThickness: 3, letterSpacing: 3,
       }));
-      desc.x = btnX + 20;
-      desc.y = btnY + 42;
+      title.anchor.set(0.5);
+      title.x = screenWidth / 2;
+      title.y = 120;
+      this.container.addChild(title);
 
-      const cost = new Text(`${skill.manaCost} MP`, new TextStyle({
-        fontFamily: 'monospace', fontSize: 12, fill: '#4488ff',
-      }));
-      cost.anchor.set(1, 0);
-      cost.x = btnX + 480;
-      cost.y = btnY + 8;
+      const startY = 220;
+      const gap = 100;
 
-      this.container.addChild(btn, name, desc, cost);
-      this.buttons.push({ bg: btn, skill });
+      for (let i = 0; i < mainSkills.length; i++) {
+        const skill = mainSkills[i];
+        const y = startY + i * gap;
+        const btnX = screenWidth / 2 - 250;
+        const btnY = y;
+
+        const btn = new Graphics();
+        btn.beginFill(0x1a1a2e);
+        btn.drawRoundedRect(0, 0, 500, 80, 6);
+        btn.endFill();
+        btn.lineStyle(1, 0x5a4a2a);
+        btn.drawRoundedRect(0, 0, 500, 80, 6);
+        btn.x = btnX;
+        btn.y = btnY;
+
+        const name = new Text(skill.name, new TextStyle({
+          fontFamily: 'Georgia, serif', fontSize: 22, fill: '#c0a060',
+        }));
+        name.x = btnX + 20;
+        name.y = btnY + 8;
+
+        const desc = new Text(skill.description, new TextStyle({
+          fontFamily: 'monospace', fontSize: 13, fill: '#888899',
+        }));
+        desc.x = btnX + 20;
+        desc.y = btnY + 42;
+
+        const cost = new Text(`${skill.manaCost} MP`, new TextStyle({
+          fontFamily: 'monospace', fontSize: 12, fill: '#4488ff',
+        }));
+        cost.anchor.set(1, 0);
+        cost.x = btnX + 480;
+        cost.y = btnY + 8;
+
+        this.container.addChild(btn, name, desc, cost);
+        this.buttons.push({ bg: btn, skill });
+      }
     }
 
     Logger.log('ui', 'Ability select screen shown');

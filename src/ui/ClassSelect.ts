@@ -31,6 +31,14 @@ const CLASSES: ClassOption[] = [
     color: 0x1a2e1a,
     borderColor: 0x2d7a20,
   },
+  {
+    classType: 'monk',
+    label: 'Monk',
+    description: 'Martial artist with stance-based combat and spirit techniques',
+    icon: '\uD83E\uDDD9',
+    color: 0x2e1a1a,
+    borderColor: 0xc06020,
+  },
 ];
 
 export class ClassSelect {
@@ -58,7 +66,7 @@ export class ClassSelect {
 
     for (let i = 0; i < CLASSES.length; i++) {
       const cls = CLASSES[i];
-      const btnX = screenWidth / 2 - 340 + i * 360;
+      const btnX = (screenWidth / 2 - 280) + i * 280;
       const btnY = 360;
 
       const btn = new Graphics();
