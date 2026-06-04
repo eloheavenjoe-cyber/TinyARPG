@@ -22,7 +22,7 @@ import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
-import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations } from '../rendering/SpriteAnimator';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 
@@ -113,6 +113,7 @@ export class Game {
       loadWarriorAnimations(),
       loadRangerAnimations(),
       loadReaperAnimations(),
+      loadGolemAnimations(),
     ]);
 
     this.app.stage.removeChild(loadingText);

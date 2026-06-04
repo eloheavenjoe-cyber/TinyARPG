@@ -5,13 +5,16 @@ const FRAME_H = 84;
 
 export type AnimName = 'idle' | 'walk' | 'attack';
 export type ReaperAnimName = 'idle' | 'attack' | 'death' | 'summon';
+export type GolemAnimName = 'idle' | 'walk' | 'attack' | 'death';
 
 let warriorFrames: Record<AnimName, Texture[]> | null = null;
 let rangerFrames: Record<AnimName, Texture[]> | null = null;
 let reaperFrames: Record<ReaperAnimName, Texture[]> | null = null;
+let golemFrames: Record<GolemAnimName, Texture[]> | null = null;
 let pendingWarriorSprites: AnimatedSprite[] = [];
 let pendingRangerSprites: AnimatedSprite[] = [];
 let pendingReaperSprites: AnimatedSprite[] = [];
+let pendingGolemSprites: AnimatedSprite[] = [];
 
 function getFrames(classType: 'warrior' | 'ranger'): Record<AnimName, Texture[]> | null {
   return classType === 'ranger' ? rangerFrames : warriorFrames;
@@ -218,6 +221,74 @@ export function playReaperAnimation(sprite: AnimatedSprite, name: ReaperAnimName
   sprite.textures = f;
   sprite.loop = loop;
   sprite.animationSpeed = name === 'idle' ? 0.1 : 0.15;
+  sprite.gotoAndPlay(0);
+}
+
+export async function loadGolemAnimations(): Promise<void> {
+  if (golemFrames) return;
+  const result = {} as Record<GolemAnimName, Texture[]>;
+  const entries: [GolemAnimName, string, number][] = [
+    ['idle', 'idle_{n}.png', 6],
+    ['walk', 'walk_{n}.png', 10],
+    ['attack', '1_atk_{n}.png', 14],
+    ['death', 'death_{n}.png', 16],
+  ];
+
+  for (const [name, pattern, count] of entries) {
+    try {
+      result[name] = await loadRangerFrames('sprites/golem', name as AnimName, pattern, count);
+    } catch {
+      console.warn(`[SpriteAnimator] fallback for golem ${name}`);
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 100;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#665544';
+      ctx.fillRect(0, 0, 100, 100);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px monospace';
+      ctx.fillText(name, 20, 52);
+      result[name] = [Texture.from(canvas)];
+    }
+  }
+
+  golemFrames = result;
+
+  for (const sprite of pendingGolemSprites) {
+    const f = golemFrames.idle;
+    if (f && f.length > 0) {
+      sprite.textures = f;
+      sprite.tint = 0xffffff;
+      sprite.animationSpeed = 0.1;
+      sprite.play();
+    }
+  }
+  pendingGolemSprites = [];
+}
+
+export function createGolemSprite(): AnimatedSprite {
+  if (golemFrames && golemFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(golemFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.1;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x886644;
+  pendingGolemSprites.push(sprite);
+  return sprite;
+}
+
+export function playGolemAnimation(sprite: AnimatedSprite, name: GolemAnimName, loop = true) {
+  if (!golemFrames) return;
+  const f = golemFrames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === 'attack' ? 0.15 : name === 'death' ? 0.1 : 0.12;
   sprite.gotoAndPlay(0);
 }
 

@@ -3,7 +3,7 @@ import { Sprites } from '../rendering/Sprites';
 import { Projectile } from './Projectile';
 import { Rect, resolveCollision } from '../world/Room';
 import { Logger } from '../core/Logger';
-import { createReaperSprite, playReaperAnimation, ReaperAnimName } from '../rendering/SpriteAnimator';
+import { createReaperSprite, playReaperAnimation, createGolemSprite, playGolemAnimation, ReaperAnimName, GolemAnimName } from '../rendering/SpriteAnimator';
 
 export type BossId = 'golem' | 'reaper';
 
@@ -76,6 +76,8 @@ export class Boss {
 
     if (bossId === 'reaper') {
       this.sprite = createReaperSprite();
+    } else if (bossId === 'golem') {
+      this.sprite = createGolemSprite();
     } else {
       this.sprite = new Sprite(cfg.sprite);
     }
@@ -91,9 +93,11 @@ export class Boss {
     }
   }
 
-  playAnim(name: ReaperAnimName, loop = true) {
+  playAnim(name: ReaperAnimName | GolemAnimName, loop = true) {
     if (this.bossId === 'reaper') {
-      playReaperAnimation(this.sprite as AnimatedSprite, name, loop);
+      playReaperAnimation(this.sprite as AnimatedSprite, name as ReaperAnimName, loop);
+    } else if (this.bossId === 'golem') {
+      playGolemAnimation(this.sprite as AnimatedSprite, name as GolemAnimName, loop);
     }
   }
 
@@ -164,26 +168,44 @@ export class Boss {
       this.y += moveY;
     }
 
+    // Walk/idle animation
+    if (!this.attacking) {
+      if (dist > 80) {
+        this.playAnim('walk');
+      } else {
+        this.playAnim('idle');
+      }
+    }
+
     if (this.aiTimer <= 0 && !this.attacking) {
       this.aiTimer = 60 + Math.random() * 60;
       this.attackCooldown = 40;
 
-      const available: (() => void)[] = [() => this.prepareTelegraph({
-        type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
-        radius: 100, duration: 40, maxDuration: 40, color: 0xff8844,
-      })];
+      const available: (() => void)[] = [() => {
+        this.playAnim('attack', false);
+        this.prepareTelegraph({
+          type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
+          radius: 100, duration: 40, maxDuration: 40, color: 0xff8844,
+        });
+      }]; // Ground Slam
 
-      available.push(() => this.prepareTelegraph({
-        type: 'line', x: this.x, y: this.y,
-        targetX: px, targetY: py,
-        duration: 40, maxDuration: 40, color: 0xff4444,
-      }));
+      available.push(() => {
+        this.playAnim('attack', false);
+        this.prepareTelegraph({
+          type: 'line', x: this.x, y: this.y,
+          targetX: px, targetY: py,
+          duration: 40, maxDuration: 40, color: 0xff4444,
+        });
+      }); // Boulder Toss
 
       if (this.phase >= 1) {
-        available.push(() => this.prepareTelegraph({
-          type: 'circle', x: this.x, y: this.y,
-          radius: 80, duration: 50, maxDuration: 50, color: 0xff6622,
-        }));
+        available.push(() => {
+          this.playAnim('attack', false);
+          this.prepareTelegraph({
+            type: 'circle', x: this.x, y: this.y,
+            radius: 80, duration: 50, maxDuration: 50, color: 0xff6622,
+          });
+        }); // Stomp
       }
 
       const idx = Math.floor(Math.random() * available.length);
