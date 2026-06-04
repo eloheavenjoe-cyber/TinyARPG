@@ -3,20 +3,21 @@ import { EnemyType } from '../entities/Enemy';
 export type BiomeId = 'dev' | 'hub' | 'tutorial' | 'forest' | 'desert' | 'ice' | 'endless';
 
 export interface BiomeData {
-  floorColorA: number;
-  floorColorB: number;
+  floorColor: number;
   wallColor: number;
   wallBorderColor: number;
+  decorColor: number;
+  decorColorB: number;
 }
 
 export const BIOME_DATA: Record<BiomeId, BiomeData> = {
-  dev:       { floorColorA: 0x3a3a3a, floorColorB: 0x404040, wallColor: 0x4a4a5a, wallBorderColor: 0x5a5a6a },
-  hub:       { floorColorA: 0x5a5a4a, floorColorB: 0x555545, wallColor: 0x6a5a4a, wallBorderColor: 0x7a6a5a },
-  tutorial:  { floorColorA: 0x4a6a3a, floorColorB: 0x406030, wallColor: 0x3a5a2a, wallBorderColor: 0x4a6a3a },
-  forest:    { floorColorA: 0x3a5a2a, floorColorB: 0x406030, wallColor: 0x3a4a2a, wallBorderColor: 0x4a5a3a },
-  desert:    { floorColorA: 0x8a7a4a, floorColorB: 0x7a6a3a, wallColor: 0x9a7a5a, wallBorderColor: 0xaa8a6a },
-  ice:       { floorColorA: 0xaaccff, floorColorB: 0x99bbee, wallColor: 0x8899cc, wallBorderColor: 0x99aadd },
-  endless:   { floorColorA: 0x4a3a5a, floorColorB: 0x403050, wallColor: 0x3a2a4a, wallBorderColor: 0x4a3a5a },
+  dev:       { floorColor: 0x3d3d45, wallColor: 0x4a4a5a, wallBorderColor: 0x5a5a6a, decorColor: 0x505060, decorColorB: 0x353545 },
+  hub:       { floorColor: 0x585848, wallColor: 0x6a5a4a, wallBorderColor: 0x7a6a5a, decorColor: 0x4a4a3a, decorColorB: 0x606050 },
+  tutorial:  { floorColor: 0x456035, wallColor: 0x3a5a2a, wallBorderColor: 0x4a6a3a, decorColor: 0x5a3a1a, decorColorB: 0x2a4a1a },
+  forest:    { floorColor: 0x3a552a, wallColor: 0x3a4a2a, wallBorderColor: 0x4a5a3a, decorColor: 0x5a3a1a, decorColorB: 0x2a4a1a },
+  desert:    { floorColor: 0x7a6a3a, wallColor: 0x9a7a5a, wallBorderColor: 0xaa8a6a, decorColor: 0x6a6a5a, decorColorB: 0x3a6a2a },
+  ice:       { floorColor: 0xaabbdd, wallColor: 0x8899cc, wallBorderColor: 0x99aadd, decorColor: 0xddeeff, decorColorB: 0xeeeeff },
+  endless:   { floorColor: 0x453555, wallColor: 0x3a2a4a, wallBorderColor: 0x4a3a5a, decorColor: 0x8844aa, decorColorB: 0x663388 },
 };
 
 export interface DoorMarker {
@@ -37,6 +38,7 @@ export interface RoomTemplate {
   portals: PortalMarker[];
   spawnZones: { x: number; y: number; width: number; height: number }[];
   playerStart: { x: number; y: number };
+  decorationRects: { x: number; y: number; width: number; height: number }[];
 }
 
 export interface ZoneConfig {

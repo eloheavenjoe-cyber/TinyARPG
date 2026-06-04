@@ -60,8 +60,9 @@ export class Room {
   biomeData: BiomeData;
   doors: DoorMarker[];
   portals: PortalMarker[];
+  private decorations: Rect[];
 
-  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = []) {
+  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = []) {
     this.container = new Container();
     this.walkableArea = {
       x: WALL_THICKNESS,
@@ -72,24 +73,31 @@ export class Room {
     this.biomeData = BIOME_DATA[biome];
     this.doors = doors;
     this.portals = portals;
+    this.decorations = decorations;
     this.build();
     Logger.log('system', `Room created: ${ROOM_WIDTH}x${ROOM_HEIGHT}, walkable: ${this.walkableArea.width}x${this.walkableArea.height}`);
   }
 
   private build() {
-    const tilesX = Math.ceil(ROOM_WIDTH / TILE_SIZE);
-    const tilesY = Math.ceil(ROOM_HEIGHT / TILE_SIZE);
+    // Solid floor background
+    const floor = new Graphics().beginFill(this.biomeData.floorColor).drawRect(0, 0, ROOM_WIDTH, ROOM_HEIGHT).endFill();
+    this.container.addChild(floor);
 
-    for (let ty = 0; ty < tilesY; ty++) {
-      for (let tx = 0; tx < tilesX; tx++) {
-        const tile = new Graphics().beginFill(
-          (tx + ty) % 2 === 0 ? this.biomeData.floorColorA : this.biomeData.floorColorB
-        ).drawRect(0, 0, TILE_SIZE, TILE_SIZE).endFill();
-        tile.x = tx * TILE_SIZE;
-        tile.y = ty * TILE_SIZE;
-        this.container.addChild(tile);
-      }
+    // Scatter tiles for floor variation
+    const scatter = new Graphics();
+    for (let i = 0; i < 200; i++) {
+      const sx = Math.random() * ROOM_WIDTH;
+      const sy = Math.random() * ROOM_HEIGHT;
+      const shade = Math.random() < 0.5 ? 0.05 : -0.05;
+      const r = ((this.biomeData.floorColor >> 16) & 0xff) + Math.round(shade * 255);
+      const g = ((this.biomeData.floorColor >> 8) & 0xff) + Math.round(shade * 255);
+      const b = (this.biomeData.floorColor & 0xff) + Math.round(shade * 255);
+      const c = Math.min(255, Math.max(0, r)) << 16 | Math.min(255, Math.max(0, g)) << 8 | Math.min(255, Math.max(0, b));
+      scatter.beginFill(c, 0.4);
+      scatter.drawRect(sx, sy, 6 + Math.random() * 8, 6 + Math.random() * 6);
+      scatter.endFill();
     }
+    this.container.addChild(scatter);
 
     this.walls.push({ x: 0, y: 0, width: ROOM_WIDTH, height: WALL_THICKNESS });
     this.walls.push({ x: 0, y: ROOM_HEIGHT - WALL_THICKNESS, width: ROOM_WIDTH, height: WALL_THICKNESS });
@@ -111,6 +119,7 @@ export class Room {
 
     this.container.addChild(wallGfx, wallBorder);
 
+    this.renderDecorations();
     this.renderDoors();
     this.renderPortals();
   }
@@ -142,5 +151,25 @@ export class Room {
       g.drawCircle(cx, cy, r * 0.6);
       this.container.addChild(g);
     }
+  }
+
+  private renderDecorations() {
+    const d = this.biomeData;
+    const g = new Graphics();
+    for (const dec of this.decorations) {
+      const cx = dec.x + dec.width / 2;
+      const cy = dec.y + dec.height / 2;
+      const r = Math.min(dec.width, dec.height) / 2;
+      if (Math.random() < 0.5) {
+        g.beginFill(d.decorColor, 0.7);
+        g.drawCircle(cx, cy, r);
+        g.endFill();
+      } else {
+        g.beginFill(d.decorColorB, 0.6);
+        g.drawRoundedRect(dec.x, dec.y, dec.width, dec.height, 3);
+        g.endFill();
+      }
+    }
+    this.container.addChild(g);
   }
 }
