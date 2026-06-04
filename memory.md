@@ -8,10 +8,12 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 ## Architecture (current)
 
 ```
-src/
+  src/
   main.ts                     Entry — creates PixiJS Application, boots Game
   core/
-    Game.ts                   State machine, game loop, wave spawning, dev console wiring, projectile management
+    Game.ts                   State machine, game loop, dev console wiring, projectile management, zone transitions
+    ZoneConfig.ts             Zone definitions, biome data, room template types, ZONE_REGISTRY
+    ZoneManager.ts            Zone state, transitions, enemy spawning, endless scaling
     InputManager.ts           WASD + mouse, canvas-coordinate conversion, right-click support
     Logger.ts                 Categorized logging ([Input] [Combat] [Skill] etc)
     SkillDefs.ts              All Warrior + Ranger skill data (main + support skills)
@@ -27,7 +29,8 @@ src/
     ItemDrop.ts               Ground loot nameplates (gold/potions/items/orbs) with rarity colors
     Projectile.ts             Projectiles with hostile flag, slow effect, colored orbs
   world/
-    Room.ts                   1600×896 room, wall collision resolver
+    Room.ts                   1600×896 room, wall collision resolver, biome-aware floor/walls, door/portal markers
+    RoomTemplates.ts          Pre-defined room layout templates (5 base + hub/tutorial/arena/dungeon/dev + 12 story zone)
   rendering/
     Sprites.ts                Programmatic pixel-art textures (player, enemy, archer, cultist, juggernaut, floor, wall)
   ui/
@@ -160,6 +163,18 @@ src/
 
 ### Phase 4h — Developer Console (completed 2026-06-04)
 - DOM-based overlay toggled with backtick (`) key
+
+### Phase 5 — Endgame Zones (completed 2026-06-04)
+- Zone system: ZoneConfig (types + registry) + ZoneManager (state, transitions, enemy spawning)
+- Biome-aware Room: floor/wall colors per biome (hub/tutorial/forest/desert/ice/endless/dev)
+- Room templates: 5 base layouts (open, pillars, L-shape, cross, ring) + zone-specific templates (17 total)
+- Hub town with 6 clickable portals to all zones
+- Tutorial zone: single room, 2-3 weak grunts, exit door to hub
+- 3 story zones: Verdant Forest (3 rooms), Scorched Desert (4 rooms), Frozen Wastes (5 rooms) with progressive difficulty
+- Endless Arena: single-room wave-based, infinite scaling
+- Endless Dungeon: procedural rooms with progressive difficulty, exit portal to hub
+- Dev room: accessible via `/devroom` command, door back to hub
+- HUD zone name display, door/portal rendering
 - Commands: /additem, /addorb, /addgold, /addlevel, /addxp, /passivepoints, /attrpoints,
   /heal, /killall, /spawn, /speed, /god, /help, /clear
 - Command history (up/down arrows), tab autocomplete
@@ -193,12 +208,12 @@ src/
 
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
-- No save/load (localStorage planned — Phase 4d)
-- No endgame maps/zones (Phase 5)
+- No save/load (localStorage planned)
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
 - No max orb stack size (stacks grow indefinitely, fine for current scope)
 - Level requirements displayed but not enforced (player can equip above level)
-- Enemies don't drop map items yet
+- Hub NPCs/vendor/stash are placeholders only
+- Endless Dungeon uses single template (no per-room rotation)
 
 ## Next Up
 
@@ -208,14 +223,12 @@ src/
 - Load on game start, continue from saved state
 - Needed before adding more permanent progression systems
 
-### Phase 5 — Endgame
-- Multiple themed zones with different visuals
-- Mapping system: consumable map items generate new zones
-- Zone transitions: walk to edge to advance
-- Difficulty scaling: enemies scale with zone level
-- Map modifiers (affixes on map items)
+### Phase 6 — Polish & Expansion
+- Hub NPCs, vendor, stash interactions
 - Boss encounters with unique mechanics
-- Infinite scaling / endless mode
+- Map modifiers (affixes on map items)
+- More room templates for variety
+- Balance pass on difficulty scaling
 
 ## Co-authoring
 This workspace may be shared between AI agents. Always read before writing —
@@ -235,6 +248,11 @@ without explicit approval. See AGENTS.md for full coordination rules.
 - **HUD position:** HUD and skill bar live at screen-coord Y=1030. Ensure canvas viewport scaling is active so bottom isn't clipped.
 - **Projectile positioning:** projectiles are children of gameContainer (offset 160,92), so use game-local coords, not screen coords.
 - **Inventory type:** `InventorySlot` union type (`EquipSlot | OrbInfo | null`) — any code accessing inventory must check `.kind` before accessing `.item` or `.orbId`.
+- **Zone transitions:** doors use overlap detection (`rectsOverlap`), portals use click detection with game-local coords
+- **Door Y position:** fixed at 828 (walkable area bottom) to avoid wall overlap
+- **Room templates:** deep-cloned via `cloneTemplate()` to prevent mutation of shared constants
+- **Endless scaling:** dungeon uses `endlessRoomCount`, arena uses `endlessWave`
+- **nextRoom() null guard:** prevents softlock when a zone has no nextZone
 - **Dev console DOM overlay:** Created via `document.createElement`, toggled with backtick. `pointer-events: auto` so it blocks canvas input when open. Remember `display: none` to hide.
 - **Stat parenthes precedence:** In `StatSystem.ts`, `add('hpPct') || 0 + equipHpPct` has wrong precedence — must be `(add('hpPct') || 0) + equipHpPct`.
 - **Enemy repulsion:** Enemies push apart in update loop. Repulsion uses `minDist` from combined widths. Must iterate with `for (const other of enemies)` including self-check.
