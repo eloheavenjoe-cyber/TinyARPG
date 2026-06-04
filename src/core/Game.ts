@@ -13,11 +13,11 @@ import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
-import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop } from '../entities/ItemDrop';
+import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, isOrbDrop, createOrbDrop } from '../entities/ItemDrop';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
-import { generateItemDrop } from './ItemGenerator';
+import { generateItemDrop, generateOrbDrop } from './ItemGenerator';
 import { Slot } from './ItemDefs';
 
 export const SCREEN_WIDTH = 1920;
@@ -300,6 +300,16 @@ export class Game {
       let clickedItem = false;
       for (const drop of this.itemDrops) {
         if (drop.pickedUp) continue;
+        if (isOrbDrop(drop) && Math.hypot(mouseWX - drop.x, mouseWY - drop.y) < 30) {
+          if (this.player!.pickupOrb(drop.item.orbId)) {
+            drop.pickup();
+            this.gameContainer!.removeChild(drop.container);
+            drop.destroy();
+            this.itemDrops.splice(this.itemDrops.indexOf(drop), 1);
+          }
+          clickedItem = true;
+          break;
+        }
         if (isEquippableDrop(drop) && Math.hypot(mouseWX - drop.x, mouseWY - drop.y) < 30) {
           const gen = drop.item.generated;
           if (this.player!.pickupItem(gen)) {
@@ -662,6 +672,12 @@ export class Game {
       this.itemDrops.push(drop);
       this.gameContainer!.addChild(drop.container);
     }
+    if (Math.random() < 0.05) {
+      const orb = generateOrbDrop();
+      const drop = createOrbDrop(x, y, orb.orbId, orb.name);
+      this.itemDrops.push(drop);
+      this.gameContainer!.addChild(drop.container);
+    }
   }
 
   private tryPickupItems() {
@@ -760,6 +776,27 @@ export class Game {
       this.inventoryScreen.onUnequipCallback((slot: Slot) => {
         if (this.player) {
           this.player.unequipItem(slot);
+          this.inventoryScreen?.update(
+            this.player.inventory, this.player.equipment,
+            this.player.computedStats, this.input,
+          );
+        }
+      });
+      this.inventoryScreen.onCraftOrbCallback((orbId: string, slot: Slot) => {
+        if (this.player) {
+          let success = false;
+          if (orbId === 'empowerment') success = this.player.empowerItem(slot);
+          else if (orbId === 'flux') success = this.player.fluxItem(slot);
+          if (success) {
+            const orbIdx = this.player.inventory.findIndex(
+              s => s !== null && s.kind === 'orb' && s.orbId === orbId
+            );
+            if (orbIdx >= 0) {
+              const orbSlot = this.player.inventory[orbIdx] as any;
+              orbSlot.count--;
+              if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
+            }
+          }
           this.inventoryScreen?.update(
             this.player.inventory, this.player.equipment,
             this.player.computedStats, this.input,
