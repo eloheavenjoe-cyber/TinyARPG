@@ -109,34 +109,44 @@ export const TEMPLATE_RING: RoomTemplate = {
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
-// Hub — town with portal positions
+// Hub — town with portal positions, ~3200x1792 playable area centered in the big room
+const HUB_PLAY_MIN_X = 1600;
+const HUB_PLAY_MAX_X = 4800;
+const HUB_PLAY_MIN_Y = 896;
+const HUB_PLAY_MAX_Y = 2688;
 export const TEMPLATE_HUB: RoomTemplate = {
-  walls: [],
+  walls: [
+    // Filler walls to shrink the playable area to ~3200x1792
+    { x: 0, y: 0, width: HUB_PLAY_MIN_X, height: ROOM_HEIGHT },
+    { x: HUB_PLAY_MAX_X, y: 0, width: ROOM_WIDTH - HUB_PLAY_MAX_X, height: ROOM_HEIGHT },
+    { x: 0, y: 0, width: ROOM_WIDTH, height: HUB_PLAY_MIN_Y },
+    { x: 0, y: HUB_PLAY_MAX_Y, width: ROOM_WIDTH, height: ROOM_HEIGHT - HUB_PLAY_MAX_Y },
+  ],
   doors: [],
   portals: [
-    { rect: { x: 200, y: 320, width: 320, height: 320 }, targetZone: 'tutorial', label: 'Tutorial' },
-    { rect: { x: 5880, y: 320, width: 320, height: 320 }, targetZone: 'endless_arena', label: 'Endless Arena' },
-    { rect: { x: 200, y: 1600, width: 320, height: 320 }, targetZone: 'forest', label: 'Verdant Forest' },
-    { rect: { x: 5880, y: 1600, width: 320, height: 320 }, targetZone: 'desert', label: 'Scorched Desert' },
-    { rect: { x: 200, y: 2880, width: 320, height: 320 }, targetZone: 'ice', label: 'Frozen Wastes' },
-    { rect: { x: 5880, y: 2880, width: 320, height: 320 }, targetZone: 'endless_dungeon', label: 'Endless Dungeon' },
+    { rect: { x: 1750, y: 1070, width: 100, height: 100 }, targetZone: 'tutorial', label: 'Tutorial' },
+    { rect: { x: 1750, y: 1470, width: 100, height: 100 }, targetZone: 'forest', label: 'Verdant Forest' },
+    { rect: { x: 1750, y: 1870, width: 100, height: 100 }, targetZone: 'desert', label: 'Scorched Desert' },
+    { rect: { x: 4550, y: 1070, width: 100, height: 100 }, targetZone: 'endless_arena', label: 'Endless Arena' },
+    { rect: { x: 4550, y: 1470, width: 100, height: 100 }, targetZone: 'ice', label: 'Frozen Wastes' },
+    { rect: { x: 4550, y: 1870, width: 100, height: 100 }, targetZone: 'endless_dungeon', label: 'Endless Dungeon' },
   ],
   spawnZones: [],
   decorationRects: [
-    { x: 800, y: 800, width: 56, height: 56 },
-    { x: 5600, y: 800, width: 48, height: 48 },
-    { x: 1200, y: 2400, width: 64, height: 64 },
-    { x: 5200, y: 2400, width: 40, height: 40 },
+    { x: 2000, y: 1000, width: 56, height: 56 },
+    { x: 4000, y: 1000, width: 48, height: 48 },
+    { x: 2000, y: 2400, width: 64, height: 64 },
+    { x: 4000, y: 2400, width: 40, height: 40 },
   ],
   buildings: [
-    { x: 800, y: 1200, width: 640, height: 480, wallColor: 0x6a5a4a, roofColor: 0x5a3a2a, label: 'Vendor' },
-    { x: 4960, y: 1200, width: 640, height: 480, wallColor: 0x5a6a5a, roofColor: 0x3a4a3a, label: 'Stash' },
+    { x: 2700, y: 1100, width: 400, height: 250, wallColor: 0x6a5a4a, roofColor: 0x5a3a2a, label: 'Vendor' },
+    { x: 3300, y: 1100, width: 400, height: 250, wallColor: 0x5a6a5a, roofColor: 0x3a4a3a, label: 'Stash' },
   ],
   npcs: [
-    { x: 1120, y: 1760, label: 'Vendor', tint: 0x44aa66 },
-    { x: 5280, y: 1760, label: 'Stash', tint: 0x4488cc },
+    { x: 2900, y: 1380, label: 'Vendor', tint: 0x44aa66 },
+    { x: 3500, y: 1380, label: 'Stash', tint: 0x4488cc },
   ],
-  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
+  playerStart: { x: 3200, y: 1792 },
 };
 
 // Tutorial — exit door to hub

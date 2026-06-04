@@ -29,6 +29,7 @@ import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
 import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, playMonkAnimation } from '../rendering/SpriteAnimator';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
+import { Minimap } from '../ui/Minimap';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -96,6 +97,7 @@ export class Game {
   private tutorialKeyWasDown: Set<string> = new Set();
   private boss: Boss | null = null;
   private bossHpBar?: BossHpBar;
+  private minimap?: Minimap;
   private bossSpawned = false;
 
   constructor(app: Application) {
@@ -217,6 +219,8 @@ export class Game {
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
     this.app.stage.addChild(this.skillBar.container);
+    this.minimap = new Minimap();
+    this.app.stage.addChild(this.minimap.container);
     this.zoneManager.transitionTo('tutorial');
     this.buildCurrentZoneRoom();
     this.tutorialStage = 'move';
@@ -260,6 +264,15 @@ export class Game {
 
     const zone = state.config;
     const template = state.currentTemplate;
+
+    // Update camera clamp bounds for hub vs regular rooms
+    if (this.camera) {
+      if (zone.id === 'hub') {
+        this.camera.setClampBounds({ x: 1600, y: 896, width: 3200, height: 1792 });
+      } else {
+        this.camera.setClampBounds();
+      }
+    }
 
     // Clean up tutorial when leaving the tutorial zone
     if (zone.id !== 'tutorial' && this.tutorialScreen) {
@@ -592,6 +605,11 @@ export class Game {
       this.camera.update(this.player.x, this.player.y, dt);
       this.gameContainer!.x = -this.camera.x;
       this.gameContainer!.y = -this.camera.y;
+    }
+
+    // Update minimap
+    if (this.minimap && this.room) {
+      this.minimap.update(this.player.x, this.player.y, this.room.walls, this.enemies, this.chests, this.breakables);
     }
 
     // Recall portal drawing and collision
@@ -1781,6 +1799,7 @@ export class Game {
     }
     if (this.hud) { this.app.stage.removeChild(this.hud.container); this.hud.destroy(); this.hud = undefined; }
     if (this.skillBar) { this.app.stage.removeChild(this.skillBar.container); this.skillBar.destroy(); this.skillBar = undefined; }
+    if (this.minimap) { this.app.stage.removeChild(this.minimap.container); this.minimap.destroy(); this.minimap = undefined; }
 
     // Boss cleanup must happen before gameContainer destroy
     if (this.boss) {
