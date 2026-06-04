@@ -99,7 +99,13 @@ export function generateItemDrop(): GeneratedItem {
 }
 
 export function generateOrbDrop(): { orbId: string; name: string } {
-  const r = Math.random();
-  if (r < 0.5) return { orbId: 'empowerment', name: 'Orb of Empowerment' };
-  return { orbId: 'flux', name: 'Orb of Flux' };
+  const orbs = [
+    { orbId: 'empowerment', name: 'Orb of Empowerment' },
+    { orbId: 'flux', name: 'Orb of Flux' },
+    { orbId: 'mutation', name: 'Orb of Mutation' },
+    { orbId: 'growth', name: 'Orb of Growth' },
+    { orbId: 'ascendance', name: 'Orb of Ascendance' },
+    { orbId: 'purification', name: 'Orb of Purification' },
+  ];
+  return orbs[Math.floor(Math.random() * orbs.length)];
 }

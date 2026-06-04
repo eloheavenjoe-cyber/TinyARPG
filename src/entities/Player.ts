@@ -218,6 +218,151 @@ export class Player {
     return ok;
   }
 
+  private mutateItemInternal(item: GeneratedItem): boolean {
+    if (item.rarity !== 'normal' || item.uniqueId) return false;
+
+    const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
+    const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+
+    item.affixes = [];
+    for (const src of [prefixes.slice(0, 1), suffixes.slice(0, 1)]) {
+      for (const affix of src) {
+        const roll = affix.min + Math.floor(Math.random() * (affix.max - affix.min + 1));
+        item.affixes.push({ affix, roll });
+      }
+    }
+
+    item.rarity = 'magic';
+    const stats: Record<string, number> = { ...item.base.innateStats };
+    if (item.damageRoll > 0) stats.damage = item.damageRoll;
+    for (const p of item.affixes) {
+      stats[p.affix.stat] = (stats[p.affix.stat] || 0) + p.roll;
+    }
+    item.computedStats = stats;
+    return true;
+  }
+
+  private growItemInternal(item: GeneratedItem): boolean {
+    if (item.rarity !== 'magic' || item.uniqueId) return false;
+    if (item.affixes.length >= 4) return false;
+
+    const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
+    const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+
+    const usedStats = new Set(item.affixes.map(a => a.affix.stat));
+    const pool = item.affixes.length <= 2 ? prefixes : suffixes;
+    const pick = pool.find(a => !usedStats.has(a.stat));
+    if (!pick) return false;
+
+    const roll = pick.min + Math.floor(Math.random() * (pick.max - pick.min + 1));
+    item.affixes.push({ affix: pick, roll });
+    item.computedStats[pick.stat] = (item.computedStats[pick.stat] || 0) + roll;
+    return true;
+  }
+
+  private ascendItemInternal(item: GeneratedItem): boolean {
+    if (item.rarity !== 'normal' || item.uniqueId) return false;
+
+    const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
+    const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+    const count = 4 + Math.floor(Math.random() * 3);
+
+    const pickPref = Math.min(Math.ceil(count / 2), prefixes.length);
+    const pickSuff = Math.min(Math.floor(count / 2), suffixes.length);
+
+    item.affixes = [];
+    for (const src of [prefixes.slice(0, pickPref), suffixes.slice(0, pickSuff)]) {
+      for (const affix of src) {
+        const roll = affix.min + Math.floor(Math.random() * (affix.max - affix.min + 1));
+        item.affixes.push({ affix, roll });
+      }
+    }
+
+    item.rarity = 'rare';
+    const stats: Record<string, number> = { ...item.base.innateStats };
+    if (item.damageRoll > 0) stats.damage = item.damageRoll;
+    for (const p of item.affixes) {
+      stats[p.affix.stat] = (stats[p.affix.stat] || 0) + p.roll;
+    }
+    item.computedStats = stats;
+    return true;
+  }
+
+  private purifyItemInternal(item: GeneratedItem): boolean {
+    if (item.rarity === 'normal' || item.uniqueId) return false;
+
+    item.affixes = [];
+    item.rarity = 'normal';
+    const stats: Record<string, number> = { ...item.base.innateStats };
+    if (item.damageRoll > 0) stats.damage = item.damageRoll;
+    item.computedStats = stats;
+    return true;
+  }
+
+  mutateItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const ok = this.mutateItemInternal(item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  growItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const ok = this.growItemInternal(item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  ascendItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const ok = this.ascendItemInternal(item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  purifyItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const ok = this.purifyItemInternal(item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  mutateInventoryItem(gridIndex: number): boolean {
+    const entry = this.inventory[gridIndex];
+    if (!entry || entry.kind !== 'equip') return false;
+    const ok = this.mutateItemInternal(entry.item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  growInventoryItem(gridIndex: number): boolean {
+    const entry = this.inventory[gridIndex];
+    if (!entry || entry.kind !== 'equip') return false;
+    const ok = this.growItemInternal(entry.item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  ascendInventoryItem(gridIndex: number): boolean {
+    const entry = this.inventory[gridIndex];
+    if (!entry || entry.kind !== 'equip') return false;
+    const ok = this.ascendItemInternal(entry.item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  purifyInventoryItem(gridIndex: number): boolean {
+    const entry = this.inventory[gridIndex];
+    if (!entry || entry.kind !== 'equip') return false;
+    const ok = this.purifyItemInternal(entry.item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
   addXp(amount: number): boolean {
     this.xp += amount;
     let leveled = false;

@@ -97,7 +97,11 @@ export class InventoryScreen {
             displayName = entry.item.base.name;
             displayColor = getRarityColor(entry.item.rarity);
           } else if (entry.kind === 'orb') {
-            const names: Record<string, string> = { empowerment: 'Empower', flux: 'Flux' };
+            const names: Record<string, string> = {
+              empowerment: 'Empower', flux: 'Flux',
+              mutation: 'Mutate', growth: 'Growth',
+              ascendance: 'Ascend', purification: 'Purify',
+            };
             displayName = `${names[entry.orbId] || entry.orbId} x${entry.count}`;
             displayColor = 0x44dddd;
           }
@@ -271,8 +275,20 @@ export class InventoryScreen {
     const descriptions: Record<string, string> = {
       empowerment: 'Adds a random affix to a\nrare item',
       flux: 'Re-rolls all affixes on a\nrare item',
+      mutation: 'Upgrades a normal item to\nmagic with 2 affixes',
+      growth: 'Adds a random affix to a\nmagic item (max 4)',
+      ascendance: 'Upgrades a normal item to\nrare with 4-6 affixes',
+      purification: 'Removes all affixes from a\nmagic or rare item',
     };
-    const name = orb.orbId === 'empowerment' ? 'Orb of Empowerment' : 'Orb of Flux';
+    const orbNames: Record<string, string> = {
+      empowerment: 'Orb of Empowerment',
+      flux: 'Orb of Flux',
+      mutation: 'Orb of Mutation',
+      growth: 'Orb of Growth',
+      ascendance: 'Orb of Ascendance',
+      purification: 'Orb of Purification',
+    };
+    const name = orbNames[orb.orbId] || orb.orbId;
     this.tooltip = new Container();
     const txt = new Text(`${name} (${orb.count})\n${descriptions[orb.orbId] || ''}`, new TextStyle({
       fontFamily: 'monospace', fontSize: 11, fill: 0x44dddd, lineHeight: 16,
@@ -438,7 +454,7 @@ export class InventoryScreen {
               if (success) {
                 this.craftMessage = 'Orb applied!';
               } else {
-                this.craftMessage = 'Item must be rare';
+                this.craftMessage = 'Item not eligible';
               }
               this.craftMessageTimer = 120;
               this.activeOrb = null;
@@ -466,7 +482,7 @@ export class InventoryScreen {
           if (success) {
             this.craftMessage = 'Orb applied!';
           } else {
-            this.craftMessage = 'Item must be rare';
+            this.craftMessage = 'Item not eligible';
           }
           this.craftMessageTimer = 120;
           this.activeOrb = null;

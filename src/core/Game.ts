@@ -796,8 +796,14 @@ export class Game {
       this.inventoryScreen.onCraftOrbCallback((orbId: string, slot: Slot): boolean => {
         if (!this.player) return false;
         let success = false;
-        if (orbId === 'empowerment') success = this.player.empowerItem(slot);
-        else if (orbId === 'flux') success = this.player.fluxItem(slot);
+        switch (orbId) {
+          case 'empowerment': success = this.player.empowerItem(slot); break;
+          case 'flux': success = this.player.fluxItem(slot); break;
+          case 'mutation': success = this.player.mutateItem(slot); break;
+          case 'growth': success = this.player.growItem(slot); break;
+          case 'ascendance': success = this.player.ascendItem(slot); break;
+          case 'purification': success = this.player.purifyItem(slot); break;
+        }
         if (success) {
           const orbIdx = this.player.inventory.findIndex(
             s => s !== null && s.kind === 'orb' && s.orbId === orbId
@@ -817,8 +823,14 @@ export class Game {
       this.inventoryScreen.onCraftOrbGridCallback((orbId: string, gridIndex: number): boolean => {
         if (!this.player) return false;
         let success = false;
-        if (orbId === 'empowerment') success = this.player.empowerInventoryItem(gridIndex);
-        else if (orbId === 'flux') success = this.player.fluxInventoryItem(gridIndex);
+        switch (orbId) {
+          case 'empowerment': success = this.player.empowerInventoryItem(gridIndex); break;
+          case 'flux': success = this.player.fluxInventoryItem(gridIndex); break;
+          case 'mutation': success = this.player.mutateInventoryItem(gridIndex); break;
+          case 'growth': success = this.player.growInventoryItem(gridIndex); break;
+          case 'ascendance': success = this.player.ascendInventoryItem(gridIndex); break;
+          case 'purification': success = this.player.purifyInventoryItem(gridIndex); break;
+        }
         if (success) {
           const orbIdx = this.player.inventory.findIndex(
             s => s !== null && s.kind === 'orb' && s.orbId === orbId
