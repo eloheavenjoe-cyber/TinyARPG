@@ -330,7 +330,6 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
-- No save/load (localStorage planned)
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
 - No max orb stack size (stacks indefinitely, fine for current scope)
 - Level requirements displayed but not enforced (player can equip above level)
@@ -378,20 +377,15 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Juggernaut sprite sheet attempt **reverted** — programmatic texture restored.
 
 ### Phase 5k — Save/Load System (completed 2026-06-05)
-- 5 save slots via localStorage with `TinyARPG_save_0` through `TinyARPG_save_4` keys + `TinyARPG_meta` for slot metadata
-- Slot metadata: character name, class, level, timestamp, zone name
-- Save manager (`src/core/SaveManager.ts`): static class with getAllSlots/getSlotMeta/saveToSlot/loadFromSlot/deleteSlot/getFirstOccupiedSlot/getFirstEmptySlot
-- Serialization: player position, HP/mana, gold, level, XP, attributes, inventory (equip + orbs), equipment (7 slots), skill slots (6), passive tree allocations, zone state (current zone/room, completed zones)
-- Object references (ItemBase, ItemAffix, SkillDef) stored as IDs, resolved on load
-- All localStorage writes wrapped in try/catch; version check on load
-- `loadGame()` reconstructs full player state: re-hydrates items, skill slots, passive tree
-- `saveGame()` called from: escape menu manual save, auto-save (every 3600 frames/~60s), save & exit
-- Escape key toggles escape menu (blocks gameplay when open)
-- ~~SaveSlotScreen: 5 slot cards with class/level/timestamp/zone, delete with confirmation~~
-- ~~EscapeMenu: Resume/Save/Settings/Save & Exit buttons, "Game Saved!" toast~~
-- ~~SettingsPlaceholder: visual-only Audio/Graphics/Controls panels (not wired)~~
-- ~~MainMenu updated: New Game, Continue (loads first occupied), Load Game (opens slot picker)~~
-- ~~Inline implementation via subagent-driven development~~
+- **SaveManager** (`src/core/SaveManager.ts`): static class, 5 slots via localStorage keys `TinyARPG_save_0`–`TinyARPG_save_4` + `TinyARPG_meta` for slot metadata
+- **Slot metadata**: character name, class, level, timestamp, zone name — stored in a single meta array
+- **SaveData interface**: versioned (v1) with player state, zone state, inventory/equipment serialization
+- **Serialization**: items stored as `SerializedItem` (baseId + affixId + roll), orbs as `orbId`+count. On load, `ITEM_BASES` and `AFFIXES` arrays resolve IDs back to object references. `ALL_SKILLS` export in SkillDefs.ts for skill ID resolution.
+- **EscapeMenu** (`src/ui/EscapeMenu.ts`): in-game overlay, dark backdrop + centered panel. 4 buttons: Resume, Save, Settings, Save & Exit. "Game Saved!" toast appears for 90 frames (~1.5s) after save.
+- **SaveSlotScreen** (`src/ui/SaveSlotScreen.ts`): 5 slot cards showing class/level/timestamp/zone. Empty slots shown as "Empty Slot" (italic). Delete button (X) per slot with confirmation dialog. Supports both 'load' and 'save' modes.
+- **SettingsPlaceholder** (`src/ui/SettingsPlaceholder.ts`): visual-only panel with Audio/Graphics/Controls sections — Music Volume, SFX Volume, Quality, keybind list. Back button returns to escape menu. Labeled "(Settings are visual placeholders only)".
+- **Game.ts integration**: `loadGame()`, `saveGame()`, `exitToMenu()`, `cleanupGameSession()` methods. Escape key toggles escape menu (blocks gameplay). Auto-save every 3600 frames (~60s). `toggleEscapeMenu()` cleans up settings placeholder when closing. `cleanupGameSession()` destroys all UI/game objects for clean restart.
+- **MainMenu** updated: New Game (replaces "Start Game"), Continue (loads first occupied slot), Load Game (opens slot picker). Code refactored with shared `createButton()`.
 
 ### Phase 6 — More Monster Sprites
 - Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
@@ -405,7 +399,6 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - More room templates for variety
 - Balance pass on difficulty scaling
 - Support skill animations (dash, buff, etc.)
-- Save/load (localStorage)
 
 ## Co-authoring
 This workspace may be shared between AI agents. Always read before writing —

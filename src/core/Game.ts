@@ -769,7 +769,7 @@ export class Game {
       this.gameContainer.addChild(statueSprite);
       this.decorationSprites.push(statueSprite);
 
-      // Animated NPC sprites (overlay on Graphics NPCs)
+      // Animated NPC sprites
       const vendorNpc = createVendorSprite();
       vendorNpc.x = 2900;
       vendorNpc.y = 1380;
@@ -777,6 +777,7 @@ export class Game {
       this.decorationSprites.push(vendorNpc);
 
       const stashNpc = createStashSprite();
+      stashNpc.scale.set(1.3);
       stashNpc.x = 3500;
       stashNpc.y = 1380;
       this.gameContainer.addChild(stashNpc);

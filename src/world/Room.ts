@@ -252,19 +252,8 @@ export class Room {
 
   private renderNpcs() {
     for (const npc of this.npcs) {
-      const g = new Graphics();
       const cx = npc.x;
       const cy = npc.y;
-      // Body
-      g.beginFill(npc.tint, 0.9);
-      g.drawRoundedRect(cx - 8, cy - 8, 16, 20, 4);
-      g.endFill();
-      // Head
-      g.beginFill(0xffccaa, 0.9);
-      g.drawCircle(cx, cy - 16, 7);
-      g.endFill();
-      this.container.addChild(g);
-      // Label
       const label = new Text(npc.label, { fontFamily: 'monospace', fontSize: 12, fill: 0xffff88 });
       label.anchor.set(0.5, 0);
       label.x = cx;
