@@ -339,8 +339,8 @@ export class Boss {
 function getBossConfig(bossId: BossId): BossConfig {
   switch (bossId) {
     case 'golem':
-      return { bossId: 'golem', name: 'Stone Golem', hp: 500, size: 80, speed: 1.5, damage: 15, sprite: Sprites.golem, xpReward: 100 };
+      return { bossId: 'golem', name: 'Stone Golem', hp: 500, size: 96, speed: 1.5, damage: 15, sprite: Sprites.golem, xpReward: 100 };
     case 'reaper':
-      return { bossId: 'reaper', name: 'Death Reaper', hp: 800, size: 80, speed: 2.0, damage: 20, sprite: Sprites.reaper, xpReward: 200 };
+      return { bossId: 'reaper', name: 'Death Reaper', hp: 800, size: 96, speed: 2.0, damage: 20, sprite: Sprites.reaper, xpReward: 200 };
   }
 }
