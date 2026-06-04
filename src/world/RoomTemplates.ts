@@ -1,8 +1,7 @@
 import type { RoomTemplate } from '../core/ZoneConfig';
+import { ROOM_WIDTH, ROOM_HEIGHT } from './Room';
 
-const W = 1600;
-const H = 896;
-const T = 32;
+const WALL_T = 32;
 
 export function cloneTemplate(t: RoomTemplate): RoomTemplate {
   return {
@@ -18,8 +17,8 @@ export const TEMPLATE_OPEN: RoomTemplate = {
   walls: [],
   doors: [],
   portals: [],
-  spawnZones: [{ x: T + 50, y: T + 50, width: W - T * 2 - 100, height: H - T * 2 - 100 }],
-  playerStart: { x: W / 2, y: H / 2 },
+  spawnZones: [{ x: WALL_T + 50, y: WALL_T + 50, width: ROOM_WIDTH - WALL_T * 2 - 100, height: ROOM_HEIGHT - WALL_T * 2 - 100 }],
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
 export const TEMPLATE_PILLARS: RoomTemplate = {
@@ -32,12 +31,12 @@ export const TEMPLATE_PILLARS: RoomTemplate = {
   doors: [],
   portals: [],
   spawnZones: [
-    { x: T + 50, y: T + 50, width: 400, height: 200 },
-    { x: 1100, y: T + 50, width: 400, height: 200 },
-    { x: T + 50, y: 500, width: 400, height: 300 },
+    { x: WALL_T + 50, y: WALL_T + 50, width: 400, height: 200 },
+    { x: 1100, y: WALL_T + 50, width: 400, height: 200 },
+    { x: WALL_T + 50, y: 500, width: 400, height: 300 },
     { x: 1100, y: 500, width: 400, height: 300 },
   ],
-  playerStart: { x: W / 2, y: H / 2 },
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
 export const TEMPLATE_L_SHAPE: RoomTemplate = {
@@ -48,12 +47,12 @@ export const TEMPLATE_L_SHAPE: RoomTemplate = {
   doors: [],
   portals: [],
   spawnZones: [
-    { x: T + 50, y: T + 50, width: 500, height: 300 },
-    { x: 700, y: T + 50, width: 800, height: 100 },
+    { x: WALL_T + 50, y: WALL_T + 50, width: 500, height: 300 },
+    { x: 700, y: WALL_T + 50, width: 800, height: 100 },
     { x: 700, y: 480, width: 800, height: 350 },
-    { x: T + 50, y: 480, width: 500, height: 350 },
+    { x: WALL_T + 50, y: 480, width: 500, height: 350 },
   ],
-  playerStart: { x: W / 2, y: H / 2 },
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
 export const TEMPLATE_CROSS: RoomTemplate = {
@@ -66,12 +65,12 @@ export const TEMPLATE_CROSS: RoomTemplate = {
   doors: [],
   portals: [],
   spawnZones: [
-    { x: T + 50, y: T + 50, width: 600, height: 300 },
-    { x: 900, y: T + 50, width: 600, height: 300 },
-    { x: T + 50, y: 480, width: 600, height: 350 },
+    { x: WALL_T + 50, y: WALL_T + 50, width: 600, height: 300 },
+    { x: 900, y: WALL_T + 50, width: 600, height: 300 },
+    { x: WALL_T + 50, y: 480, width: 600, height: 350 },
     { x: 900, y: 480, width: 600, height: 350 },
   ],
-  playerStart: { x: W / 2, y: H / 2 },
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
 export const TEMPLATE_RING: RoomTemplate = {
@@ -84,10 +83,10 @@ export const TEMPLATE_RING: RoomTemplate = {
   doors: [],
   portals: [],
   spawnZones: [
-    { x: T + 50, y: T + 50, width: 550, height: 200 },
-    { x: 900, y: T + 50, width: 600, height: 200 },
-    { x: T + 50, y: 500, width: 550, height: 300 },
+    { x: WALL_T + 50, y: WALL_T + 50, width: 550, height: 200 },
+    { x: 900, y: WALL_T + 50, width: 600, height: 200 },
+    { x: WALL_T + 50, y: 500, width: 550, height: 300 },
     { x: 900, y: 500, width: 600, height: 300 },
   ],
-  playerStart: { x: W / 2, y: H / 2 },
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
