@@ -4,11 +4,14 @@ const FRAME_W = 96;
 const FRAME_H = 84;
 
 export type AnimName = 'idle' | 'walk' | 'attack';
+export type ReaperAnimName = 'idle' | 'attack' | 'death' | 'summon';
 
 let warriorFrames: Record<AnimName, Texture[]> | null = null;
 let rangerFrames: Record<AnimName, Texture[]> | null = null;
+let reaperFrames: Record<ReaperAnimName, Texture[]> | null = null;
 let pendingWarriorSprites: AnimatedSprite[] = [];
 let pendingRangerSprites: AnimatedSprite[] = [];
+let pendingReaperSprites: AnimatedSprite[] = [];
 
 function getFrames(classType: 'warrior' | 'ranger'): Record<AnimName, Texture[]> | null {
   return classType === 'ranger' ? rangerFrames : warriorFrames;
@@ -16,6 +19,10 @@ function getFrames(classType: 'warrior' | 'ranger'): Record<AnimName, Texture[]>
 
 export function isLoaded(classType: 'warrior' | 'ranger' = 'warrior'): boolean {
   return getFrames(classType) !== null;
+}
+
+export function isReaperLoaded(): boolean {
+  return reaperFrames !== null;
 }
 
 async function loadImage(url: string): Promise<HTMLImageElement> {
@@ -40,6 +47,19 @@ async function loadSheet(name: AnimName, url: string): Promise<Texture[]> {
     frames.push(new Texture(base, new Rectangle(i * FRAME_W, 0, FRAME_W, FRAME_H)));
   }
   console.log(`[SpriteAnimator] ${name}: ${frameCount} frames`);
+  return frames;
+}
+
+async function loadMultiRowSheet(url: string, frameW: number, frameH: number, totalFrames: number, cols: number): Promise<Texture[]> {
+  const img = await loadImage(url);
+  console.log(`[SpriteAnimator] multi-row: ${url} ${img.width}x${img.height} -> ${frameW}x${frameH} ${totalFrames}f ${cols}cols`);
+  const base = new BaseTexture(img);
+  const frames: Texture[] = [];
+  for (let i = 0; i < totalFrames; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    frames.push(new Texture(base, new Rectangle(col * frameW, row * frameH, frameW, frameH)));
+  }
   return frames;
 }
 
@@ -129,6 +149,76 @@ export async function loadRangerAnimations(): Promise<void> {
     }
   }
   pendingRangerSprites = [];
+}
+
+const REAPER_SHEETS: Record<ReaperAnimName, { url: string; frameW: number; frameH: number; frames: number; cols: number }> = {
+  idle: { url: 'sprites/reaper/idle2.png', frameW: 100, frameH: 100, frames: 8, cols: 4 },
+  attack: { url: 'sprites/reaper/attacking.png', frameW: 100, frameH: 100, frames: 14, cols: 6 },
+  death: { url: 'sprites/reaper/death.png', frameW: 125, frameH: 100, frames: 10, cols: 8 },
+  summon: { url: 'sprites/reaper/summon.png', frameW: 100, frameH: 100, frames: 5, cols: 4 },
+};
+
+export async function loadReaperAnimations(): Promise<void> {
+  if (reaperFrames) return;
+  const result = {} as Record<ReaperAnimName, Texture[]>;
+  const entries = Object.entries(REAPER_SHEETS) as [ReaperAnimName, typeof REAPER_SHEETS[ReaperAnimName]][];
+
+  for (const [name, cfg] of entries) {
+    try {
+      result[name] = await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols);
+    } catch {
+      console.warn(`[SpriteAnimator] fallback for reaper ${name}`);
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 100;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#442266';
+      ctx.fillRect(0, 0, 100, 100);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px monospace';
+      ctx.fillText(name, 20, 52);
+      result[name] = [Texture.from(canvas)];
+    }
+  }
+
+  reaperFrames = result;
+
+  for (const sprite of pendingReaperSprites) {
+    const f = reaperFrames.idle;
+    if (f && f.length > 0) {
+      sprite.textures = f;
+      sprite.tint = 0xffffff;
+      sprite.animationSpeed = 0.1;
+      sprite.play();
+    }
+  }
+  pendingReaperSprites = [];
+}
+
+export function createReaperSprite(): AnimatedSprite {
+  if (reaperFrames && reaperFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(reaperFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.1;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x8844aa;
+  pendingReaperSprites.push(sprite);
+  return sprite;
+}
+
+export function playReaperAnimation(sprite: AnimatedSprite, name: ReaperAnimName, loop = true) {
+  if (!reaperFrames) return;
+  const f = reaperFrames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === 'idle' ? 0.1 : 0.15;
+  sprite.gotoAndPlay(0);
 }
 
 export function createWarriorSprite(): AnimatedSprite {

@@ -22,7 +22,7 @@ import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
-import { loadWarriorAnimations, loadRangerAnimations } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations } from '../rendering/SpriteAnimator';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 
@@ -99,6 +99,7 @@ export class Game {
     this.setupConsoleCommands();
     loadWarriorAnimations();
     loadRangerAnimations();
+    loadReaperAnimations();
     Logger.log('game', 'TinyARPG initialized');
   }
 

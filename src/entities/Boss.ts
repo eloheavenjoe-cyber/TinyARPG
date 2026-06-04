@@ -1,8 +1,9 @@
-import { Sprite, Graphics, Texture } from 'pixi.js';
+import { Sprite, Graphics, Texture, AnimatedSprite } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
 import { Projectile } from './Projectile';
 import { Rect, resolveCollision } from '../world/Room';
 import { Logger } from '../core/Logger';
+import { createReaperSprite, playReaperAnimation, ReaperAnimName } from '../rendering/SpriteAnimator';
 
 export type BossId = 'golem' | 'reaper';
 
@@ -72,13 +73,26 @@ export class Boss {
     this.damage = cfg.damage;
     this.xpReward = cfg.xpReward;
 
-    this.sprite = new Sprite(cfg.sprite);
+    if (bossId === 'reaper') {
+      this.sprite = createReaperSprite();
+    } else {
+      this.sprite = new Sprite(cfg.sprite);
+    }
     this.sprite.anchor.set(0.5);
     this.sprite.tint = 0xffffff;
     this.sprite.x = x;
     this.sprite.y = y;
 
     this.telegraphs = new Graphics();
+    if (bossId === 'reaper') {
+      (this.sprite as AnimatedSprite).play();
+    }
+  }
+
+  playAnim(name: ReaperAnimName, loop = true) {
+    if (this.bossId === 'reaper') {
+      playReaperAnimation(this.sprite as AnimatedSprite, name, loop);
+    }
   }
 
   onSpawnEnemies(callback: (count: number, type: string) => void) {
@@ -106,21 +120,18 @@ export class Boss {
       case 'reaper': this.updateReaper(dx, dy, dist, dt, playerX, playerY); break;
     }
 
-    // Attack execution
-    if (this.chosenAttack && this.attacking) {
+    // Telegraph phase: count down windup, draw telegraph
+    if (this.chosenAttack && !this.attacking) {
       this.attackWindup -= dt;
+      const t = this.chosenAttack;
+      const progress = 1 - this.attackWindup / t.maxDuration;
+      this.drawTelegraph(t, progress);
       if (this.attackWindup <= 0) {
+        this.attacking = true;
         this.executeAttack(playerX, playerY);
         this.chosenAttack = null;
         this.attacking = false;
       }
-    }
-
-    // Draw telegraph
-    if (this.chosenAttack && !this.attacking) {
-      const t = this.chosenAttack;
-      const progress = 1 - t.duration / t.maxDuration;
-      this.drawTelegraph(t, progress);
     }
 
     // Wall collision
@@ -192,16 +203,30 @@ export class Boss {
       this.aiTimer = 70 + Math.random() * 80;
       this.attackCooldown = 50;
 
-      const available: (() => void)[] = [() => this.prepareTelegraph({
-        type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
-        radius: 120, duration: 45, maxDuration: 45, color: 0xcc44cc,
-      })];
+      const available: (() => void)[] = [() => {
+        this.playAnim('attack', false);
+        this.prepareTelegraph({
+          type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
+          radius: 120, duration: 45, maxDuration: 45, color: 0xcc44cc,
+        });
+      }]; // Scythe Sweep
 
       if (this.phase >= 1) {
-        available.push(() => this.prepareTelegraph({
-          type: 'circle', x: px, y: py,
-          radius: 80, duration: 50, maxDuration: 50, color: 0x8822aa,
-        }));
+        available.push(() => {
+          this.playAnim('attack', false);
+          this.prepareTelegraph({
+            type: 'circle', x: px, y: py,
+            radius: 80, duration: 50, maxDuration: 50, color: 0x8822aa,
+          });
+        }); // Teleport Slam
+      }
+
+      if (this.phase >= 2 && this.spawnEnemiesCallback) {
+        available.push(() => {
+          this.playAnim('summon', false);
+          this.spawnEnemiesCallback!(this.phase >= 3 ? 3 : 2, 'cultist');
+          this.aiTimer = 60;
+        });
       }
 
       if (this.phase >= 2 && this.spawnEnemiesCallback) {
@@ -284,7 +309,7 @@ export class Boss {
     Logger.log('combat', `[${this.name}] took ${amount} dmg (hp: ${Math.max(0, this.health)}/${this.maxHealth})`);
     if (this.health <= 0) {
       this.alive = false;
-      this.sprite.visible = false;
+      this.playAnim('death', false);
       Logger.log('entity', `${this.name} defeated`);
       return true;
     }
