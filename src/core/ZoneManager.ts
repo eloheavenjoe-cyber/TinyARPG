@@ -58,12 +58,15 @@ export class ZoneManager {
         }
       } else if (zone.isEndless === 'procgen') {
         const depth = this.endlessRoomCount;
-        if (depth > 20) type = pool[Math.floor(Math.random() * pool.length)];
-        else if (depth > 10) {
+        if (depth > 20) {
           const r = Math.random();
-          type = r < 0.3 ? 'grunt' : r < 0.6 ? 'archer' : r < 0.8 ? 'juggernaut' : 'cultist';
+          type = r < 0.3 ? 'archer' : r < 0.6 ? 'juggernaut' : 'cultist';
+        } else if (depth > 10) {
+          const r = Math.random();
+          type = r < 0.2 ? 'grunt' : r < 0.5 ? 'archer' : r < 0.75 ? 'juggernaut' : 'cultist';
         } else {
-          type = pool[Math.floor(Math.random() * pool.length)];
+          const r = Math.random();
+          type = r < 0.5 ? 'grunt' : r < 0.85 ? 'archer' : 'juggernaut';
         }
       } else {
         type = pool[Math.floor(Math.random() * pool.length)];
@@ -75,9 +78,9 @@ export class ZoneManager {
       x = Math.max(64, Math.min(ROOM_WIDTH - 64, x));
       y = Math.max(64, Math.min(ROOM_HEIGHT - 64, y));
 
-      const hpMult = this.getHpMult(zone, roomIndex);
-      const dmgMult = this.getDmgMult(zone, roomIndex);
-      const xpMult = this.getXpMult(zone, roomIndex);
+      const hpMult = this.getHpMult(zone);
+      const dmgMult = this.getDmgMult(zone);
+      const xpMult = this.getXpMult(zone);
 
       const e = new Enemy(x, y, type);
       e.maxHealth = Math.round(e.maxHealth * hpMult);
@@ -142,19 +145,19 @@ export class ZoneManager {
     return this.endlessWave;
   }
 
-  getHpMult(zone: ZoneConfig, roomIndex: number): number {
+  getHpMult(zone: ZoneConfig): number {
     if (zone.isEndless === 'procgen') return zone.enemyHpMult * (1 + this.endlessRoomCount * 0.1);
     if (zone.isEndless === 'wave') return zone.enemyHpMult * (1 + this.endlessWave * 0.08);
     return zone.enemyHpMult;
   }
 
-  getDmgMult(zone: ZoneConfig, roomIndex: number): number {
+  getDmgMult(zone: ZoneConfig): number {
     if (zone.isEndless === 'procgen') return zone.enemyDmgMult * (1 + this.endlessRoomCount * 0.08);
     if (zone.isEndless === 'wave') return zone.enemyDmgMult * (1 + this.endlessWave * 0.06);
     return zone.enemyDmgMult;
   }
 
-  getXpMult(zone: ZoneConfig, roomIndex: number): number {
+  getXpMult(zone: ZoneConfig): number {
     if (zone.isEndless === 'procgen') return zone.enemyXpMult * (1 + this.endlessRoomCount * 0.15);
     if (zone.isEndless === 'wave') return zone.enemyXpMult;
     return zone.enemyXpMult;
