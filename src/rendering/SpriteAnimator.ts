@@ -45,27 +45,24 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => { resolve(img); URL.revokeObjectURL(objUrl); };
-    img.onerror = () => { console.error(`[SpriteAnimator] failed: ${url} (${blob.size} bytes)`); reject(); };
+    img.onerror = () => { reject(); };
     img.src = objUrl;
   });
 }
 
 async function loadSheet(name: AnimName, url: string): Promise<Texture[]> {
   const img = await loadImage(url);
-  console.log(`[SpriteAnimator] ${name}: ${img.width}x${img.height}`);
   const base = new BaseTexture(img);
   const frameCount = Math.floor(base.width / FRAME_W);
   const frames: Texture[] = [];
   for (let i = 0; i < frameCount; i++) {
     frames.push(new Texture(base, new Rectangle(i * FRAME_W, 0, FRAME_W, FRAME_H)));
   }
-  console.log(`[SpriteAnimator] ${name}: ${frameCount} frames`);
   return frames;
 }
 
 async function loadMultiRowSheet(url: string, frameW: number, frameH: number, totalFrames: number, cols: number): Promise<Texture[]> {
   const img = await loadImage(url);
-  console.log(`[SpriteAnimator] multi-row: ${url} ${img.width}x${img.height} -> ${frameW}x${frameH} ${totalFrames}f ${cols}cols`);
   const base = new BaseTexture(img);
   const frames: Texture[] = [];
   for (let i = 0; i < totalFrames; i++) {
@@ -77,15 +74,13 @@ async function loadMultiRowSheet(url: string, frameW: number, frameH: number, to
 }
 
 async function loadRangerFrames(baseUrl: string, name: AnimName, filePattern: string, count: number): Promise<Texture[]> {
-  const frames: Texture[] = [];
-  for (let i = 1; i <= count; i++) {
-    const url = `${baseUrl}/${filePattern.replace('{n}', String(i))}`;
+  const results = await Promise.all(Array.from({ length: count }, async (_, i) => {
+    const frameNum = i + 1;
+    const url = `${baseUrl}/${filePattern.replace('{n}', String(frameNum))}`;
     try {
       const img = await loadImage(url);
-      console.log(`[SpriteAnimator] ranger ${name} frame ${i}: ${img.width}x${img.height}`);
-      frames.push(new Texture(new BaseTexture(img)));
+      return new Texture(new BaseTexture(img));
     } catch {
-      console.warn(`[SpriteAnimator] fallback for ranger ${name} frame ${i}`);
       const canvas = document.createElement('canvas');
       canvas.width = 288;
       canvas.height = 128;
@@ -94,27 +89,25 @@ async function loadRangerFrames(baseUrl: string, name: AnimName, filePattern: st
       ctx.fillRect(0, 0, 288, 128);
       ctx.fillStyle = '#ffffff';
       ctx.font = '16px monospace';
-      ctx.fillText(`${name}_${i}`, 100, 64);
-      frames.push(Texture.from(canvas));
+      ctx.fillText(`${name}_${frameNum}`, 100, 64);
+      return Texture.from(canvas);
     }
-  }
-  return frames;
+  }));
+  return results;
 }
 
 export async function loadWarriorAnimations(): Promise<void> {
   if (warriorFrames) return;
-  const result = {} as Record<AnimName, Texture[]>;
   const entries: [AnimName, string][] = [
     ['attack', 'sprites/warrior/attack.png'],
     ['idle', 'sprites/warrior/idle.png'],
     ['walk', 'sprites/warrior/walk.png'],
   ];
 
-  for (const [name, url] of entries) {
+  const results = await Promise.all(entries.map(async ([name, url]) => {
     try {
-      result[name] = await loadSheet(name, url);
+      return { name, frames: await loadSheet(name, url) };
     } catch {
-      console.warn(`[SpriteAnimator] fallback for ${name}`);
       const canvas = document.createElement('canvas');
       canvas.width = FRAME_W;
       canvas.height = FRAME_H;
@@ -124,10 +117,12 @@ export async function loadWarriorAnimations(): Promise<void> {
       ctx.fillStyle = '#ffffff';
       ctx.font = '16px monospace';
       ctx.fillText(name, 24, 48);
-      result[name] = [Texture.from(canvas), Texture.from(canvas), Texture.from(canvas)];
+      return { name, frames: [Texture.from(canvas), Texture.from(canvas), Texture.from(canvas)] };
     }
-  }
+  }));
 
+  const result = {} as Record<AnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
   warriorFrames = result;
 
   for (const sprite of pendingWarriorSprites) {
@@ -144,12 +139,14 @@ export async function loadWarriorAnimations(): Promise<void> {
 
 export async function loadRangerAnimations(): Promise<void> {
   if (rangerFrames) return;
-  const result = {} as Record<AnimName, Texture[]>;
 
-  result.idle = await loadRangerFrames('sprites/ranger', 'idle', 'idle_{n}.png', 12);
-  result.walk = await loadRangerFrames('sprites/ranger', 'walk', 'run_{n}.png', 10);
-  result.attack = await loadRangerFrames('sprites/ranger', 'attack', '2_atk_{n}.png', 15);
+  const [idle, walk, attack] = await Promise.all([
+    loadRangerFrames('sprites/ranger', 'idle', 'idle_{n}.png', 12),
+    loadRangerFrames('sprites/ranger', 'walk', 'run_{n}.png', 10),
+    loadRangerFrames('sprites/ranger', 'attack', '2_atk_{n}.png', 15),
+  ]);
 
+  const result = { idle, walk, attack } as Record<AnimName, Texture[]>;
   rangerFrames = result;
 
   for (const sprite of pendingRangerSprites) {
@@ -173,14 +170,12 @@ const REAPER_SHEETS: Record<ReaperAnimName, { url: string; frameW: number; frame
 
 export async function loadReaperAnimations(): Promise<void> {
   if (reaperFrames) return;
-  const result = {} as Record<ReaperAnimName, Texture[]>;
   const entries = Object.entries(REAPER_SHEETS) as [ReaperAnimName, typeof REAPER_SHEETS[ReaperAnimName]][];
 
-  for (const [name, cfg] of entries) {
+  const results = await Promise.all(entries.map(async ([name, cfg]) => {
     try {
-      result[name] = await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols);
+      return { name, frames: await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols) };
     } catch {
-      console.warn(`[SpriteAnimator] fallback for reaper ${name}`);
       const canvas = document.createElement('canvas');
       canvas.width = 100;
       canvas.height = 100;
@@ -190,10 +185,12 @@ export async function loadReaperAnimations(): Promise<void> {
       ctx.fillStyle = '#ffffff';
       ctx.font = '12px monospace';
       ctx.fillText(name, 20, 52);
-      result[name] = [Texture.from(canvas)];
+      return { name, frames: [Texture.from(canvas)] };
     }
-  }
+  }));
 
+  const result = {} as Record<ReaperAnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
   reaperFrames = result;
 
   for (const sprite of pendingReaperSprites) {
@@ -236,7 +233,6 @@ export function playReaperAnimation(sprite: AnimatedSprite, name: ReaperAnimName
 
 export async function loadGolemAnimations(): Promise<void> {
   if (golemFrames) return;
-  const result = {} as Record<GolemAnimName, Texture[]>;
   const entries: [GolemAnimName, string, number][] = [
     ['idle', 'idle_{n}.png', 6],
     ['walk', 'walk_{n}.png', 10],
@@ -244,11 +240,10 @@ export async function loadGolemAnimations(): Promise<void> {
     ['death', 'death_{n}.png', 16],
   ];
 
-  for (const [name, pattern, count] of entries) {
+  const results = await Promise.all(entries.map(async ([name, pattern, count]) => {
     try {
-      result[name] = await loadRangerFrames('sprites/golem', name as AnimName, pattern, count);
+      return { name, frames: await loadRangerFrames('sprites/golem', name as AnimName, pattern, count) };
     } catch {
-      console.warn(`[SpriteAnimator] fallback for golem ${name}`);
       const canvas = document.createElement('canvas');
       canvas.width = 100;
       canvas.height = 100;
@@ -258,10 +253,12 @@ export async function loadGolemAnimations(): Promise<void> {
       ctx.fillStyle = '#ffffff';
       ctx.font = '12px monospace';
       ctx.fillText(name, 20, 52);
-      result[name] = [Texture.from(canvas)];
+      return { name, frames: [Texture.from(canvas)] };
     }
-  }
+  }));
 
+  const result = {} as Record<GolemAnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
   golemFrames = result;
 
   for (const sprite of pendingGolemSprites) {
@@ -313,13 +310,11 @@ const MONK_FRAME_CONFIGS: [MonkAnimName, string, number][] = [
 
 export async function loadMonkAnimations(): Promise<void> {
   if (monkFrames) return;
-  const result = {} as Record<MonkAnimName, Texture[]>;
 
-  for (const [name, pattern, count] of MONK_FRAME_CONFIGS) {
+  const results = await Promise.all(MONK_FRAME_CONFIGS.map(async ([name, pattern, count]) => {
     try {
-      result[name] = await loadRangerFrames('sprites/monk', name as AnimName, pattern, count);
+      return { name, frames: await loadRangerFrames('sprites/monk', name as AnimName, pattern, count) };
     } catch {
-      console.warn(`[SpriteAnimator] fallback for monk ${name}`);
       const canvas = document.createElement('canvas');
       canvas.width = 100;
       canvas.height = 100;
@@ -329,10 +324,12 @@ export async function loadMonkAnimations(): Promise<void> {
       ctx.fillStyle = '#ffffff';
       ctx.font = '12px monospace';
       ctx.fillText(name, 20, 52);
-      result[name] = [Texture.from(canvas)];
+      return { name, frames: [Texture.from(canvas)] };
     }
-  }
+  }));
 
+  const result = {} as Record<MonkAnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
   monkFrames = result;
 
   for (const sprite of pendingMonkSprites) {
@@ -387,14 +384,12 @@ const CULTIST_SHEETS: Record<CultistAnimName, { url: string; frameW: number; fra
 
 export async function loadCultistAnimations(): Promise<void> {
   if (cultistFrames) return;
-  const result = {} as Record<CultistAnimName, Texture[]>;
   const entries = Object.entries(CULTIST_SHEETS) as [CultistAnimName, typeof CULTIST_SHEETS[CultistAnimName]][];
 
-  for (const [name, cfg] of entries) {
+  const results = await Promise.all(entries.map(async ([name, cfg]) => {
     try {
-      result[name] = await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols);
+      return { name, frames: await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols) };
     } catch {
-      console.warn(`[SpriteAnimator] fallback for cultist ${name}`);
       const canvas = document.createElement('canvas');
       canvas.width = 231;
       canvas.height = 190;
@@ -404,10 +399,12 @@ export async function loadCultistAnimations(): Promise<void> {
       ctx.fillStyle = '#ffffff';
       ctx.font = '16px monospace';
       ctx.fillText(name, 60, 100);
-      result[name] = [Texture.from(canvas)];
+      return { name, frames: [Texture.from(canvas)] };
     }
-  }
+  }));
 
+  const result = {} as Record<CultistAnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
   cultistFrames = result;
 
   for (const sprite of pendingCultistSprites) {

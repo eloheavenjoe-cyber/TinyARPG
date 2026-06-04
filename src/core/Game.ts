@@ -134,22 +134,19 @@ export class Game {
     barFill.endFill();
     this.app.stage.addChild(barFill);
 
-    const loaders = [
-      loadWarriorAnimations,
-      loadRangerAnimations,
-      loadReaperAnimations,
-      loadGolemAnimations,
-      loadMonkAnimations,
-      loadCultistAnimations,
-    ];
+    await Promise.all([
+      loadWarriorAnimations(),
+      loadRangerAnimations(),
+      loadReaperAnimations(),
+      loadGolemAnimations(),
+      loadMonkAnimations(),
+      loadCultistAnimations(),
+    ]);
 
-    for (let i = 0; i < loaders.length; i++) {
-      await loaders[i]();
-      barFill.clear();
-      barFill.beginFill(0xcc8844);
-      barFill.drawRect(0, 0, 396 * ((i + 1) / loaders.length), 16);
-      barFill.endFill();
-    }
+    barFill.clear();
+    barFill.beginFill(0xcc8844);
+    barFill.drawRect(0, 0, 396, 16);
+    barFill.endFill();
 
     this.app.stage.removeChild(loadingText);
     this.app.stage.removeChild(barBg);
