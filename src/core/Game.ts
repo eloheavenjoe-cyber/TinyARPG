@@ -661,22 +661,32 @@ export class Game {
   }
 
   private spawnLoot(x: number, y: number) {
-    const drops = createRandomLoot(x, y);
-    for (const drop of drops) {
-      this.itemDrops.push(drop);
-      this.gameContainer!.addChild(drop.container);
+    const pending: { drop: ItemDrop }[] = [];
+
+    for (const drop of createRandomLoot(x, y)) {
+      pending.push({ drop });
     }
     if (Math.random() < 0.4) {
       const gen = generateItemDrop();
-      const drop = createItemDrop(x, y, gen);
-      this.itemDrops.push(drop);
-      this.gameContainer!.addChild(drop.container);
+      pending.push({ drop: createItemDrop(x, y, gen) });
     }
     if (Math.random() < 0.05) {
       const orb = generateOrbDrop();
-      const drop = createOrbDrop(x, y, orb.orbId, orb.name);
-      this.itemDrops.push(drop);
-      this.gameContainer!.addChild(drop.container);
+      pending.push({ drop: createOrbDrop(x, y, orb.orbId, orb.name) });
+    }
+
+    // Spread drops vertically so nameplates don't overlap
+    const spacing = 25;
+    const total = pending.length;
+    if (total > 0) {
+      const startY = y - ((total - 1) * spacing) / 2;
+      for (let i = 0; i < total; i++) {
+        const d = pending[i].drop;
+        d.y = startY + i * spacing;
+        d.container.y = d.y;
+        this.itemDrops.push(d);
+        this.gameContainer!.addChild(d.container);
+      }
     }
   }
 
