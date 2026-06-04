@@ -76,7 +76,7 @@ export class ItemDrop {
   }
 }
 
-export function isEquippableDrop(drop: ItemDrop): boolean {
+export function isEquippableDrop(drop: ItemDrop): drop is ItemDrop & { item: EquippableItem } {
   return drop.item.type === 'item';
 }
 
