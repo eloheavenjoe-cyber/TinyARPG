@@ -1,6 +1,7 @@
-import { Sprite } from 'pixi.js';
+import { AnimatedSprite, Texture } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
 import { InputManager } from '../core/InputManager';
+import { createWarriorSprite, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
 import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
 import { PassiveTree } from '../core/PassiveTree';
@@ -38,7 +39,7 @@ export class Player {
   speed = 6;
   alive = true;
 
-  sprite: Sprite;
+  sprite: AnimatedSprite;
   skills: SkillManager;
   passiveTree: PassiveTree = new PassiveTree();
 
@@ -63,14 +64,21 @@ export class Player {
   private fallbackAttackCooldown = 15;
   private readonly baseManaRegen = 8;
   lastHitInfo: { x: number; y: number; damage: number } | null = null;
+  private animState: 'idle' | 'walk' | 'attack' = 'idle';
 
   private _computedStats = computeStats(this.passiveTree, this.attrs, 100, 50);
 
   constructor(x: number, y: number, classType: ClassType = 'warrior') {
     this.x = x;
     this.y = y;
-    this.sprite = new Sprite(classType === 'ranger' ? Sprites.ranger : Sprites.player);
-    this.sprite.anchor.set(0.5);
+    if (classType === 'warrior' && isLoaded()) {
+      this.sprite = createWarriorSprite();
+    } else {
+      const tex = classType === 'ranger' ? Sprites.ranger : Sprites.player;
+      const s = new AnimatedSprite([tex]);
+      s.anchor.set(0.5);
+      this.sprite = s;
+    }
     this.skills = new SkillManager(classType);
     this.updateSprite();
   }
@@ -418,6 +426,16 @@ export class Player {
 
     this.sprite.rotation = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
 
+    // Animation state switching (warrior animated sprites only)
+    const isMoving = dx !== 0 || dy !== 0;
+    if (isMoving && this.animState === 'idle') {
+      this.animState = 'walk';
+      playAnimation(this.sprite, 'walk');
+    } else if (!isMoving && this.animState === 'walk') {
+      this.animState = 'idle';
+      playAnimation(this.sprite, 'idle');
+    }
+
     if (this.invulnTimer > 0) {
       this.invulnTimer -= dt;
       this.sprite.alpha = Math.floor(this.invulnTimer / 5) % 2 === 0 ? 1 : 0.4;
@@ -485,6 +503,12 @@ export class Player {
     const result = this.skills.consume(0, this.mana);
     if (!result) return false;
     this.mana -= result.manaCost;
+
+    // Trigger attack animation
+    this.animState = 'attack';
+    playAnimation(this.sprite, 'attack', false);
+    const resetAnim = () => { if (this.animState === 'attack') { this.animState = 'idle'; playAnimation(this.sprite, 'idle'); } };
+    this.sprite.onComplete = resetAnim;
 
     const aoeMult = 1 + ((this._computedStats.skillAoePct || 0) / 100);
     const leechPct = this._computedStats.lifeLeechPct || 0;
