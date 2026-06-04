@@ -11,6 +11,15 @@ export class Sprites {
   static reaper: Texture;
   static wall: Texture;
   static floor: Texture;
+  static tree: Texture;
+  static rock: Texture;
+  static bush: Texture;
+  static chestClosed: Texture;
+  static chestOpen: Texture;
+  static breakablePot: Texture;
+  static breakableBarrel: Texture;
+  static grassTuft: Texture;
+  static flower: Texture;
 
   static generateAll(): void {
     Sprites.player = Sprites.createTexture(32, 32, (ctx) => {
@@ -190,6 +199,107 @@ export class Sprites {
       ctx.beginPath();
       ctx.ellipse(ox, oy + 28, 28, 6, 0, 0, Math.PI * 2);
       ctx.fill();
+    });
+
+    Sprites.tree = Sprites.createTexture(48, 64, (ctx) => {
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(20, 32, 8, 32);
+      ctx.fillStyle = '#3a7a28';
+      ctx.beginPath();
+      ctx.arc(24, 24, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2a6a1a';
+      ctx.beginPath();
+      ctx.arc(16, 20, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(32, 20, 12, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    Sprites.rock = Sprites.createTexture(36, 28, (ctx) => {
+      ctx.fillStyle = '#6a6a6a';
+      ctx.beginPath();
+      ctx.ellipse(18, 22, 16, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#7a7a7a';
+      ctx.beginPath();
+      ctx.ellipse(14, 18, 10, 12, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    Sprites.bush = Sprites.createTexture(32, 24, (ctx) => {
+      ctx.fillStyle = '#2a6a1a';
+      ctx.beginPath();
+      ctx.ellipse(16, 18, 14, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#3a8a2a';
+      ctx.beginPath();
+      ctx.ellipse(10, 14, 8, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(22, 14, 8, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    Sprites.chestClosed = Sprites.createTexture(32, 24, (ctx) => {
+      ctx.fillStyle = '#8a6a3a';
+      ctx.fillRect(4, 8, 24, 16);
+      ctx.fillStyle = '#a07a4a';
+      ctx.fillRect(4, 8, 24, 6);
+      ctx.fillStyle = '#6a4a2a';
+      ctx.fillRect(4, 8, 24, 2);
+      ctx.fillStyle = '#ffcc44';
+      ctx.fillRect(14, 14, 4, 4);
+    });
+
+    Sprites.chestOpen = Sprites.createTexture(32, 24, (ctx) => {
+      ctx.fillStyle = '#6a4a2a';
+      ctx.fillRect(4, 12, 24, 12);
+      ctx.fillStyle = '#8a6a3a';
+      ctx.fillRect(4, 8, 24, 6);
+      ctx.fillStyle = '#a07a4a';
+      ctx.fillRect(4, 8, 24, 3);
+      ctx.fillStyle = '#ffcc44';
+      ctx.fillRect(14, 16, 4, 4);
+    });
+
+    Sprites.breakablePot = Sprites.createTexture(20, 24, (ctx) => {
+      ctx.fillStyle = '#8a5030';
+      ctx.fillRect(4, 8, 12, 14);
+      ctx.fillStyle = '#9a6040';
+      ctx.fillRect(6, 6, 8, 4);
+      ctx.fillStyle = '#6a3a20';
+      ctx.fillRect(2, 20, 4, 4);
+      ctx.fillRect(14, 20, 4, 4);
+    });
+
+    Sprites.breakableBarrel = Sprites.createTexture(28, 28, (ctx) => {
+      ctx.fillStyle = '#7a5a3a';
+      ctx.fillRect(2, 6, 24, 20);
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(2, 6, 24, 3);
+      ctx.fillRect(2, 23, 24, 3);
+      ctx.fillRect(0, 12, 28, 2);
+      ctx.fillRect(0, 18, 28, 2);
+      ctx.fillStyle = '#4a2a0a';
+      ctx.fillRect(10, 2, 8, 6);
+    });
+
+    Sprites.grassTuft = Sprites.createTexture(12, 12, (ctx) => {
+      ctx.fillStyle = '#4a9a2a';
+      ctx.fillRect(2, 6, 2, 6);
+      ctx.fillRect(5, 4, 2, 8);
+      ctx.fillRect(8, 6, 2, 6);
+    });
+
+    Sprites.flower = Sprites.createTexture(10, 12, (ctx) => {
+      ctx.fillStyle = '#3a7a1a';
+      ctx.fillRect(4, 6, 2, 6);
+      ctx.fillStyle = '#ff6688';
+      ctx.fillRect(3, 2, 4, 4);
+      ctx.fillStyle = '#ffaa44';
+      ctx.fillRect(4, 3, 2, 2);
     });
 
     Sprites.reaper = Sprites.createTexture(64, 68, (ctx) => {
