@@ -56,6 +56,7 @@ export class Player {
   };
 
   private invulnTimer = 0;
+  slowTimer = 0;
   private attackCooldown = 0;
   private fallbackAttackCooldown = 15;
   private readonly baseManaRegen = 8;
@@ -399,8 +400,9 @@ export class Player {
     }
 
     const speedMult = this.skills.moveSpeedBonus();
-    this.x += dx * this.speed * speedMult * dt;
-    this.y += dy * this.speed * dt;
+    const slowMult = this.slowTimer > 0 ? 0.5 : 1;
+    this.x += dx * this.speed * speedMult * slowMult * dt;
+    this.y += dy * this.speed * slowMult * dt;
 
     const bounds = this.getBounds();
     const resolved = resolveCollision(bounds, walls);
@@ -425,11 +427,22 @@ export class Player {
       this.attackCooldown -= dt;
     }
 
+    if (this.slowTimer > 0) {
+      this.slowTimer -= dt;
+      this.sprite.tint = 0xcc88ff;
+    } else {
+      this.sprite.tint = 0xffffff;
+    }
+
     const regenMult = 1 + ((this._computedStats.manaRegenPct || 0) / 100);
     const regen = (this.baseManaRegen + this.skills.manaRegenBonus()) * regenMult;
     this.mana = Math.min(this.maxMana, this.mana + regen * (dt / 60));
 
     this.updateSprite();
+  }
+
+  applySlow(duration: number) {
+    this.slowTimer = Math.max(this.slowTimer, duration);
   }
 
   takeDamage(amount: number): boolean {

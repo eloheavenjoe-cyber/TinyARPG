@@ -10,7 +10,7 @@ import { HUD } from '../ui/HUD';
 import { SkillBar } from '../ui/SkillBar';
 import { Room, ROOM_WIDTH, ROOM_HEIGHT, rectsOverlap } from '../world/Room';
 import { Player } from '../entities/Player';
-import { Enemy } from '../entities/Enemy';
+import { Enemy, EnemyType } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, isOrbDrop, createOrbDrop } from '../entities/ItemDrop';
@@ -58,6 +58,7 @@ export class Game {
   private player?: Player;
   private enemies: Enemy[] = [];
   private projectiles: Projectile[] = [];
+  private waveCooldown = 0;
   private itemDrops: ItemDrop[] = [];
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
@@ -140,20 +141,40 @@ export class Game {
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
     this.app.stage.addChild(this.skillBar.container);
-    this.spawnEnemy();
+    this.spawnWave();
   }
 
-  private spawnEnemy() {
+  private spawnWave() {
+    const count = 3 + Math.floor(Math.random() * 4);
+    const types: EnemyType[] = ['grunt', 'grunt'];
+    if (Math.random() < 0.5) types.push('archer');
+    if (Math.random() < 0.3) types.push('juggernaut');
+    if (Math.random() < 0.4) types.push('cultist');
+    while (types.length < count) types.push('grunt');
+    types.length = count;
+
     const margin = 80;
     const wa = this.room!.walkableArea;
-    let x: number, y: number;
-    do {
-      x = margin + Math.random() * (wa.width - margin * 2) + wa.x;
-      y = margin + Math.random() * (wa.height - margin * 2) + wa.y;
-    } while (this.player && Math.hypot(x - this.player.x, y - this.player.y) < 250);
-    const e = new Enemy(x, y);
-    this.enemies.push(e);
-    this.gameContainer!.addChild(e.sprite);
+    const cx = wa.x + wa.width / 2;
+    const cy = wa.y + wa.height / 2;
+
+    for (const t of types) {
+      let x: number, y: number;
+      let attempts = 0;
+      do {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 80 + Math.random() * 120;
+        x = cx + Math.cos(angle) * dist;
+        y = cy + Math.sin(angle) * dist;
+        x = Math.max(margin, Math.min(wa.x + wa.width - margin, x));
+        y = Math.max(margin, Math.min(wa.y + wa.height - margin, y));
+        attempts++;
+      } while (this.player && Math.hypot(x - this.player.x, y - this.player.y) < 250 && attempts < 10);
+
+      const e = new Enemy(x, y, t);
+      this.enemies.push(e);
+      this.gameContainer!.addChild(e.sprite);
+    }
   }
 
   private update(dt: number) {
@@ -236,7 +257,14 @@ export class Game {
     }
 
     for (const enemy of this.enemies) {
-      if (enemy.alive) enemy.update(this.player.x, this.player.y, this.room.walls, dt);
+      if (enemy.alive) {
+        enemy.update(this.player.x, this.player.y, this.room.walls, dt, this.enemies);
+        for (const p of enemy.projectiles) {
+          this.projectiles.push(p);
+          this.gameContainer!.addChild(p.sprite);
+        }
+        enemy.projectiles = [];
+      }
     }
 
     this.combatText.update(dt);
@@ -266,14 +294,24 @@ export class Game {
         continue;
       }
       let hit = false;
-      for (const enemy of this.enemies) {
-        if (!enemy.alive) continue;
-        if (rectsOverlap(p.getBounds(), enemy.getBounds())) {
-          enemy.takeDamage(p.damage);
-          this.combatText.showDamage(enemy.x, enemy.y - 20, p.damage, 0xffaa00);
-          if (!p.pierce) {
-            hit = true;
-            break;
+      if (p.hostile) {
+        if (this.player && rectsOverlap(p.getBounds(), this.player.getBounds())) {
+          if (this.player.takeDamage(p.damage)) {
+            this.combatText.showDamage(this.player.x, this.player.y - 20, p.damage, 0xff6666);
+          }
+          if (p.slowDuration > 0) this.player.applySlow(p.slowDuration);
+          hit = true;
+        }
+      } else {
+        for (const enemy of this.enemies) {
+          if (!enemy.alive) continue;
+          if (rectsOverlap(p.getBounds(), enemy.getBounds())) {
+            enemy.takeDamage(p.damage);
+            this.combatText.showDamage(enemy.x, enemy.y - 20, p.damage, 0xffaa00);
+            if (!p.pierce) {
+              hit = true;
+              break;
+            }
           }
         }
       }
@@ -288,9 +326,11 @@ export class Game {
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
       if (rectsOverlap(this.player.getBounds(), enemy.getBounds())) {
-        const dmg = 8;
-        this.player.takeDamage(dmg);
-        this.combatText.showDamage(this.player.x, this.player.y - 20, dmg, 0xff6666);
+        if (enemy.canDamagePlayer()) {
+          this.player.takeDamage(enemy.damage);
+          this.combatText.showDamage(this.player.x, this.player.y - 20, enemy.damage, 0xff6666);
+          enemy.onDamagePlayer();
+        }
       }
     }
 
@@ -338,7 +378,19 @@ export class Game {
           Logger.log('combat', `Player reached level ${this.player.level}`);
         }
         this.spawnLoot(dead.x, dead.y);
-        this.spawnEnemy();
+        dead.destroy();
+      }
+    }
+
+    // Wave spawning
+    if (this.enemies.length === 0) {
+      if (this.waveCooldown <= 0) {
+        this.waveCooldown = 120;
+      } else {
+        this.waveCooldown -= dt;
+        if (this.waveCooldown <= 0) {
+          this.spawnWave();
+        }
       }
     }
 
@@ -895,6 +947,7 @@ export class Game {
     this.projectiles = [];
     this.itemDrops = [];
     this.vfx = [];
+    this.waveCooldown = 0;
     this.dash = null;
     this.combatText.destroy();
     this.combatText = new CombatTextManager();

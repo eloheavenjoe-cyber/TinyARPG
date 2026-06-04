@@ -4,6 +4,7 @@ export class Sprites {
   static player: Texture;
   static ranger: Texture;
   static enemy: Texture;
+  static juggernaut: Texture;
   static wall: Texture;
   static floor: Texture;
 
@@ -66,6 +67,24 @@ export class Sprites {
       ctx.fillStyle = '#2a0808';
       ctx.fillRect(8, 28, 8, 4);
       ctx.fillRect(16, 28, 8, 4);
+    });
+
+    Sprites.juggernaut = Sprites.createTexture(48, 48, (ctx) => {
+      ctx.fillStyle = '#2a0808';
+      ctx.fillRect(14, 2, 20, 10);
+      ctx.fillStyle = '#cc2222';
+      ctx.fillRect(18, 4, 5, 4);
+      ctx.fillRect(25, 4, 5, 4);
+      ctx.fillStyle = '#3a0e0e';
+      ctx.fillRect(10, 12, 28, 18);
+      ctx.fillStyle = '#4a1515';
+      ctx.fillRect(14, 14, 20, 8);
+      ctx.fillStyle = '#2a0808';
+      ctx.fillRect(12, 30, 10, 10);
+      ctx.fillRect(26, 30, 10, 10);
+      ctx.fillStyle = '#1a0404';
+      ctx.fillRect(10, 40, 12, 8);
+      ctx.fillRect(26, 40, 12, 8);
     });
 
     Sprites.floor = Sprites.createTexture(32, 32, (ctx) => {
