@@ -379,7 +379,7 @@ let cultistFrames: Record<CultistAnimName, Texture[]> | null = null;
 let pendingCultistSprites: AnimatedSprite[] = [];
 
 const CULTIST_SHEETS: Record<CultistAnimName, { url: string; frameW: number; frameH: number; frames: number; cols: number }> = {
-  idle: { url: 'sprites/cultist/idle.png', frameW: 231, frameH: 190, frames: 6, cols: 6 },
+  idle: { url: 'sprites/cultist/Idle.png', frameW: 231, frameH: 190, frames: 6, cols: 6 },
   run: { url: 'sprites/cultist/Run.png', frameW: 231, frameH: 190, frames: 8, cols: 8 },
   attack: { url: 'sprites/cultist/Attack1.png', frameW: 231, frameH: 190, frames: 8, cols: 8 },
   death: { url: 'sprites/cultist/Death.png', frameW: 231, frameH: 190, frames: 7, cols: 7 },
