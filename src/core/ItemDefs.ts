@@ -1,4 +1,4 @@
-export type Slot = 'weapon' | 'body' | 'helmet' | 'boots' | 'ring' | 'amulet';
+export type Slot = 'weapon' | 'body' | 'helmet' | 'boots' | 'ring' | 'ring2' | 'amulet';
 export type Rarity = 'normal' | 'magic' | 'rare' | 'unique';
 
 export interface ItemBase {

@@ -1,12 +1,12 @@
 import { PassiveTree, NodeEffects } from './PassiveTree';
 
-export function computeStats(tree: PassiveTree, attrs: { str: number; dex: number; int: number }, baseHp: number, baseMana: number): {
-  hp: number; maxHp: number; mana: number; maxMana: number;
-  attackSpeedMult: number; meleeDmgMult: number; projectileDmgMult: number;
-  moveSpeedMult: number; dodgePct: number; damageReduction: number;
-  cooldownReductionPct: number; skillDurationPct: number;
-  manaCostReductionPct: number; manaRegenPct: number; hpRegen: number;
-} {
+export function computeStats(
+  tree: PassiveTree,
+  attrs: { str: number; dex: number; int: number },
+  baseHp: number,
+  baseMana: number,
+  equipmentStats?: Record<string, number>,
+) {
   const treeEffects = tree.getAllEffects();
 
   const add = (key: keyof NodeEffects) => treeEffects[key] || 0;
@@ -21,7 +21,7 @@ export function computeStats(tree: PassiveTree, attrs: { str: number; dex: numbe
   let maxMana = baseMana + int * 2 + add('mana');
   maxMana = Math.round(maxMana * (1 + (add('manaPct') || 0) / 100));
 
-  return {
+  const base = {
     hp: maxHp,
     maxHp,
     mana: maxMana,
@@ -38,4 +38,19 @@ export function computeStats(tree: PassiveTree, attrs: { str: number; dex: numbe
     manaRegenPct: add('manaRegenPct') || 0,
     hpRegen: add('hpRegen') || 0,
   };
+
+  if (equipmentStats) {
+    for (const [key, val] of Object.entries(equipmentStats)) {
+      if (key === 'hp') base.maxHp += val;
+      else if (key === 'mana') base.maxMana += val;
+      else if (key === 'damageReduction') base.damageReduction = Math.min(50, base.damageReduction + val);
+      else if (key === 'attackSpeedPct') base.attackSpeedMult += val / 100;
+      else if (key === 'moveSpeedPct') base.moveSpeedMult += val / 100;
+      else if (key === 'meleeDmgPct') base.meleeDmgMult += val / 100;
+      else if (key === 'projectileDmgPct') base.projectileDmgMult += val / 100;
+      else if (key === 'hpRegen') base.hpRegen += val;
+    }
+  }
+
+  return base;
 }

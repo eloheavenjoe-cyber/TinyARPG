@@ -5,6 +5,8 @@ import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
 import { PassiveTree } from '../core/PassiveTree';
 import { computeStats } from '../core/StatSystem';
+import { Slot } from '../core/ItemDefs';
+import { GeneratedItem } from '../core/ItemGenerator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Enemy } from './Enemy';
@@ -34,6 +36,11 @@ export class Player {
   attrs = { str: 0, dex: 0, int: 0 };
   unspentAttrPoints = 0;
   passivePoints = 0;
+  inventory: (GeneratedItem | null)[] = new Array(30).fill(null);
+  equipment: Record<Slot, GeneratedItem | null> = {
+    weapon: null, body: null, helmet: null, boots: null,
+    ring: null, ring2: null, amulet: null,
+  };
 
   private invulnTimer = 0;
   private attackCooldown = 0;
@@ -59,13 +66,51 @@ export class Player {
   get computedStats() { return this._computedStats; }
 
   recalcStats() {
-    this._computedStats = computeStats(this.passiveTree, this.attrs, 100, 50);
+    const equipStats: Record<string, number> = {};
+    for (const item of Object.values(this.equipment)) {
+      if (!item) continue;
+      for (const [stat, val] of Object.entries(item.computedStats)) {
+        equipStats[stat] = (equipStats[stat] || 0) + (val as number);
+      }
+    }
+    this._computedStats = computeStats(this.passiveTree, this.attrs, 100, 50, equipStats);
     const s = this._computedStats;
     this.maxHealth = s.maxHp;
     this.health = Math.min(this.health, this.maxHealth);
     this.maxMana = s.maxMana;
     this.mana = Math.min(this.mana, this.maxMana);
     this.speed = 6 * s.moveSpeedMult;
+  }
+
+  pickupItem(item: GeneratedItem): boolean {
+    const idx = this.inventory.findIndex(s => s === null);
+    if (idx === -1) return false;
+    this.inventory[idx] = item;
+    return true;
+  }
+
+  equipItem(gridIndex: number): boolean {
+    const item = this.inventory[gridIndex];
+    if (!item) return false;
+    const slot = item.base.slot;
+    const slotKey: Slot = slot === 'ring' && this.equipment.ring !== null && this.equipment.ring2 === null
+      ? 'ring2' : slot;
+    const current = this.equipment[slotKey];
+    this.equipment[slotKey] = item;
+    this.inventory[gridIndex] = current || null;
+    this.recalcStats();
+    return true;
+  }
+
+  unequipItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const idx = this.inventory.findIndex(s => s === null);
+    if (idx === -1) return false;
+    this.inventory[idx] = item;
+    this.equipment[slot] = null;
+    this.recalcStats();
+    return true;
   }
 
   addXp(amount: number): boolean {
