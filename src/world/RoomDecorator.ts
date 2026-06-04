@@ -1,5 +1,5 @@
 import { RoomTemplate, BiomeId } from '../core/ZoneConfig';
-import { ROOM_WIDTH, ROOM_HEIGHT, WALL_THICKNESS, Rect } from './Room';
+import { ROOM_WIDTH, ROOM_HEIGHT, WALL_THICKNESS, Rect, rectsOverlap } from './Room';
 import { Sprites } from '../rendering/Sprites';
 import { Sprite } from 'pixi.js';
 
@@ -14,11 +14,6 @@ export interface DecoratorResult {
   obstacles: Rect[];
   chests: { x: number; y: number }[];
   breakables: { x: number; y: number }[];
-}
-
-function rectsOverlap(a: Rect, b: Rect): boolean {
-  return a.x < b.x + b.width && a.x + a.width > b.x &&
-         a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 const BIOME_DECOR: Record<BiomeId, { treeChance: number; rockChance: number; bushChance: number }> = {

@@ -1,4 +1,4 @@
-import { Application, Container, Point, Graphics, Text, TextStyle, AnimatedSprite } from 'pixi.js';
+import { Application, Container, Point, Graphics, Text, TextStyle, AnimatedSprite, Sprite } from 'pixi.js';
 import { InputManager } from './InputManager';
 import { Camera } from './Camera';
 import { Logger } from './Logger';
@@ -69,6 +69,7 @@ export class Game {
   private projectiles: Projectile[] = [];
   private waveCooldown = 0;
   private itemDrops: ItemDrop[] = [];
+  private decorationSprites: Sprite[] = [];
   private chests: Chest[] = [];
   private breakables: Breakable[] = [];
   private combatText: CombatTextManager = new CombatTextManager();
@@ -232,11 +233,13 @@ export class Game {
     for (const e of this.enemies) { this.gameContainer.removeChild(e.sprite); e.destroy(); }
     for (const p of this.projectiles) { this.gameContainer.removeChild(p.sprite); p.destroy(); }
     for (const d of this.itemDrops) { this.gameContainer.removeChild(d.container); d.destroy(); }
+    for (const s of this.decorationSprites) { this.gameContainer.removeChild(s); s.destroy(); }
     for (const c of this.chests) { this.gameContainer.removeChild(c.container); c.destroy(); }
     for (const b of this.breakables) { this.gameContainer.removeChild(b.container); b.destroy(); }
     this.enemies = [];
     this.projectiles = [];
     this.itemDrops = [];
+    this.decorationSprites = [];
     this.chests = [];
     this.breakables = [];
     this.vfx = [];
@@ -273,7 +276,7 @@ export class Game {
 
     // Procedural decoration
     const decor = decorateRoom(template, zone.biome);
-    for (const d of decor.decorations) this.gameContainer.addChild(d.sprite);
+    for (const d of decor.decorations) { this.gameContainer.addChild(d.sprite); this.decorationSprites.push(d.sprite); }
     for (const ob of decor.obstacles) this.room.walls.push(ob);
     for (const cp of decor.chests) {
       const chest = new Chest(cp.x, cp.y);

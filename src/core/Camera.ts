@@ -23,5 +23,9 @@ export class Camera {
     // Smooth lerp
     this.x += (this.targetX - this.x) * this.lerpSpeed * dt;
     this.y += (this.targetY - this.y) * this.lerpSpeed * dt;
+
+    // Clamp post-lerp to prevent edge bleed
+    this.x = Math.max(0, Math.min(this.roomWidth - this.screenWidth, this.x));
+    this.y = Math.max(0, Math.min(this.roomHeight - this.screenHeight, this.y));
   }
 }
