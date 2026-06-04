@@ -702,6 +702,7 @@ export class Game {
           case 'gold': this.player!.gold += item.value; break;
           case 'healthPotion': this.player!.health = Math.min(this.player!.maxHealth, this.player!.health + item.value); break;
           case 'manaPotion': this.player!.mana = Math.min(this.player!.maxMana, this.player!.mana + item.value); break;
+          case 'orb': this.player!.pickupOrb(item.orbId, item.count); break;
         }
         this.gameContainer!.removeChild(drop.container);
         drop.destroy();
