@@ -1,4 +1,4 @@
-export type ClassType = 'warrior' | 'ranger';
+export type ClassType = 'warrior' | 'ranger' | 'monk';
 
 export interface SkillDef {
   id: string;
@@ -230,3 +230,41 @@ export const RANGER_SUPPORT: SkillDef[] = [
 ];
 
 export const RANGER_DEFAULT_SUPPORT_IDS = ['dodge_roll', 'eagle_eye', 'haste', 'spread_shot', 'trap'];
+
+export const MONK_MAIN: SkillDef[] = [
+  {
+    id: 'basic_strike', name: 'Basic Strike', description: 'A swift strike',
+    category: 'main', classType: 'monk', manaCost: 0, cooldown: 8, range: 80,
+    damageMult: 0.8, effectType: 'single',
+  },
+  {
+    id: 'dragon_palm', name: 'Dragon Palm', description: 'Focused palm strike with 15% stun chance',
+    category: 'main', classType: 'monk', manaCost: 15, cooldown: 25, range: 80,
+    damageMult: 1.8, effectType: 'single',
+  },
+  {
+    id: 'whirlwind_kick', name: 'Whirlwind Kick', description: 'Spinning kick hitting all nearby enemies',
+    category: 'main', classType: 'monk', manaCost: 15, cooldown: 30, range: 80,
+    damageMult: 1.2, effectType: 'cone', angle: 120 * D,
+  },
+  {
+    id: 'tiger_uppercut', name: 'Tiger Uppercut', description: 'Heavy upward strike that knocks enemies back',
+    category: 'main', classType: 'monk', manaCost: 20, cooldown: 40, range: 80,
+    damageMult: 2.5, effectType: 'single',
+  },
+  {
+    id: 'meditate', name: 'Meditate', description: 'Channel to regain 25% HP and gain +20% damage',
+    category: 'main', classType: 'monk', manaCost: 0, cooldown: 180, range: 0,
+    damageMult: 0, effectType: 'buff', duration: 120, value: 20,
+  },
+];
+
+export const MONK_SUPPORT: SkillDef[] = [
+  {
+    id: 'stance_toggle', name: 'Stance Toggle', description: 'Cycle stance: Tiger(dmg) / Tortoise(def) / Crane(lifesteal)',
+    category: 'support', classType: 'monk', manaCost: 0, cooldown: 15, range: 0,
+    damageMult: 0, effectType: 'buff',
+  },
+];
+
+export const MONK_DEFAULT_SUPPORT_IDS: string[] = [];
