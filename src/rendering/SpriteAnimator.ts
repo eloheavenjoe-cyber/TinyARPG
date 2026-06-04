@@ -483,40 +483,33 @@ export type JuggernautAnimName = 'idle' | 'run' | 'attack';
 let juggernautFrames: Record<JuggernautAnimName, Texture[]> | null = null;
 let pendingJuggernautSprites: AnimatedSprite[] = [];
 
-const JUGGERNAUT_ROW_CONFIG: [JuggernautAnimName, number, number, number][] = [
-  ['idle', 0, 200, 5],
-  ['run', 1, 128, 8],
-  ['attack', 3, 112, 9],
-];
+const JUGGERNAUT_SHEETS: Record<JuggernautAnimName, { url: string; frameW: number; frames: number }> = {
+  idle: { url: 'sprites/juggernaut/juggernaut_idle.png', frameW: 200, frames: 5 },
+  run: { url: 'sprites/juggernaut/juggernaut_run.png', frameW: 128, frames: 8 },
+  attack: { url: 'sprites/juggernaut/juggernaut_attack.png', frameW: 112, frames: 9 },
+};
 
 export async function loadJuggernautAnimations(): Promise<void> {
   if (juggernautFrames) return;
-  try {
-    const img = await loadImage('sprites/juggernaut/juggernaut.png');
-    const base = new BaseTexture(img);
-    const ROW_H = 192;
-    const result = {} as Record<JuggernautAnimName, Texture[]>;
+  const result = {} as Record<JuggernautAnimName, Texture[]>;
+  const entries = Object.entries(JUGGERNAUT_SHEETS) as [JuggernautAnimName, typeof JUGGERNAUT_SHEETS[JuggernautAnimName]][];
 
-    for (const [name, row, frameW, count] of JUGGERNAUT_ROW_CONFIG) {
-      const frames: Texture[] = [];
-      const yOff = row * ROW_H;
-      for (let i = 0; i < count; i++) {
-        frames.push(new Texture(base, new Rectangle(i * frameW, yOff, frameW, ROW_H)));
-      }
-      result[name] = frames;
+  const results = await Promise.all(entries.map(async ([name, cfg]) => {
+    try {
+      return { name, frames: await loadMultiRowSheet(cfg.url, cfg.frameW, 192, cfg.frames, cfg.frames) };
+    } catch {
+      const canvas = document.createElement('canvas');
+      canvas.width = cfg.frameW;
+      canvas.height = 192;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#5a3a2a';
+      ctx.fillRect(0, 0, cfg.frameW, 192);
+      return { name, frames: [Texture.from(canvas)] };
     }
+  }));
 
-    juggernautFrames = result;
-  } catch {
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 192;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#5a3a2a';
-    ctx.fillRect(0, 0, 128, 192);
-    const fallback = [Texture.from(canvas)];
-    juggernautFrames = { idle: fallback, run: fallback, attack: fallback };
-  }
+  for (const { name, frames } of results) result[name] = frames;
+  juggernautFrames = result;
 
   for (const sprite of pendingJuggernautSprites) {
     const f = juggernautFrames.idle;
