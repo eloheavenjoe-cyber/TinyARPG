@@ -37,7 +37,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     roomCount: 4, enemyPool: ['grunt', 'archer'],
     enemyHpMult: 1.0, enemyDmgMult: 1.0, enemyXpMult: 1.0,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
-    enemyCount: { min: 3, max: 5 }, bossId: 'golem',
+    enemyCount: { min: 8, max: 14 }, bossId: 'golem',
     templates: [TEMPLATE_FOREST_1, TEMPLATE_FOREST_2, TEMPLATE_FOREST_3, TEMPLATE_FOREST_BOSS],
   },
   desert: {
@@ -45,7 +45,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     roomCount: 5, enemyPool: ['grunt', 'archer', 'juggernaut'],
     enemyHpMult: 1.5, enemyDmgMult: 1.3, enemyXpMult: 1.5,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
-    enemyCount: { min: 4, max: 6 },
+    enemyCount: { min: 10, max: 18 },
     templates: [TEMPLATE_DESERT_1, TEMPLATE_DESERT_2, TEMPLATE_DESERT_3, TEMPLATE_DESERT_4, TEMPLATE_DESERT_BOSS],
   },
   ice: {
@@ -53,7 +53,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     roomCount: 6, enemyPool: ['grunt', 'archer', 'juggernaut', 'cultist'],
     enemyHpMult: 2.5, enemyDmgMult: 2.0, enemyXpMult: 2.5,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
-    enemyCount: { min: 5, max: 7 }, bossId: 'reaper',
+    enemyCount: { min: 12, max: 20 }, bossId: 'reaper',
     templates: [TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5, TEMPLATE_ICE_BOSS],
   },
   endless_dungeon: {
@@ -61,7 +61,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     roomCount: 1, enemyPool: ['grunt', 'archer', 'juggernaut', 'cultist'],
     enemyHpMult: 1, enemyDmgMult: 1, enemyXpMult: 1,
     isEndless: 'procgen', nextZone: 'hub', availableFromHub: true,
-    enemyCount: { min: 4, max: 4 },
+    enemyCount: { min: 10, max: 14 },
     templates: [TEMPLATE_DUNGEON],
   },
   endless_arena: {
@@ -69,7 +69,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     roomCount: 1, enemyPool: ['grunt', 'archer', 'juggernaut', 'cultist'],
     enemyHpMult: 1, enemyDmgMult: 1, enemyXpMult: 1,
     isEndless: 'wave', nextZone: 'hub', availableFromHub: true,
-    enemyCount: { min: 3, max: 3 },
+    enemyCount: { min: 6, max: 10 },
     templates: [TEMPLATE_ARENA],
   },
 };

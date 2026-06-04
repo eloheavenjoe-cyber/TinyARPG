@@ -14,18 +14,20 @@ interface EnemyConfig {
   xp: number;
   sprite: Texture;
   damage: number;
+  detectRange: number;
+  deaggroRange: number;
 }
 
 function getConfig(type: EnemyType): EnemyConfig {
   switch (type) {
     case 'grunt':
-      return { hp: 40, speed: 2.2, size: 28, xp: 10, sprite: Sprites.enemy, damage: 8 };
+      return { hp: 40, speed: 2.2, size: 28, xp: 10, sprite: Sprites.enemy, damage: 8, detectRange: 400, deaggroRange: 600 };
     case 'archer':
-      return { hp: 25, speed: 2.5, size: 28, xp: 12, sprite: Sprites.archer, damage: 6 };
+      return { hp: 25, speed: 2.5, size: 28, xp: 12, sprite: Sprites.archer, damage: 6, detectRange: 500, deaggroRange: 750 };
     case 'juggernaut':
-      return { hp: 120, speed: 1.2, size: 42, xp: 25, sprite: Sprites.juggernaut, damage: 16 };
+      return { hp: 120, speed: 1.2, size: 42, xp: 25, sprite: Sprites.juggernaut, damage: 16, detectRange: 350, deaggroRange: 525 };
     case 'cultist':
-      return { hp: 35, speed: 2.0, size: 28, xp: 15, sprite: Sprites.cultist, damage: 5 };
+      return { hp: 35, speed: 2.0, size: 28, xp: 15, sprite: Sprites.cultist, damage: 5, detectRange: 450, deaggroRange: 675 };
   }
 }
 
@@ -42,6 +44,9 @@ export class Enemy {
   alive = true;
   xpReward: number;
   damage: number;
+  detectRange: number;
+  deaggroRange: number;
+  aggroed = false;
 
   sprite: Sprite;
   private hitFlashTimer = 0;
@@ -66,6 +71,8 @@ export class Enemy {
     this.speed = cfg.speed * (0.85 + Math.random() * 0.3);
     this.xpReward = cfg.xp;
     this.damage = cfg.damage;
+    this.detectRange = cfg.detectRange;
+    this.deaggroRange = cfg.deaggroRange;
     this.wobblePhase = Math.random() * Math.PI * 2;
 
     this.sprite = type === 'cultist' ? createCultistSprite() : new Sprite(cfg.sprite);
@@ -80,6 +87,11 @@ export class Enemy {
     const dx = playerX - this.x;
     const dy = playerY - this.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Aggro range check: aggro when entering detectRange, de-aggro when leaving deaggroRange
+    if (!this.aggroed && dist < this.detectRange) this.aggroed = true;
+    if (this.aggroed && dist > this.deaggroRange) this.aggroed = false;
+    if (!this.aggroed) return;
 
     switch (this.type) {
       case 'grunt':
