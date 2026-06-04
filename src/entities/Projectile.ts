@@ -13,6 +13,7 @@ export class Projectile {
   hostile: boolean;
   slowDuration: number;
   sprite: Graphics;
+  hitTargets: Set<object> = new Set();
 
   constructor(x: number, y: number, angle: number, speed: number, damage: number, pierce = false, hostile = false, color = 0xffdd44, slowDuration = 0) {
     this.x = x;

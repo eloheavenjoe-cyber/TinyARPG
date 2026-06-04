@@ -50,6 +50,7 @@ export class Boss {
 
   chosenAttack: TelegraphShape | null = null;
   attacking = false;
+  pendingAttackDamage: (TelegraphShape & { damageAmt: number }) | null = null;
 
   private phase = 0;
   private attackCooldown = 0;
@@ -283,6 +284,7 @@ export class Boss {
 
     switch (t.type) {
       case 'cone':
+        this.pendingAttackDamage = { ...t, damageAmt: this.damage };
         break;
       case 'line': {
         const angle = Math.atan2(py - this.y, px - this.x);
@@ -296,6 +298,7 @@ export class Boss {
           this.x = t.x;
           this.y = t.y;
         }
+        this.pendingAttackDamage = { ...t, damageAmt: this.damage };
         break;
     }
 

@@ -216,6 +216,16 @@ export class Game {
     const zone = state.config;
     const template = state.currentTemplate;
 
+    // Clean up tutorial when leaving the tutorial zone
+    if (zone.id !== 'tutorial' && this.tutorialScreen) {
+      this.app.stage.removeChild(this.tutorialScreen.container);
+      this.tutorialScreen.destroy();
+      this.tutorialScreen = undefined;
+      this.tutorialStage = null;
+      this.tutorialKeys = new Set();
+      this.tutorialKeyWasDown = new Set();
+    }
+
     this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone));
     this.gameContainer.addChild(this.room.container);
 
@@ -534,10 +544,11 @@ export class Game {
         }
       } else {
         for (const enemy of this.enemies) {
-          if (!enemy.alive) continue;
+          if (!enemy.alive || p.hitTargets.has(enemy)) continue;
           if (rectsOverlap(p.getBounds(), enemy.getBounds())) {
             enemy.takeDamage(p.damage);
             this.combatText.showDamage(enemy.x, enemy.y - 20, p.damage, 0xffaa00);
+            p.hitTargets.add(enemy);
             if (!p.pierce) {
               hit = true;
               break;
@@ -545,10 +556,11 @@ export class Game {
           }
         }
         // Check boss hit
-        if (!p.hostile && this.boss?.alive) {
+        if (!p.hostile && this.boss?.alive && !p.hitTargets.has(this.boss)) {
           if (rectsOverlap(p.getBounds(), this.boss.getBounds())) {
             this.boss.takeDamage(p.damage);
             this.combatText.showDamage(this.boss.x, this.boss.y - 20, p.damage, 0xffaa00);
+            p.hitTargets.add(this.boss);
             if (!p.pierce) {
               hit = true;
             }
@@ -574,9 +586,9 @@ export class Game {
       }
     }
 
-    // Boss telegraph damage
-    if (this.boss?.alive && this.boss.chosenAttack && this.boss.attacking) {
-      const t = this.boss.chosenAttack;
+    // Boss attack damage (from executeAttack, not telegraph)
+    if (this.boss?.alive && this.boss.pendingAttackDamage) {
+      const t = this.boss.pendingAttackDamage;
       let inZone = false;
 
       switch (t.type) {
@@ -613,9 +625,10 @@ export class Game {
       }
 
       if (inZone) {
-        this.player.takeDamage(this.boss.damage);
-        this.combatText.showDamage(this.player.x, this.player.y - 20, this.boss.damage, 0xff6666);
+        this.player.takeDamage(t.damageAmt);
+        this.combatText.showDamage(this.player.x, this.player.y - 20, t.damageAmt, 0xff6666);
       }
+      this.boss.pendingAttackDamage = null;
     }
 
     this.handleSkillKeys(mouseWX, mouseWY);
