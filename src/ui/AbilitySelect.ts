@@ -34,6 +34,8 @@ export class AbilitySelect {
     for (let i = 0; i < WARRIOR_MAIN.length; i++) {
       const skill = WARRIOR_MAIN[i];
       const y = startY + i * gap;
+      const btnX = screenWidth / 2 - 250;
+      const btnY = y;
 
       const btn = new Graphics();
       btn.beginFill(0x1a1a2e);
@@ -41,27 +43,27 @@ export class AbilitySelect {
       btn.endFill();
       btn.lineStyle(1, 0x5a4a2a);
       btn.drawRoundedRect(0, 0, 500, 80, 6);
-      btn.x = screenWidth / 2 - 250;
-      btn.y = y;
+      btn.x = btnX;
+      btn.y = btnY;
 
       const name = new Text(skill.name, new TextStyle({
         fontFamily: 'Georgia, serif', fontSize: 22, fill: '#c0a060',
       }));
-      name.x = 20;
-      name.y = 8;
+      name.x = btnX + 20;
+      name.y = btnY + 8;
 
       const desc = new Text(skill.description, new TextStyle({
         fontFamily: 'monospace', fontSize: 13, fill: '#888899',
       }));
-      desc.x = 20;
-      desc.y = 42;
+      desc.x = btnX + 20;
+      desc.y = btnY + 42;
 
       const cost = new Text(`${skill.manaCost} MP`, new TextStyle({
         fontFamily: 'monospace', fontSize: 12, fill: '#4488ff',
       }));
       cost.anchor.set(1, 0);
-      cost.x = 480;
-      cost.y = 8;
+      cost.x = btnX + 480;
+      cost.y = btnY + 8;
 
       this.container.addChild(btn, name, desc, cost);
       this.buttons.push({ bg: btn, skill });
