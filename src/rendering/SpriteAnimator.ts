@@ -373,6 +373,81 @@ export function playMonkAnimation(sprite: AnimatedSprite, name: MonkAnimName, lo
   sprite.gotoAndPlay(0);
 }
 
+export type CultistAnimName = 'idle' | 'run' | 'attack' | 'death';
+
+let cultistFrames: Record<CultistAnimName, Texture[]> | null = null;
+let pendingCultistSprites: AnimatedSprite[] = [];
+
+const CULTIST_SHEETS: Record<CultistAnimName, { url: string; frameW: number; frameH: number; frames: number; cols: number }> = {
+  idle: { url: 'sprites/cultist/idle.png', frameW: 231, frameH: 190, frames: 6, cols: 6 },
+  run: { url: 'sprites/cultist/Run.png', frameW: 231, frameH: 190, frames: 8, cols: 8 },
+  attack: { url: 'sprites/cultist/Attack1.png', frameW: 231, frameH: 190, frames: 8, cols: 8 },
+  death: { url: 'sprites/cultist/Death.png', frameW: 231, frameH: 190, frames: 7, cols: 7 },
+};
+
+export async function loadCultistAnimations(): Promise<void> {
+  if (cultistFrames) return;
+  const result = {} as Record<CultistAnimName, Texture[]>;
+  const entries = Object.entries(CULTIST_SHEETS) as [CultistAnimName, typeof CULTIST_SHEETS[CultistAnimName]][];
+
+  for (const [name, cfg] of entries) {
+    try {
+      result[name] = await loadMultiRowSheet(cfg.url, cfg.frameW, cfg.frameH, cfg.frames, cfg.cols);
+    } catch {
+      console.warn(`[SpriteAnimator] fallback for cultist ${name}`);
+      const canvas = document.createElement('canvas');
+      canvas.width = 231;
+      canvas.height = 190;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#553366';
+      ctx.fillRect(0, 0, 231, 190);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px monospace';
+      ctx.fillText(name, 60, 100);
+      result[name] = [Texture.from(canvas)];
+    }
+  }
+
+  cultistFrames = result;
+
+  for (const sprite of pendingCultistSprites) {
+    const f = cultistFrames.idle;
+    if (f && f.length > 0) {
+      sprite.textures = f;
+      sprite.tint = 0xffffff;
+      sprite.animationSpeed = 0.12;
+      sprite.play();
+    }
+  }
+  pendingCultistSprites = [];
+}
+
+export function createCultistSprite(): AnimatedSprite {
+  if (cultistFrames && cultistFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(cultistFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.12;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x8844aa;
+  pendingCultistSprites.push(sprite);
+  return sprite;
+}
+
+export function playCultistAnimation(sprite: AnimatedSprite, name: CultistAnimName, loop = true) {
+  if (!cultistFrames) return;
+  const f = cultistFrames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === 'attack' ? 0.15 : 0.12;
+  sprite.gotoAndPlay(0);
+}
+
 export function createWarriorSprite(): AnimatedSprite {
   if (warriorFrames && warriorFrames.idle.length > 0) {
     const sprite = new AnimatedSprite(warriorFrames.idle);

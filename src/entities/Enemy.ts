@@ -1,5 +1,6 @@
-import { Sprite, Texture } from 'pixi.js';
+import { Sprite, Texture, AnimatedSprite } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
+import { createCultistSprite, playCultistAnimation, CultistAnimName } from '../rendering/SpriteAnimator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Projectile } from './Projectile';
@@ -48,6 +49,7 @@ export class Enemy {
   private fireTimer = 0;
   private blinkCooldown = 0;
   private wobblePhase: number;
+  private animState: 'idle' | 'run' | 'attack' | 'death' = 'idle';
 
   projectiles: Projectile[] = [];
 
@@ -66,7 +68,7 @@ export class Enemy {
     this.damage = cfg.damage;
     this.wobblePhase = Math.random() * Math.PI * 2;
 
-    this.sprite = new Sprite(cfg.sprite);
+    this.sprite = type === 'cultist' ? createCultistSprite() : new Sprite(cfg.sprite);
     this.sprite.anchor.set(0.5);
     this.sprite.tint = 0xffffff;
     this.updateSprite();
@@ -103,7 +105,27 @@ export class Enemy {
     this.x = resolved.x + this.width / 2;
     this.y = resolved.y + this.height / 2;
 
-    this.sprite.rotation = Math.atan2(playerY - this.y, playerX - this.x);
+    // Facing
+    const faceAngle = Math.atan2(playerY - this.y, playerX - this.x);
+    if (this.type === 'cultist') {
+      const wasMoving = this.animState === 'run';
+      this.sprite.scale.x = Math.abs(faceAngle) > Math.PI / 2 ? -1 : 1;
+      if (!wasMoving && this.animState === 'run') {
+        playCultistAnimation(this.sprite as AnimatedSprite, 'run');
+      }
+    } else {
+      this.sprite.rotation = faceAngle;
+    }
+
+    // Animation state
+    const isMoving = dx !== 0 || dy !== 0;
+    if (this.type === 'cultist') {
+      if (!this.alive) {
+        this.animState = 'death';
+      } else if (this.animState !== 'attack') {
+        this.animState = isMoving ? 'run' : 'idle';
+      }
+    }
 
     if (this.hitFlashTimer > 0) {
       this.hitFlashTimer -= dt;
@@ -196,6 +218,13 @@ export class Enemy {
       const p = new Projectile(this.x, this.y, angle, 3.5, this.damage, false, true, 0x9933cc, 120);
       p.lifetime = 100;
       this.projectiles.push(p);
+      this.animState = 'attack';
+      playCultistAnimation(this.sprite as AnimatedSprite, 'attack', false);
+      (this.sprite as AnimatedSprite).onComplete = () => {
+        if (this.animState === 'attack') {
+          this.animState = 'idle';
+        }
+      };
     }
   }
 
@@ -257,7 +286,11 @@ export class Enemy {
     Logger.log('combat', `[${this.type}] took ${amount} dmg (hp: ${Math.max(0, this.health)}/${this.maxHealth})`);
     if (this.health <= 0) {
       this.alive = false;
-      this.sprite.visible = false;
+      if (this.type === 'cultist') {
+        playCultistAnimation(this.sprite as AnimatedSprite, 'death', false);
+      } else {
+        this.sprite.visible = false;
+      }
       Logger.log('entity', `${this.type} killed`);
       return true;
     }
