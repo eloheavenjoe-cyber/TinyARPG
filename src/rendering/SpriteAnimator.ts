@@ -115,7 +115,7 @@ export async function loadRangerAnimations(): Promise<void> {
 
   result.idle = await loadRangerFrames('sprites/ranger', 'idle', 'idle_{n}.png', 12);
   result.walk = await loadRangerFrames('sprites/ranger', 'walk', 'run_{n}.png', 10);
-  result.attack = await loadRangerFrames('sprites/ranger', 'attack', '1_atk_{n}.png', 10);
+  result.attack = await loadRangerFrames('sprites/ranger', 'attack', '2_atk_{n}.png', 15);
 
   rangerFrames = result;
 
