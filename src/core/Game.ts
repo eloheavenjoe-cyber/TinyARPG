@@ -23,6 +23,8 @@ import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
 import { loadWarriorAnimations, loadRangerAnimations } from '../rendering/SpriteAnimator';
+import { Boss, BossId } from '../entities/Boss';
+import { BossHpBar } from '../ui/BossHpBar';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -85,6 +87,9 @@ export class Game {
   private tutorialKeys: Set<string> = new Set();
   private tutorialScreen?: TutorialScreen;
   private tutorialKeyWasDown: Set<string> = new Set();
+  private boss: Boss | null = null;
+  private bossHpBar?: BossHpBar;
+  private bossSpawned = false;
 
   constructor(app: Application) {
     this.app = app;
@@ -218,6 +223,26 @@ export class Game {
       }
     }
 
+    // Clean up previous boss
+    this.bossSpawned = false;
+    if (this.boss) {
+      this.gameContainer!.removeChild(this.boss.sprite);
+      this.gameContainer!.removeChild(this.boss.telegraphs);
+      this.boss.destroy();
+      this.boss = null;
+    }
+    if (this.bossHpBar) {
+      this.app.stage.removeChild(this.bossHpBar.container);
+      this.bossHpBar.destroy();
+      this.bossHpBar = undefined;
+    }
+
+    // Spawn boss if this is a boss room
+    const isBossRoom = state.roomIndex === zone.roomCount - 1 && zone.bossId;
+    if (isBossRoom && zone.bossId) {
+      this.spawnBoss(zone.bossId as BossId);
+    }
+
     // Add animated portal VFX
     for (const portal of this.room.portals) {
       const cx = portal.rect.x + portal.rect.width / 2;
@@ -252,6 +277,33 @@ export class Game {
       this.enemies.push(e);
       this.gameContainer!.addChild(e.sprite);
     }
+  }
+
+  private spawnBoss(bossId: BossId) {
+    if (!this.gameContainer) return;
+    const boss = new Boss(ROOM_WIDTH / 2, ROOM_HEIGHT / 2, bossId);
+
+    boss.onSpawnEnemies((count, type) => {
+      for (let i = 0; i < count; i++) {
+        const margin = 80;
+        const wa = this.room!.walkableArea;
+        const x = margin + Math.random() * (wa.width - margin * 2) + wa.x;
+        const y = margin + Math.random() * (wa.height - margin * 2) + wa.y;
+        const e = new Enemy(x, y, type as any);
+        this.enemies.push(e);
+        this.gameContainer!.addChild(e.sprite);
+      }
+    });
+
+    this.boss = boss;
+    this.bossSpawned = true;
+    this.gameContainer.addChild(boss.sprite);
+    this.gameContainer.addChild(boss.telegraphs);
+
+    this.bossHpBar = new BossHpBar(SCREEN_WIDTH);
+    this.app.stage.addChild(this.bossHpBar.container);
+
+    Logger.log('entity', `Boss spawned: ${boss.name}`);
   }
 
   private update(dt: number) {
@@ -388,6 +440,23 @@ export class Game {
       }
     }
 
+    // Boss update
+    if (this.boss?.alive) {
+      this.boss.update(this.player.x, this.player.y, dt, this.room!.walls);
+      for (const p of this.boss.projectiles) {
+        this.projectiles.push(p);
+        this.gameContainer!.addChild(p.sprite);
+      }
+      this.boss.projectiles = [];
+
+      if (rectsOverlap(this.player.getBounds(), this.boss.getBounds())) {
+        this.player.takeDamage(this.boss.damage);
+        this.combatText.showDamage(this.player.x, this.player.y - 20, this.boss.damage, 0xff6666);
+      }
+
+      this.bossHpBar?.update(this.boss);
+    }
+
     this.combatText.update(dt);
     this.portalAngle += dt * 0.03;
 
@@ -460,6 +529,16 @@ export class Game {
             }
           }
         }
+        // Check boss hit
+        if (!p.hostile && this.boss?.alive) {
+          if (rectsOverlap(p.getBounds(), this.boss.getBounds())) {
+            this.boss.takeDamage(p.damage);
+            this.combatText.showDamage(this.boss.x, this.boss.y - 20, p.damage, 0xffaa00);
+            if (!p.pierce) {
+              hit = true;
+            }
+          }
+        }
       }
       if (hit) {
         this.gameContainer!.removeChild(p.sprite);
@@ -477,6 +556,50 @@ export class Game {
           this.combatText.showDamage(this.player.x, this.player.y - 20, enemy.damage, 0xff6666);
           enemy.onDamagePlayer();
         }
+      }
+    }
+
+    // Boss telegraph damage
+    if (this.boss?.alive && this.boss.chosenAttack && this.boss.attacking) {
+      const t = this.boss.chosenAttack;
+      let inZone = false;
+
+      switch (t.type) {
+        case 'circle':
+          inZone = Math.hypot(this.player.x - t.x, this.player.y - t.y) < (t.radius || 80);
+          break;
+        case 'cone': {
+          const dx = this.player.x - t.x;
+          const dy = this.player.y - t.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < (t.radius || 100)) {
+            const angleToPlayer = Math.atan2(dy, dx);
+            let diff = angleToPlayer - (t.angle || 0);
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            inZone = Math.abs(diff) < 0.6;
+          }
+          break;
+        }
+        case 'line': {
+          const lx = t.targetX || t.x;
+          const ly = t.targetY || t.y;
+          const lineLen = Math.hypot(lx - t.x, ly - t.y);
+          if (lineLen > 0) {
+            const tParam = ((this.player.x - t.x) * (lx - t.x) + (this.player.y - t.y) * (ly - t.y)) / (lineLen * lineLen);
+            if (tParam >= 0 && tParam <= 1) {
+              const closestX = t.x + tParam * (lx - t.x);
+              const closestY = t.y + tParam * (ly - t.y);
+              inZone = Math.hypot(this.player.x - closestX, this.player.y - closestY) < 40;
+            }
+          }
+          break;
+        }
+      }
+
+      if (inZone) {
+        this.player.takeDamage(this.boss.damage);
+        this.combatText.showDamage(this.player.x, this.player.y - 20, this.boss.damage, 0xff6666);
       }
     }
 
@@ -550,6 +673,41 @@ export class Game {
         }
         this.spawnLoot(dead.x, dead.y);
         dead.destroy();
+      }
+    }
+
+    // Boss death
+    if (this.boss && !this.boss.alive && this.bossSpawned) {
+      this.bossSpawned = false;
+
+      this.zoneManager.markZoneCompleted(this.zoneManager.state!.zoneId);
+
+      this.spawnLoot(this.boss.x, this.boss.y);
+      this.spawnLoot(this.boss.x - 40, this.boss.y);
+      this.spawnLoot(this.boss.x + 40, this.boss.y);
+
+      if (this.player.addXp(this.boss.xpReward)) {
+        this.combatText.showDamage(this.boss.x, this.boss.y - 30, this.player.level - 1, 0x44ff88);
+      }
+
+      this.gameContainer!.removeChild(this.boss.telegraphs);
+      if (this.bossHpBar) {
+        this.app.stage.removeChild(this.bossHpBar.container);
+        this.bossHpBar.destroy();
+        this.bossHpBar = undefined;
+      }
+
+      Logger.log('system', `${this.boss.name} defeated — zone completed`);
+    }
+
+    // Desert boss room placeholder: mark completed when all enemies dead
+    if (this.zoneManager.state?.config.id === 'desert' && this.zoneManager.state?.roomIndex === this.zoneManager.state?.config.roomCount - 1) {
+      if (this.enemies.length === 0 && !this.bossSpawned && this.zoneManager.state) {
+        const zoneId = this.zoneManager.state.zoneId;
+        if (!this.zoneManager.completedZoneIds.has(zoneId)) {
+          this.zoneManager.markZoneCompleted(zoneId);
+          Logger.log('system', 'Desert boss room cleared — zone completed');
+        }
       }
     }
 
@@ -1358,6 +1516,21 @@ export class Game {
     }
     if (this.hud) { this.app.stage.removeChild(this.hud.container); this.hud.destroy(); this.hud = undefined; }
     if (this.skillBar) { this.app.stage.removeChild(this.skillBar.container); this.skillBar.destroy(); this.skillBar = undefined; }
+
+    // Boss cleanup must happen before gameContainer destroy
+    if (this.boss) {
+      if (this.boss.sprite.parent && this.gameContainer) this.gameContainer.removeChild(this.boss.sprite);
+      if (this.boss.telegraphs.parent && this.gameContainer) this.gameContainer.removeChild(this.boss.telegraphs);
+      this.boss.destroy();
+      this.boss = null;
+    }
+    if (this.bossHpBar) {
+      this.app.stage.removeChild(this.bossHpBar.container);
+      this.bossHpBar.destroy();
+      this.bossHpBar = undefined;
+    }
+    this.bossSpawned = false;
+
     if (this.gameContainer) {
       this.app.stage.removeChild(this.gameContainer);
       this.gameContainer.destroy({ children: true });
