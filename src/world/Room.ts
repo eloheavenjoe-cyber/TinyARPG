@@ -12,7 +12,7 @@ export interface Rect {
 export const ROOM_WIDTH = 6400;
 export const ROOM_HEIGHT = 3584;
 const TILE_SIZE = 32;
-const WALL_THICKNESS = 48;
+export const WALL_THICKNESS = 48;
 
 export function resolveCollision(entity: Rect, walls: Rect[]): { x: number; y: number } {
   let { x, y } = entity;
