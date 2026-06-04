@@ -1,15 +1,14 @@
 import { Assets, Texture, AnimatedSprite, Rectangle } from 'pixi.js';
 
-const FRAME_COUNT = 8;
 const FRAME_W = 96;
 const FRAME_H = 84;
 
 export type AnimName = 'idle' | 'walk' | 'attack';
 
 const ANIM_URLS: Record<AnimName, string> = {
-  idle: '/sprites/warrior/idle.png',
-  walk: '/sprites/warrior/walk.png',
-  attack: '/sprites/warrior/attack.png',
+  idle: 'sprites/warrior/idle.png',
+  walk: 'sprites/warrior/walk.png',
+  attack: 'sprites/warrior/attack.png',
 };
 
 let cachedFrames: Record<AnimName, Texture[]> | null = null;
@@ -27,13 +26,13 @@ export async function loadWarriorAnimations(): Promise<void> {
     try {
       const tex = await Assets.load(url);
       const base = tex.baseTexture;
+      const frameCount = Math.floor(base.width / FRAME_W);
       const frames: Texture[] = [];
-      for (let i = 0; i < FRAME_COUNT; i++) {
+      for (let i = 0; i < frameCount; i++) {
         frames.push(new Texture(base, new Rectangle(i * FRAME_W, 0, FRAME_W, FRAME_H)));
       }
       result[name] = frames;
     } catch {
-      // If file doesn't exist yet, create placeholder colored frames
       const canvas = document.createElement('canvas');
       canvas.width = FRAME_W;
       canvas.height = FRAME_H;
@@ -45,7 +44,7 @@ export async function loadWarriorAnimations(): Promise<void> {
       ctx.fillText(name, 24, 48);
       const placeholder = Texture.from(canvas);
       const frames: Texture[] = [];
-      for (let i = 0; i < FRAME_COUNT; i++) {
+      for (let i = 0; i < 8; i++) {
         frames.push(placeholder);
       }
       result[name] = frames;
@@ -83,6 +82,6 @@ export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: bool
   if (!frames || sprite.textures === frames) return;
   sprite.textures = frames;
   sprite.loop = loop;
-  sprite.animationSpeed = name === 'attack' ? 0.25 : 0.15;
+  sprite.animationSpeed = name === 'attack' ? 0.2 : 0.12;
   sprite.gotoAndPlay(0);
 }
