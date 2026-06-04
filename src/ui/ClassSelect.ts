@@ -15,91 +15,99 @@ interface ClassOption {
 }
 
 function drawSword(g: Graphics) {
-  g.lineStyle(3, 0x8a6a3a);
-  // Blade
+  // Blade - elongated diamond
   g.beginFill(0xd0d0e0);
-  g.moveTo(0, -38);
-  g.lineTo(7, -4);
-  g.lineTo(0, 0);
-  g.lineTo(-7, -4);
-  g.closePath();
+  g.drawPolygon([0, -38, 7, -4, 0, 0, -7, -4]);
   g.endFill();
-  // Blade center highlight
-  g.lineStyle(1.5, 0xffffff, 0.5);
-  g.moveTo(0, -36);
-  g.lineTo(0, -2);
-  // Guard
-  g.lineStyle(3.5, 0x8a6a3a);
-  g.moveTo(-13, 0);
-  g.lineTo(13, 0);
-  // Handle
-  g.lineStyle(3, 0x6a4a2a);
-  g.moveTo(0, 0);
-  g.lineTo(0, 15);
+  // Blade highlight
+  g.beginFill(0xffffff, 0.3);
+  g.drawRect(-1, -36, 2, 32);
+  g.endFill();
+  // Crossguard
+  g.beginFill(0x8a6a3a);
+  g.drawRect(-14, -1, 28, 3);
+  g.endFill();
+  // Grip
+  g.beginFill(0x6a4a2a);
+  g.drawRect(-2, 2, 4, 13);
+  g.endFill();
   // Pommel
   g.beginFill(0x8a6a3a);
-  g.drawCircle(0, 18, 3.5);
+  g.drawCircle(0, 18, 4);
+  g.endFill();
+  // Guard detail
+  g.beginFill(0x7a5a3a);
+  g.drawRect(-8, -2, 16, 5);
   g.endFill();
 }
 
 function drawBow(g: Graphics) {
-  g.lineStyle(4, 0x7a9a6a);
-  const bowColor = 0x5a7a4a;
-  // Bow arc (upper)
-  g.beginFill(0, 0);
-  g.arc(0, 0, 32, -Math.PI * 0.75, -Math.PI * 0.25);
-  g.lineStyle(4, bowColor);
-  g.arc(0, 0, 32, -Math.PI * 0.75, -Math.PI * 0.25);
-  // Bow arc (lower)
-  g.arc(0, 0, 32, Math.PI * 0.25, Math.PI * 0.75);
-  // Bowstring
-  g.lineStyle(1.5, 0xcccccc, 0.7);
-  const stringY = 32 * Math.sin(Math.PI * 0.25);
-  const stringX = 32 * Math.cos(Math.PI * 0.25);
-  g.moveTo(-stringX, -stringY);
-  g.lineTo(-stringX, stringY);
-  // Arrow
-  g.lineStyle(2, 0xb0a070);
-  g.moveTo(-stringX + 4, 0);
-  g.lineTo(28, 0);
-  g.lineStyle(1, 0xc0b080);
-  g.moveTo(-stringX + 4, -3);
-  g.lineTo(-stringX + 4, 3);
+  // Upper limb
+  g.beginFill(0x5a7a4a);
+  g.drawPolygon([
+    0, 0,
+    -6, -28,
+    -3, -32,
+    0, -30,
+    3, -32,
+    6, -28,
+  ]);
+  g.endFill();
+  // Lower limb
+  g.beginFill(0x5a7a4a);
+  g.drawPolygon([
+    0, 0,
+    -6, 28,
+    -3, 32,
+    0, 30,
+    3, 32,
+    6, 28,
+  ]);
+  g.endFill();
+  // Bowstring dots
+  g.beginFill(0xcccccc);
+  g.drawCircle(-12, -22, 1);
+  g.drawCircle(-12, 22, 1);
+  g.endFill();
+  // Arrow shaft
+  g.beginFill(0xb0a070);
+  g.drawRect(-10, -1, 38, 2);
+  g.endFill();
   // Arrowhead
   g.beginFill(0xd0d0e0);
-  g.moveTo(28, 0);
-  g.lineTo(22, -5);
-  g.lineTo(22, 5);
-  g.closePath();
+  g.drawPolygon([28, 0, 20, -5, 20, 5]);
+  g.endFill();
+  // Fletching
+  g.beginFill(0xc0b080);
+  g.drawPolygon([-10, 0, -13, -4, -13, 4]);
   g.endFill();
 }
 
 function drawMonkSilhouette(g: Graphics) {
   const c = 0xd0b080;
-  g.lineStyle(3, c);
   // Head
+  g.beginFill(c);
   g.drawCircle(0, -32, 10);
-  // Body (torso leaning forward in fighting stance)
-  g.moveTo(0, -22);
-  g.lineTo(6, 2);
+  g.endFill();
+  // Torso
+  g.beginFill(c);
+  g.drawPolygon([-4, -22, 4, -22, 8, 4, -2, 4]);
+  g.endFill();
   // Front arm (punching forward)
-  g.moveTo(6, -8);
-  g.lineTo(28, -16);
-  // Back arm (chambered)
-  g.moveTo(4, -6);
-  g.lineTo(-16, -14);
-  g.lineTo(-22, -6);
-  // Front leg (forward lunge)
-  g.moveTo(6, 2);
-  g.lineTo(22, 26);
-  g.lineTo(30, 24);
-  // Back leg
-  g.moveTo(6, 2);
-  g.lineTo(-10, 26);
-  g.lineTo(-18, 30);
+  g.beginFill(c);
+  g.drawPolygon([4, -10, 8, -8, 28, -16, 26, -20]);
+  g.endFill();
   // Fist
   g.beginFill(c);
-  g.drawCircle(28, -16, 3);
+  g.drawCircle(28, -18, 4);
+  g.endFill();
+  // Front leg (lunge)
+  g.beginFill(c);
+  g.drawPolygon([4, 2, 8, 2, 24, 26, 20, 28]);
+  g.endFill();
+  // Back leg
+  g.beginFill(c);
+  g.drawPolygon([0, 2, 4, 2, -8, 28, -14, 30]);
   g.endFill();
 }
 
