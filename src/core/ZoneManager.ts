@@ -1,9 +1,5 @@
-import { Container } from 'pixi.js';
-import { Room, ROOM_WIDTH, ROOM_HEIGHT } from '../world/Room';
-import { Player } from '../entities/Player';
+import { ROOM_WIDTH, ROOM_HEIGHT } from '../world/Room';
 import { Enemy, EnemyType } from '../entities/Enemy';
-import { Projectile } from '../entities/Projectile';
-import { ItemDrop } from '../entities/ItemDrop';
 import { Logger } from './Logger';
 import { ZoneConfig, ZONE_REGISTRY, RoomTemplate } from './ZoneConfig';
 import { cloneTemplate } from '../world/RoomTemplates';
