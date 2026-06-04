@@ -176,7 +176,7 @@ export class Game {
     const zone = state.config;
     const template = state.currentTemplate;
 
-    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects);
+    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs);
     this.gameContainer.addChild(this.room.container);
 
     // Re-add player and combat text above the new room (room floor tiles would cover them)

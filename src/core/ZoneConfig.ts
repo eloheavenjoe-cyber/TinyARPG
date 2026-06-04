@@ -32,6 +32,18 @@ export interface PortalMarker {
   label: string;
 }
 
+export interface BuildingData {
+  x: number; y: number; width: number; height: number;
+  wallColor: number; roofColor: number;
+  label: string;
+}
+
+export interface NpcData {
+  x: number; y: number;
+  label: string;
+  tint: number;
+}
+
 export interface RoomTemplate {
   walls: { x: number; y: number; width: number; height: number }[];
   doors: DoorMarker[];
@@ -39,6 +51,8 @@ export interface RoomTemplate {
   spawnZones: { x: number; y: number; width: number; height: number }[];
   playerStart: { x: number; y: number };
   decorationRects: { x: number; y: number; width: number; height: number }[];
+  buildings: BuildingData[];
+  npcs: NpcData[];
 }
 
 export interface ZoneConfig {

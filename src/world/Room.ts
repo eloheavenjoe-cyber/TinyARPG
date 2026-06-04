@@ -1,6 +1,6 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Text } from 'pixi.js';
 import { Logger } from '../core/Logger';
-import { BiomeData, BIOME_DATA, BiomeId, DoorMarker, PortalMarker } from '../core/ZoneConfig';
+import { BiomeData, BIOME_DATA, BiomeId, DoorMarker, PortalMarker, BuildingData, NpcData } from '../core/ZoneConfig';
 
 export interface Rect {
   x: number;
@@ -61,8 +61,10 @@ export class Room {
   doors: DoorMarker[];
   portals: PortalMarker[];
   private decorations: Rect[];
+  private buildings: BuildingData[];
+  private npcs: NpcData[];
 
-  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = []) {
+  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = []) {
     this.container = new Container();
     this.walkableArea = {
       x: WALL_THICKNESS,
@@ -74,6 +76,8 @@ export class Room {
     this.doors = doors;
     this.portals = portals;
     this.decorations = decorations;
+    this.buildings = buildings;
+    this.npcs = npcs;
     this.build();
     Logger.log('system', `Room created: ${ROOM_WIDTH}x${ROOM_HEIGHT}, walkable: ${this.walkableArea.width}x${this.walkableArea.height}`);
   }
@@ -120,6 +124,8 @@ export class Room {
     this.container.addChild(wallGfx, wallBorder);
 
     this.renderDecorations();
+    this.renderBuildings();
+    this.renderNpcs();
     this.renderDoors();
     this.renderPortals();
   }
@@ -171,5 +177,61 @@ export class Room {
       }
     }
     this.container.addChild(g);
+  }
+
+  private renderBuildings() {
+    for (const b of this.buildings) {
+      const g = new Graphics();
+      // Main body
+      g.beginFill(b.wallColor);
+      g.drawRect(b.x, b.y, b.width, b.height);
+      g.endFill();
+      // Roof (triangle)
+      g.beginFill(b.roofColor);
+      g.moveTo(b.x - 8, b.y);
+      g.lineTo(b.x + b.width / 2, b.y - 40);
+      g.lineTo(b.x + b.width + 8, b.y);
+      g.closePath();
+      g.endFill();
+      // Door
+      g.beginFill(0x3a2a1a);
+      g.drawRect(b.x + b.width / 2 - 12, b.y + b.height - 36, 24, 36);
+      g.endFill();
+      // Windows
+      g.beginFill(0x88ccff, 0.6);
+      g.drawRect(b.x + 12, b.y + 20, 20, 20);
+      g.drawRect(b.x + b.width - 32, b.y + 20, 20, 20);
+      g.endFill();
+      this.container.addChild(g);
+      // Label
+      const label = new Text(b.label, { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff });
+      label.anchor.set(0.5, 1);
+      label.x = b.x + b.width / 2;
+      label.y = b.y - 44;
+      this.container.addChild(label);
+    }
+  }
+
+  private renderNpcs() {
+    for (const npc of this.npcs) {
+      const g = new Graphics();
+      const cx = npc.x;
+      const cy = npc.y;
+      // Body
+      g.beginFill(npc.tint, 0.9);
+      g.drawRoundedRect(cx - 8, cy - 8, 16, 20, 4);
+      g.endFill();
+      // Head
+      g.beginFill(0xffccaa, 0.9);
+      g.drawCircle(cx, cy - 16, 7);
+      g.endFill();
+      this.container.addChild(g);
+      // Label
+      const label = new Text(npc.label, { fontFamily: 'monospace', fontSize: 12, fill: 0xffff88 });
+      label.anchor.set(0.5, 0);
+      label.x = cx;
+      label.y = cy + 16;
+      this.container.addChild(label);
+    }
   }
 }

@@ -11,6 +11,8 @@ export function cloneTemplate(t: RoomTemplate): RoomTemplate {
     spawnZones: t.spawnZones.map(s => ({ ...s })),
     playerStart: { ...t.playerStart },
     decorationRects: t.decorationRects.map(d => ({ ...d })),
+    buildings: t.buildings.map(b => ({ ...b })),
+    npcs: t.npcs.map(n => ({ ...n })),
   };
 }
 
@@ -20,6 +22,8 @@ export const TEMPLATE_OPEN: RoomTemplate = {
   portals: [],
   spawnZones: [{ x: WALL_T + 50, y: WALL_T + 50, width: ROOM_WIDTH - WALL_T * 2 - 100, height: ROOM_HEIGHT - WALL_T * 2 - 100 }],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
@@ -39,6 +43,8 @@ export const TEMPLATE_PILLARS: RoomTemplate = {
     { x: 1100, y: 500, width: 400, height: 300 },
   ],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
@@ -56,6 +62,8 @@ export const TEMPLATE_L_SHAPE: RoomTemplate = {
     { x: WALL_T + 50, y: 480, width: 500, height: 350 },
   ],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
@@ -75,6 +83,8 @@ export const TEMPLATE_CROSS: RoomTemplate = {
     { x: 900, y: 480, width: 600, height: 350 },
   ],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
@@ -94,6 +104,8 @@ export const TEMPLATE_RING: RoomTemplate = {
     { x: 900, y: 500, width: 600, height: 300 },
   ],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
 
@@ -115,10 +127,14 @@ export const TEMPLATE_HUB: RoomTemplate = {
     { x: 1400, y: 200, width: 12, height: 12 },
     { x: 300, y: 600, width: 16, height: 16 },
     { x: 1300, y: 600, width: 10, height: 10 },
-    { x: 500, y: 300, width: 12, height: 12 },
-    { x: 1100, y: 300, width: 14, height: 14 },
-    { x: 400, y: 750, width: 10, height: 10 },
-    { x: 1200, y: 750, width: 12, height: 12 },
+  ],
+  buildings: [
+    { x: 200, y: 300, width: 160, height: 120, wallColor: 0x6a5a4a, roofColor: 0x5a3a2a, label: 'Vendor' },
+    { x: 1240, y: 300, width: 160, height: 120, wallColor: 0x5a6a5a, roofColor: 0x3a4a3a, label: 'Stash' },
+  ],
+  npcs: [
+    { x: 280, y: 440, label: 'Vendor', tint: 0x44aa66 },
+    { x: 1320, y: 440, label: 'Stash', tint: 0x4488cc },
   ],
   playerStart: { x: 800, y: 448 },
 };
@@ -132,6 +148,8 @@ export const TEMPLATE_TUTORIAL: RoomTemplate = {
   portals: [],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -144,6 +162,8 @@ export const TEMPLATE_ARENA: RoomTemplate = {
   ],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -158,6 +178,8 @@ export const TEMPLATE_DUNGEON: RoomTemplate = {
   ],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -170,6 +192,8 @@ export const TEMPLATE_DEV: RoomTemplate = {
   portals: [],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   decorationRects: [],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -188,6 +212,8 @@ export const TEMPLATE_FOREST_1: RoomTemplate = {
     { x: 300, y: 700, width: 12, height: 12 },
     { x: 1300, y: 700, width: 16, height: 16 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -214,6 +240,8 @@ export const TEMPLATE_FOREST_2: RoomTemplate = {
     { x: 100, y: 400, width: 12, height: 12 },
     { x: 1500, y: 300, width: 16, height: 16 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -237,6 +265,8 @@ export const TEMPLATE_FOREST_3: RoomTemplate = {
     { x: 900, y: 600, width: 18, height: 18 },
     { x: 1200, y: 300, width: 12, height: 12 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -263,6 +293,8 @@ export const TEMPLATE_DESERT_1: RoomTemplate = {
     { x: 1100, y: 700, width: 16, height: 12 },
     { x: 100, y: 500, width: 14, height: 10 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -289,6 +321,8 @@ export const TEMPLATE_DESERT_2: RoomTemplate = {
     { x: 200, y: 650, width: 12, height: 26 },
     { x: 1300, y: 300, width: 14, height: 10 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -315,6 +349,8 @@ export const TEMPLATE_DESERT_3: RoomTemplate = {
     { x: 100, y: 400, width: 12, height: 10 },
     { x: 1500, y: 300, width: 14, height: 28 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -331,6 +367,8 @@ export const TEMPLATE_DESERT_4: RoomTemplate = {
     { x: 200, y: 700, width: 14, height: 10 },
     { x: 800, y: 600, width: 12, height: 26 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -349,6 +387,8 @@ export const TEMPLATE_ICE_1: RoomTemplate = {
     { x: 1200, y: 450, width: 12, height: 12 },
     { x: 600, y: 650, width: 16, height: 16 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -375,6 +415,8 @@ export const TEMPLATE_ICE_2: RoomTemplate = {
     { x: 100, y: 450, width: 12, height: 12 },
     { x: 1500, y: 350, width: 22, height: 22 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -399,6 +441,8 @@ export const TEMPLATE_ICE_3: RoomTemplate = {
     { x: 1200, y: 300, width: 22, height: 22 },
     { x: 500, y: 500, width: 12, height: 12 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -423,6 +467,8 @@ export const TEMPLATE_ICE_4: RoomTemplate = {
     { x: 1500, y: 500, width: 12, height: 12 },
     { x: 100, y: 700, width: 22, height: 22 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
 
@@ -449,5 +495,7 @@ export const TEMPLATE_ICE_5: RoomTemplate = {
     { x: 100, y: 400, width: 22, height: 22 },
     { x: 1500, y: 400, width: 12, height: 12 },
   ],
+  buildings: [],
+  npcs: [],
   playerStart: { x: 800, y: 448 },
 };
