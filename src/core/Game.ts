@@ -1101,6 +1101,20 @@ export class Game {
       return;
     }
 
+    // Monk combat techniques
+    if (this.player.classType === 'monk' && (result.effectType === 'single' || result.effectType === 'cone')) {
+      this.player.executeTechnique(result, this.enemies);
+      return;
+    }
+
+    // Monk meditate channel
+    if (this.player.classType === 'monk' && result.id === 'meditate') {
+      this.player.startChannel('meditate', 60);
+      const sprite = this.player.sprite as AnimatedSprite;
+      playMonkAnimation(sprite, 'meditate', false);
+      return;
+    }
+
     const isProjectileType = result.effectType === 'projectile' || result.effectType === 'projectile_spread';
 
     if (isProjectileType) {

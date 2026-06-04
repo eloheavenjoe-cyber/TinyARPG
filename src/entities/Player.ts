@@ -29,8 +29,8 @@ export type InventorySlot = EquipSlot | OrbInfo | null;
 export class Player {
   x: number;
   y: number;
-  readonly width = 28;
-  readonly height = 28;
+  width: number;
+  height: number;
   health = 100;
   maxHealth = 100;
   mana = 50;
@@ -74,12 +74,15 @@ export class Player {
   constructor(x: number, y: number, classType: ClassType = 'warrior') {
     this.x = x;
     this.y = y;
+    this.width = classType === 'monk' ? 32 : 28;
+    this.height = classType === 'monk' ? 32 : 28;
     if (classType === 'warrior' && isLoaded()) {
       this.sprite = createWarriorSprite();
     } else if (classType === 'ranger' && isLoaded('ranger')) {
       this.sprite = createRangerSprite();
     } else if (classType === 'monk' && isMonkLoaded()) {
       this.sprite = createMonkSprite();
+      this.sprite.scale.set(1.125);
     } else {
       const tex = classType === 'ranger' ? Sprites.ranger : Sprites.player;
       const s = new AnimatedSprite([tex]);
@@ -570,7 +573,22 @@ export class Player {
     this.mana -= result.manaCost;
 
     this.triggerAttackAnimation(skill.id);
+    this.applySkillDamage(skill, enemies);
+    return true;
+  }
 
+  executeTechnique(skill: SkillDef, enemies: Enemy[]): boolean {
+    const slotIdx = this.skills.slots.indexOf(skill);
+    if (slotIdx === -1) return false;
+    const result = this.skills.consume(slotIdx, this.mana);
+    if (!result) return false;
+    this.mana -= result.manaCost;
+    this.triggerAttackAnimation(skill.id);
+    this.applySkillDamage(skill, enemies);
+    return true;
+  }
+
+  private applySkillDamage(skill: SkillDef, enemies: Enemy[]) {
     const aoeMult = 1 + ((this._computedStats.skillAoePct || 0) / 100);
     const leechPct = this._computedStats.lifeLeechPct || 0;
     const fortifyAmt = this._computedStats.fortifyOnHit || 0;
