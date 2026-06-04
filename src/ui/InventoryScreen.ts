@@ -67,7 +67,7 @@ export class InventoryScreen {
     this.container.addChild(hint);
 
     // Inventory grid (left side, centered)
-    const gridLeft = screenW / 2 - 185;
+    const gridLeft = 300;
     const gridTop = 80;
     const slotSize = 50;
     const gap = 6;
@@ -105,7 +105,7 @@ export class InventoryScreen {
     }
 
     // Equipment panel (right side)
-    const equipX = screenW / 2 + 60;
+    const equipX = screenW / 2 + 200;
     const equipStartY = 80;
     const equipSlotSize = 60;
     const equipGap = 10;
@@ -161,7 +161,7 @@ export class InventoryScreen {
     }
 
     // Stats panel
-    const statsX = screenW / 2 + 60;
+    const statsX = screenW / 2 + 200;
     const statsY = equipStartY + slotLabels.length * (equipSlotSize + equipGap) + 30;
 
     const header = new Text('Character Stats', new TextStyle({
@@ -324,7 +324,7 @@ export class InventoryScreen {
     }
 
     // Update stats
-    const statsX = 1920 / 2 + 60;
+    const statsX = 1920 / 2 + 200;
     const statsY = 80 + 7 * (60 + 10) + 30;
     this.refreshStats(computedStats, statsX, statsY);
   }
