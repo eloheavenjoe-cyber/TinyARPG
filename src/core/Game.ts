@@ -26,7 +26,7 @@ import { Slot, ITEM_BASES } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
-import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, playMonkAnimation } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadJuggernautAnimations, playMonkAnimation } from '../rendering/SpriteAnimator';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 import { Minimap } from '../ui/Minimap';
@@ -141,6 +141,7 @@ export class Game {
       loadGolemAnimations(),
       loadMonkAnimations(),
       loadCultistAnimations(),
+      loadJuggernautAnimations(),
     ]);
 
     barFill.clear();

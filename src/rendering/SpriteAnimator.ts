@@ -477,6 +477,84 @@ export function createRangerSprite(): AnimatedSprite {
   return sprite;
 }
 
+// --- Juggernaut animated sprite ---
+export type JuggernautAnimName = 'idle' | 'run' | 'attack';
+
+let juggernautFrames: Record<JuggernautAnimName, Texture[]> | null = null;
+let pendingJuggernautSprites: AnimatedSprite[] = [];
+
+const JUGGERNAUT_ROW_CONFIG: [JuggernautAnimName, number, number, number][] = [
+  ['idle', 0, 204, 5],
+  ['run', 1, 128, 8],
+  ['attack', 3, 113, 9],
+];
+
+export async function loadJuggernautAnimations(): Promise<void> {
+  if (juggernautFrames) return;
+  try {
+    const img = await loadImage('sprites/juggernaut/juggernaut.png');
+    const base = new BaseTexture(img);
+    const ROW_H = 192;
+    const result = {} as Record<JuggernautAnimName, Texture[]>;
+
+    for (const [name, row, frameW, count] of JUGGERNAUT_ROW_CONFIG) {
+      const frames: Texture[] = [];
+      const yOff = row * ROW_H;
+      for (let i = 0; i < count; i++) {
+        frames.push(new Texture(base, new Rectangle(i * frameW, yOff, frameW, ROW_H)));
+      }
+      result[name] = frames;
+    }
+
+    juggernautFrames = result;
+  } catch {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 192;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#5a3a2a';
+    ctx.fillRect(0, 0, 128, 192);
+    const fallback = [Texture.from(canvas)];
+    juggernautFrames = { idle: fallback, run: fallback, attack: fallback };
+  }
+
+  for (const sprite of pendingJuggernautSprites) {
+    const f = juggernautFrames.idle;
+    if (f.length > 0) {
+      sprite.textures = f;
+      sprite.animationSpeed = 0.12;
+      sprite.play();
+    }
+  }
+  pendingJuggernautSprites = [];
+}
+
+export function createJuggernautSprite(): AnimatedSprite {
+  if (juggernautFrames && juggernautFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(juggernautFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.12;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x5a3a2a;
+  pendingJuggernautSprites.push(sprite);
+  return sprite;
+}
+
+export function playJuggernautAnimation(sprite: AnimatedSprite, name: JuggernautAnimName, loop = true) {
+  if (!juggernautFrames) return;
+  const f = juggernautFrames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === 'attack' ? 0.15 : 0.12;
+  sprite.gotoAndPlay(0);
+}
+
 export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true, classType: 'warrior' | 'ranger' | 'monk' = 'warrior') {
   if (classType === 'monk') return;
   const frames = getFrames(classType);
