@@ -12,10 +12,11 @@ export class Projectile {
   pierce: boolean;
   hostile: boolean;
   slowDuration: number;
+  size: number;
   sprite: Graphics;
   hitTargets: Set<object> = new Set();
 
-  constructor(x: number, y: number, angle: number, speed: number, damage: number, pierce = false, hostile = false, color = 0xffdd44, slowDuration = 0) {
+  constructor(x: number, y: number, angle: number, speed: number, damage: number, pierce = false, hostile = false, color = 0xffdd44, slowDuration = 0, size = 4) {
     this.x = x;
     this.y = y;
     this.vx = Math.cos(angle) * speed;
@@ -24,12 +25,13 @@ export class Projectile {
     this.pierce = pierce;
     this.hostile = hostile;
     this.slowDuration = slowDuration;
+    this.size = size;
     this.lifetime = 60;
 
     this.sprite = new Graphics();
     if (hostile) {
       this.sprite.beginFill(color);
-      this.sprite.drawCircle(0, 0, 4);
+      this.sprite.drawCircle(0, 0, size);
       this.sprite.endFill();
     } else {
       this.sprite.beginFill(0xffdd44);
@@ -54,7 +56,8 @@ export class Projectile {
 
   getBounds(): Rect {
     if (this.hostile) {
-      return { x: this.x - 4, y: this.y - 4, width: 8, height: 8 };
+      const s = this.size;
+      return { x: this.x - s, y: this.y - s, width: s * 2, height: s * 2 };
     }
     return { x: this.x - 3, y: this.y - 1, width: 6, height: 2 };
   }

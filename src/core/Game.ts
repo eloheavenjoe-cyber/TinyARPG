@@ -629,6 +629,15 @@ export class Game {
         this.player.takeDamage(t.damageAmt);
         this.combatText.showDamage(this.player.x, this.player.y - 20, t.damageAmt, 0xff6666);
       }
+
+      // Boss attack VFX
+      if (t.type === 'cone') {
+        this.vfxGroundSlam(t.x, t.y, t.angle || 0);
+      } else if (t.type === 'circle') {
+        this.vfxRing(t.x, t.y, 0xff6622, (t.radius || 80) * 1.5);
+        this.vfxImpact(t.x, t.y);
+      }
+
       this.boss.pendingAttackDamage = null;
     }
 

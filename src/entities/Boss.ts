@@ -279,14 +279,30 @@ export class Boss {
         const angle = Math.atan2((t.targetY || 0) - t.y, (t.targetX || 0) - t.x);
         const len = Math.hypot((t.targetX || 0) - t.x, (t.targetY || 0) - t.y);
         const grown = len * progress;
-        this.telegraphs.lineStyle(3, t.color, alpha);
-        this.telegraphs.moveTo(t.x, t.y);
-        this.telegraphs.lineTo(t.x + Math.cos(angle) * grown, t.y + Math.sin(angle) * grown);
+        const halfW = 14;
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        const perpX = -sinA * halfW;
+        const perpY = cosA * halfW;
+        const ex = t.x + cosA * grown;
+        const ey = t.y + sinA * grown;
+        this.telegraphs.lineStyle(2, t.color, alpha * 0.4);
+        this.telegraphs.moveTo(t.x + perpX, t.y + perpY);
+        this.telegraphs.lineTo(ex + perpX, ey + perpY);
+        this.telegraphs.moveTo(t.x - perpX, t.y - perpY);
+        this.telegraphs.lineTo(ex - perpX, ey - perpY);
+        this.telegraphs.lineStyle(1, t.color, alpha * 0.2);
+        this.telegraphs.moveTo(t.x + perpX * 0.5, t.y + perpY * 0.5);
+        this.telegraphs.lineTo(ex + perpX * 0.5, ey + perpY * 0.5);
+        this.telegraphs.moveTo(t.x - perpX * 0.5, t.y - perpY * 0.5);
+        this.telegraphs.lineTo(ex - perpX * 0.5, ey - perpY * 0.5);
         break;
       }
       case 'circle':
-        this.telegraphs.lineStyle(3, t.color, alpha);
+        this.telegraphs.lineStyle(4, t.color, alpha * 0.6);
         this.telegraphs.drawCircle(t.x, t.y, (t.radius || 80) * progress);
+        this.telegraphs.lineStyle(2, t.color, alpha * 0.3);
+        this.telegraphs.drawCircle(t.x, t.y, (t.radius || 80) * progress * 0.85);
         break;
       case 'cone': {
         const halfA = 0.6;
@@ -311,8 +327,16 @@ export class Boss {
         break;
       case 'line': {
         const angle = Math.atan2(py - this.y, px - this.x);
-        const p = new Projectile(this.x, this.y, angle, 5, this.damage, false, true, 0xcc8844);
+        const p = new Projectile(this.x, this.y, angle, 8, this.damage, false, true, 0xcc8844, 0, 14);
         p.lifetime = 60;
+        p.sprite.clear();
+        p.sprite.beginFill(0x887766);
+        p.sprite.drawCircle(0, 0, 14);
+        p.sprite.beginFill(0x665544);
+        p.sprite.drawCircle(-4, -3, 10);
+        p.sprite.beginFill(0x554433);
+        p.sprite.drawCircle(2, -1, 6);
+        p.sprite.endFill();
         this.projectiles.push(p);
         break;
       }
