@@ -39,9 +39,10 @@ export class Enemy {
       this.y += moveY;
     }
 
-    const resolved = resolveCollision(this.getBounds(), walls);
-    this.x = resolved.x;
-    this.y = resolved.y;
+    const bounds = this.getBounds();
+    const resolved = resolveCollision(bounds, walls);
+    this.x = resolved.x + this.width / 2;
+    this.y = resolved.y + this.height / 2;
 
     this.sprite.rotation = Math.atan2(playerY - this.y, playerX - this.x);
 

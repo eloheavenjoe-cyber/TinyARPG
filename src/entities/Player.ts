@@ -52,12 +52,15 @@ export class Player {
     this.x += dx * speed;
     this.y += dy * speed;
 
-    const resolved = resolveCollision(this.getBounds(), walls);
-    if (resolved.x !== this.x || resolved.y !== this.y) {
-      Logger.log('collision', `Wall push at (${this.x.toFixed(0)}, ${this.y.toFixed(0)}) -> (${resolved.x.toFixed(0)}, ${resolved.y.toFixed(0)})`);
+    const bounds = this.getBounds();
+    const resolved = resolveCollision(bounds, walls);
+    const newX = resolved.x + this.width / 2;
+    const newY = resolved.y + this.height / 2;
+    if (newX !== this.x || newY !== this.y) {
+      Logger.log('collision', `Wall push at (${this.x.toFixed(0)}, ${this.y.toFixed(0)}) -> (${newX.toFixed(0)}, ${newY.toFixed(0)})`);
     }
-    this.x = resolved.x;
-    this.y = resolved.y;
+    this.x = newX;
+    this.y = newY;
 
     this.sprite.rotation = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
 
