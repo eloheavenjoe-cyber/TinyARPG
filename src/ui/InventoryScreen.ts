@@ -232,34 +232,125 @@ export class InventoryScreen {
     }
   }
 
+  private statLabel(stat: string): string {
+    const labels: Record<string, string> = {
+      hp: 'HP', mana: 'Mana', armor: 'Armor', damage: 'Damage',
+      damagePct: 'Dmg %', attackSpeedPct: 'Atk Spd', moveSpeedPct: 'Move Spd',
+      str: 'STR', dex: 'DEX', int: 'INT',
+      armorPct: 'Armor %', hpRegen: 'HP Regen',
+      fireDmg: 'Fire Dmg', damageReduction: 'Dmg Red', projectileDmgPct: 'Proj Dmg',
+    };
+    return labels[stat] || stat;
+  }
+
   private showTooltip(item: GeneratedItem, x: number, y: number) {
     if (this.tooltip) this.container.removeChild(this.tooltip);
+    this.tooltip = new Container();
 
-    const lines: string[] = [item.computedName];
-    lines.push(`Base: ${item.base.name}`);
-    if (item.damageRoll > 0) lines.push(`Damage: ${item.damageRoll}`);
-    for (const a of item.affixes) {
-      if (a.affix.name) {
-        lines.push(`  ${a.affix.name}: ${a.roll > 0 ? '+' : ''}${a.roll}`);
+    const pad = 10;
+    const lineH = 16;
+    const rarityColor = getRarityColor(item.rarity);
+
+    interface Line { left: Text; right?: Text }
+    const elems: Line[] = [];
+    let cy = pad;
+
+    const addText = (text: string, overrides: Partial<TextStyle>, xOff = 0): Text => {
+      const t = new Text(text, new TextStyle({ fontFamily: 'monospace', ...overrides }));
+      t.x = pad + xOff;
+      t.y = cy;
+      return t;
+    };
+
+    // Header
+    elems.push({ left: addText(item.computedName, { fontSize: 14, fontWeight: 'bold', fill: rarityColor }) });
+    cy += 20;
+
+    // Base type
+    elems.push({ left: addText(`── ${item.base.name} ──`, { fontSize: 10, fill: '#777788' }) });
+    cy += 12;
+
+    const prefixes = item.affixes.filter(a => a.affix.type === 'prefix');
+    const suffixes = item.affixes.filter(a => a.affix.type === 'suffix');
+
+    // Prefixes section
+    if (prefixes.length > 0) {
+      cy += 2;
+      elems.push({ left: addText('Prefixes', { fontSize: 10, fill: '#556688', fontStyle: 'italic' }) });
+      cy += 14;
+      for (const a of prefixes) {
+        const left = addText(`◆ ${a.affix.name}`, { fontSize: 11, fill: '#88aacc' }, 6);
+        const right = addText(`${a.roll > 0 ? '+' : ''}${a.roll}`, { fontSize: 11, fill: '#ccccdd' });
+        elems.push({ left, right });
+        cy += lineH;
       }
     }
 
-    this.tooltip = new Container();
-    const txt = new Text(lines.join('\n'), new TextStyle({
-      fontFamily: 'monospace', fontSize: 11,
-      fill: getRarityColor(item.rarity), lineHeight: 16,
-    }));
+    // Suffixes section
+    if (suffixes.length > 0) {
+      cy += 2;
+      elems.push({ left: addText('Suffixes', { fontSize: 10, fill: '#556688', fontStyle: 'italic' }) });
+      cy += 14;
+      for (const a of suffixes) {
+        const left = addText(`◆ ${a.affix.name}`, { fontSize: 11, fill: '#88aacc' }, 6);
+        const right = addText(`${a.roll > 0 ? '+' : ''}${a.roll}`, { fontSize: 11, fill: '#ccccdd' });
+        elems.push({ left, right });
+        cy += lineH;
+      }
+    }
 
-    const pad = 8;
+    // Stat summary
+    cy += 2;
+    const nonZeroStats = Object.entries(item.computedStats).filter(([, v]) => v !== 0);
+    if (nonZeroStats.length > 0) {
+      elems.push({ left: addText('Stats', { fontSize: 10, fill: '#556688', fontStyle: 'italic' }) });
+      cy += 14;
+      for (const [stat, val] of nonZeroStats) {
+        const left = addText(`  ${this.statLabel(stat)}`, { fontSize: 11, fill: '#aaaabc' });
+        const right = addText(`${val > 0 ? '+' : ''}${val}`, { fontSize: 11, fill: '#ccccdd' });
+        elems.push({ left, right });
+        cy += lineH;
+      }
+    }
+
+    cy += pad;
+
+    // Calculate width: find widest element
+    let maxW = pad * 2;
+    for (const e of elems) {
+      const eRight = e.left.x + e.left.width + pad;
+      maxW = Math.max(maxW, eRight);
+      if (e.right) {
+        const eRight2 = e.right.x + e.right.width + pad;
+        maxW = Math.max(maxW, eRight2);
+      }
+    }
+    // Ensure minimum width
+    maxW = Math.max(maxW, 140);
+
+    // Position right-aligned values
+    for (const e of elems) {
+      if (e.right) {
+        e.right.x = maxW - pad - e.right.width;
+      }
+    }
+
+    // Background
     const bg = new Graphics();
     bg.beginFill(0x0a0a18, 0.95);
-    bg.lineStyle(1, getRarityColor(item.rarity), 0.6);
-    bg.drawRoundedRect(-pad, -pad, txt.width + pad * 2, txt.height + pad * 2, 4);
+    bg.lineStyle(2, rarityColor, 0.6);
+    bg.drawRoundedRect(0, 0, maxW, cy, 4);
     bg.endFill();
+    this.tooltip.addChild(bg);
 
-    this.tooltip.addChild(bg, txt);
-    this.tooltip.x = Math.min(x + 20, 1920 - txt.width - pad * 2 - 10);
-    this.tooltip.y = Math.min(y + 20, 1080 - txt.height - pad * 2 - 10);
+    // Add all text in order
+    for (const e of elems) {
+      this.tooltip.addChild(e.left);
+      if (e.right) this.tooltip.addChild(e.right);
+    }
+
+    this.tooltip.x = Math.min(x + 20, 1920 - maxW - 10);
+    this.tooltip.y = Math.min(y + 20, 1080 - cy - 10);
     this.container.addChild(this.tooltip);
   }
 
