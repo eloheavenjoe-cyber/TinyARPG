@@ -15,6 +15,7 @@ import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot } from '../entities/ItemDrop';
 import { ClassType } from './SkillDefs';
+import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -61,6 +62,8 @@ export class Game {
 
   private lastKeys: Set<string> = new Set();
   private pendingClassType: ClassType = 'warrior';
+  private treeOpen = false;
+  private passiveTreeScreen?: PassiveTreeScreen;
 
   constructor(app: Application) {
     this.app = app;
@@ -153,7 +156,13 @@ export class Game {
         this.classSelect?.update(this.input);
         this.abilitySelect?.update(this.input);
         break;
-      case State.Playing: this.updateGameplay(dt); break;
+      case State.Playing:
+        if (this.treeOpen) {
+          this.updateTree();
+        } else {
+          this.updateGameplay(dt);
+        }
+        break;
       case State.Death: this.deathScreen?.update(this.input); break;
     }
   }
@@ -190,7 +199,19 @@ export class Game {
       if (t >= 1) this.dash = null;
     }
 
+    if (this.input.isKeyDown('KeyP') && !this.lastKeys.has('KeyP')) {
+      this.toggleTree();
+    }
+
     this.player.update(this.input, mouseWX, mouseWY, this.room.walls, dt);
+
+    // HP regen from passive tree
+    if (this.player.health < this.player.maxHealth) {
+      const hpRegen = this.player.computedStats.hpRegen || 0;
+      if (hpRegen > 0) {
+        this.player.health = Math.min(this.player.maxHealth, this.player.health + hpRegen * (dt / 60));
+      }
+    }
 
     for (const enemy of this.enemies) {
       if (enemy.alive) enemy.update(this.player.x, this.player.y, this.room.walls, dt);
@@ -263,6 +284,10 @@ export class Game {
         this.gameContainer!.removeChild(dead.sprite);
         const healAmt = this.player.skills.healOnKill();
         if (healAmt > 0) this.player.heal(healAmt);
+        if (this.player.addXp(dead.xpReward)) {
+          this.combatText.showDamage(dead.x, dead.y - 30, this.player.level - 1, 0x44ff88);
+          Logger.log('combat', `Player reached level ${this.player.level}`);
+        }
         this.spawnLoot(dead.x, dead.y);
         this.spawnEnemy();
       }
@@ -620,7 +645,63 @@ export class Game {
     this.app.stage.addChild(this.deathScreen.container);
   }
 
+  private updateTree() {
+    if (!this.passiveTreeScreen || !this.player) return;
+    this.passiveTreeScreen.update(
+      this.input, this.player.passiveTree,
+      this.player.passivePoints, this.player.attrs,
+      this.player.unspentAttrPoints,
+    );
+    if (this.input.isKeyDown('KeyP') && !this.lastKeys.has('KeyP')) {
+      this.toggleTree();
+    }
+  }
+
+  private toggleTree() {
+    if (!this.player) return;
+    this.treeOpen = !this.treeOpen;
+    if (this.treeOpen) {
+      this.passiveTreeScreen = new PassiveTreeScreen(
+        SCREEN_WIDTH, SCREEN_HEIGHT,
+        this.player.passiveTree, this.player.passivePoints,
+        this.player.attrs, this.player.unspentAttrPoints,
+      );
+      this.passiveTreeScreen.onAllocateCallback((id) => {
+        if (this.player && this.player.passiveTree.allocate(id)) {
+          this.player.passivePoints--;
+          this.player.recalcStats();
+          this.passiveTreeScreen?.update(
+            this.input, this.player.passiveTree,
+            this.player.passivePoints, this.player.attrs,
+            this.player.unspentAttrPoints,
+          );
+        }
+      });
+      this.passiveTreeScreen.onAttrChangeCallback((stat, delta) => {
+        if (this.player && this.player.unspentAttrPoints > 0) {
+          this.player.attrs[stat] += delta;
+          this.player.unspentAttrPoints--;
+          this.player.recalcStats();
+        }
+      });
+      this.app.stage.addChild(this.passiveTreeScreen.container);
+      this.app.ticker.started = true;
+    } else {
+      if (this.passiveTreeScreen) {
+        this.app.stage.removeChild(this.passiveTreeScreen.container);
+        this.passiveTreeScreen.destroy();
+        this.passiveTreeScreen = undefined;
+      }
+    }
+  }
+
   private restartGame() {
+    if (this.treeOpen) this.toggleTree();
+    if (this.passiveTreeScreen) {
+      this.app.stage.removeChild(this.passiveTreeScreen.container);
+      this.passiveTreeScreen.destroy();
+      this.passiveTreeScreen = undefined;
+    }
     if (this.deathScreen) {
       this.app.stage.removeChild(this.deathScreen.container);
       this.deathScreen.destroy();

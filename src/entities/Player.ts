@@ -3,6 +3,8 @@ import { Sprites } from '../rendering/Sprites';
 import { InputManager } from '../core/InputManager';
 import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
+import { PassiveTree } from '../core/PassiveTree';
+import { computeStats } from '../core/StatSystem';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Enemy } from './Enemy';
@@ -23,12 +25,23 @@ export class Player {
 
   sprite: Sprite;
   skills: SkillManager;
+  passiveTree: PassiveTree = new PassiveTree();
+
+  level = 1;
+  xp = 0;
+  get xpToNext(): number { return this.level * 50; }
+
+  attrs = { str: 0, dex: 0, int: 0 };
+  unspentAttrPoints = 0;
+  passivePoints = 0;
 
   private invulnTimer = 0;
   private attackCooldown = 0;
   private fallbackAttackCooldown = 15;
   private readonly baseManaRegen = 8;
   lastHitInfo: { x: number; y: number; damage: number } | null = null;
+
+  private _computedStats = computeStats(this.passiveTree, this.attrs, 100, 50);
 
   constructor(x: number, y: number, classType: ClassType = 'warrior') {
     this.x = x;
@@ -41,6 +54,33 @@ export class Player {
 
   get classType(): ClassType {
     return this.skills.classType;
+  }
+
+  get computedStats() { return this._computedStats; }
+
+  recalcStats() {
+    this._computedStats = computeStats(this.passiveTree, this.attrs, 100, 50);
+    const s = this._computedStats;
+    this.maxHealth = s.maxHp;
+    this.health = Math.min(this.health, this.maxHealth);
+    this.maxMana = s.maxMana;
+    this.mana = Math.min(this.mana, this.maxMana);
+    this.speed = 6 * s.moveSpeedMult;
+  }
+
+  addXp(amount: number): boolean {
+    this.xp += amount;
+    let leveled = false;
+    while (this.xp >= this.xpToNext) {
+      this.xp -= this.xpToNext;
+      this.level++;
+      this.passivePoints++;
+      this.unspentAttrPoints += 3;
+      leveled = true;
+      this.recalcStats();
+      Logger.log('combat', `Level up! Now level ${this.level} (${this.passivePoints} passive, ${this.unspentAttrPoints} attr points)`);
+    }
+    return leveled;
   }
 
   update(input: InputManager, mouseWorldX: number, mouseWorldY: number, walls: Rect[], dt: number) {
@@ -90,7 +130,8 @@ export class Player {
       this.attackCooldown -= dt;
     }
 
-    const regen = this.baseManaRegen + this.skills.manaRegenBonus();
+    const regenMult = 1 + ((this._computedStats.manaRegenPct || 0) / 100);
+    const regen = (this.baseManaRegen + this.skills.manaRegenBonus()) * regenMult;
     this.mana = Math.min(this.maxMana, this.mana + regen * (dt / 60));
 
     this.updateSprite();
@@ -100,7 +141,9 @@ export class Player {
     if (this.invulnTimer > 0 || !this.alive) return false;
     if (this.skills.isInvulnerable()) return false;
 
-    const reduction = this.skills.damageReduction();
+    const skillReduction = this.skills.damageReduction();
+    const treeReduction = (this._computedStats.damageReduction || 0) / 100;
+    const reduction = Math.min(0.5, skillReduction + treeReduction);
     const finalDmg = reduction > 0 ? Math.round(amount * (1 - reduction)) : amount;
 
     this.health = Math.max(0, this.health - finalDmg);
@@ -240,8 +283,9 @@ export class Player {
   getAttackCooldown(): number {
     const skill = this.skills.mainAbility;
     if (!skill) return this.fallbackAttackCooldown;
-    const mult = this.skills.attackSpeedMult();
-    return Math.max(5, Math.round(skill.cooldown / mult));
+    const mult = this.skills.attackSpeedMult() * this._computedStats.attackSpeedMult;
+    const cdr = (this._computedStats.cooldownReductionPct || 0) / 100;
+    return Math.max(5, Math.round((skill.cooldown * (1 - cdr)) / mult));
   }
 
   getBounds(): Rect {

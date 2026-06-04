@@ -12,6 +12,7 @@ export class Enemy {
   maxHealth = 40;
   speed = 2.2;
   alive = true;
+  xpReward = 10;
 
   sprite: Sprite;
   private hitFlashTimer = 0;
