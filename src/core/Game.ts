@@ -325,7 +325,7 @@ export class Game {
   }
 
   private saveGame() {
-    if (!this.player || this.currentSaveSlot === null) return;
+    if (!this.player || this.currentSaveSlot === null || this.currentSaveSlot < 0) return;
     const p = this.player;
 
     const data: SaveData = {
@@ -518,9 +518,8 @@ export class Game {
     this.room = undefined;
     this.input.reset();
     this.lastKeys.clear();
-    this.escapeMenuOpen = false;
   }
-
+ 
   private toggleEscapeMenu() {
     if (!this.player) return;
     this.escapeMenuOpen = !this.escapeMenuOpen;
@@ -948,6 +947,8 @@ export class Game {
             this.toggleEscapeMenu();
           } else if (this.inventoryOpen) {
             this.toggleInventory();
+          } else if (this.treeOpen) {
+            this.toggleTree();
           }
           this.wasEscapeKeyDown = true;
         }

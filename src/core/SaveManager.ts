@@ -1,28 +1,9 @@
-import { ItemBase, ItemAffix, AFFIXES, ITEM_BASES } from './ItemDefs';
-import { SkillDef, ClassType, WARRIOR_MAIN, WARRIOR_SUPPORT, RANGER_MAIN, RANGER_SUPPORT, MONK_MAIN, MONK_SUPPORT } from './SkillDefs';
+import { ClassType } from './SkillDefs';
 
 const SAVE_PREFIX = 'TinyARPG_save_';
 const META_KEY = 'TinyARPG_meta';
 const SLOT_COUNT = 5;
 const SAVE_VERSION = 1;
-
-const ALL_SKILLS: SkillDef[] = [
-  ...WARRIOR_MAIN, ...WARRIOR_SUPPORT,
-  ...RANGER_MAIN, ...RANGER_SUPPORT,
-  ...MONK_MAIN, ...MONK_SUPPORT,
-];
-
-export function findSkill(id: string): SkillDef | undefined {
-  return ALL_SKILLS.find(s => s.id === id);
-}
-
-export function findBase(id: string): ItemBase | undefined {
-  return ITEM_BASES.find(b => b.id === id);
-}
-
-export function findAffix(id: string): ItemAffix | undefined {
-  return AFFIXES.find(a => a.id === id);
-}
 
 export interface SlotMeta {
   occupied: boolean;

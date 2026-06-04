@@ -7,9 +7,13 @@ export class SaveSlotScreen {
   private onSelect: ((index: number) => void) | null = null;
   private onBack: (() => void) | null = null;
   private slots: (SlotMeta | null)[] = [];
+  private screenWidth: number;
+  private screenHeight: number;
 
   constructor(screenWidth: number, screenHeight: number, mode: 'load' | 'save') {
     this.container = new Container();
+    this.screenWidth = screenWidth;
+    this.screenHeight = screenHeight;
     this.slots = SaveManager.getAllSlots();
 
     const bg = new Graphics();
@@ -163,7 +167,7 @@ export class SaveSlotScreen {
   private showDeleteConfirm(index: number) {
     const overlay = new Graphics();
     overlay.beginFill(0x000000, 0.6);
-    overlay.drawRect(0, 0, 1920, 1080);
+    overlay.drawRect(0, 0, this.screenWidth, this.screenHeight);
     overlay.endFill();
     overlay.eventMode = 'static';
 
@@ -228,8 +232,8 @@ export class SaveSlotScreen {
     box.addChild(noBtn);
 
     confirmBox.addChild(box);
-    confirmBox.x = 1920 / 2;
-    confirmBox.y = 1080 / 2;
+    confirmBox.x = this.screenWidth / 2;
+    confirmBox.y = this.screenHeight / 2;
     overlay.addChild(confirmBox);
     this.container.addChild(overlay);
   }
@@ -241,7 +245,7 @@ export class SaveSlotScreen {
     }
     const bg = new Graphics();
     bg.beginFill(0x0a0a1a, 0.95);
-    bg.drawRect(0, 0, 1920, 1080);
+    bg.drawRect(0, 0, this.screenWidth, this.screenHeight);
     bg.endFill();
     this.container.addChild(bg);
 
@@ -250,11 +254,11 @@ export class SaveSlotScreen {
       stroke: '#000', strokeThickness: 3, letterSpacing: 4,
     }));
     title.anchor.set(0.5, 0);
-    title.x = 1920 / 2;
+    title.x = this.screenWidth / 2;
     title.y = 60;
     this.container.addChild(title);
 
-    this.createSlotButtons(1920);
+    this.createSlotButtons(this.screenWidth);
 
     const backBtn = new Container();
     const backBg = new Graphics();
@@ -268,8 +272,8 @@ export class SaveSlotScreen {
     }));
     backText.anchor.set(0.5);
     backBtn.addChild(backBg, backText);
-    backBtn.x = 1920 / 2;
-    backBtn.y = 1080 - 60;
+    backBtn.x = this.screenWidth / 2;
+    backBtn.y = this.screenHeight - 60;
     backBtn.eventMode = 'static';
     backBtn.cursor = 'pointer';
     const savedOnBack = this.onBack;
