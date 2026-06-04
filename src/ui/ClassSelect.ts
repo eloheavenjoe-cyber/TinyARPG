@@ -66,7 +66,7 @@ export class ClassSelect {
 
     for (let i = 0; i < CLASSES.length; i++) {
       const cls = CLASSES[i];
-      const btnX = (screenWidth / 2 - 280) + i * 280;
+      const btnX = (screenWidth / 2 - 320) + i * 320;
       const btnY = 360;
 
       const btn = new Graphics();

@@ -1,4 +1,4 @@
-import { Application, Container, Point, Graphics, Text, TextStyle } from 'pixi.js';
+import { Application, Container, Point, Graphics, Text, TextStyle, AnimatedSprite } from 'pixi.js';
 import { InputManager } from './InputManager';
 import { Logger } from './Logger';
 import { Sprites } from '../rendering/Sprites';
@@ -973,7 +973,7 @@ export class Game {
       if (!result) return;
       this.player.mana -= result.manaCost;
       this.player.startChannel('meditate', 60);
-      const sprite = this.player.sprite as import('pixi.js').AnimatedSprite;
+      const sprite = this.player.sprite as AnimatedSprite;
       playMonkAnimation(sprite, 'meditate', false);
       return;
     }
