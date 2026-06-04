@@ -13,12 +13,15 @@ export function computeStats(
 
   // Separate attribute stats from equipment so they feed into derived stat calculations
   let equipStr = 0, equipDex = 0, equipInt = 0;
+  let equipHpPct = 0, equipManaPct = 0;
   const otherEquip: Record<string, number> = {};
   if (equipmentStats) {
     for (const [key, val] of Object.entries(equipmentStats)) {
       if (key === 'str') equipStr = val;
       else if (key === 'dex') equipDex = val;
       else if (key === 'int') equipInt = val;
+      else if (key === 'hpPct') equipHpPct = val;
+      else if (key === 'manaPct') equipManaPct = val;
       else otherEquip[key] = val;
     }
   }
@@ -28,10 +31,10 @@ export function computeStats(
   const int = attrs.int + add('int') + equipInt;
 
   let maxHp = baseHp + str * 2 + add('hp');
-  maxHp = Math.round(maxHp * (1 + (add('hpPct') || 0) / 100));
+  maxHp = Math.round(maxHp * (1 + ((add('hpPct') || 0) + equipHpPct) / 100));
 
   let maxMana = baseMana + int * 2 + add('mana');
-  maxMana = Math.round(maxMana * (1 + (add('manaPct') || 0) / 100));
+  maxMana = Math.round(maxMana * (1 + ((add('manaPct') || 0) + equipManaPct) / 100));
 
   const base = {
     hp: maxHp,
@@ -63,6 +66,8 @@ export function computeStats(
     else if (key === 'meleeDmgPct') base.meleeDmgMult += val / 100;
     else if (key === 'projectileDmgPct') base.projectileDmgMult += val / 100;
     else if (key === 'hpRegen') base.hpRegen += val;
+    else if (key === 'skillDurationPct') base.skillDurationPct += val;
+    else if (key === 'manaRegenPct') base.manaRegenPct += val;
     else if (key === 'coldDmg') base.coldDmg += val;
     else if (key === 'lightningDmg') base.lightningDmg += val;
     else if (key === 'additionalProjectiles') base.additionalProjectiles += val;

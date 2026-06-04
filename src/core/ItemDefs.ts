@@ -137,6 +137,22 @@ export const AFFIXES: ItemAffix[] = [
   { id: 'of_storms', name: 'of Storms', type: 'suffix', stat: 'lightningDmg', min: 1, max: 3, tier: 1 },
   { id: 'of_lightning', name: 'of Lightning', type: 'suffix', stat: 'lightningDmg', min: 2, max: 5, tier: 2 },
   { id: 'of_thunder', name: 'of Thunder', type: 'suffix', stat: 'lightningDmg', min: 4, max: 8, tier: 3 },
+  // HP %
+  { id: 'vital', name: 'Vital', type: 'prefix', stat: 'hpPct', min: 5, max: 12, tier: 1 },
+  { id: 'robust', name: 'Robust', type: 'prefix', stat: 'hpPct', min: 10, max: 20, tier: 2 },
+  { id: 'colossal', name: 'Colossal', type: 'prefix', stat: 'hpPct', min: 18, max: 30, tier: 3 },
+  // Mana %
+  { id: 'enigmatic', name: 'Enigmatic', type: 'prefix', stat: 'manaPct', min: 5, max: 12, tier: 1 },
+  { id: 'esoteric', name: 'Esoteric', type: 'prefix', stat: 'manaPct', min: 10, max: 20, tier: 2 },
+  { id: 'profound', name: 'Profound', type: 'prefix', stat: 'manaPct', min: 18, max: 30, tier: 3 },
+  // Skill Duration %
+  { id: 'of_endurance', name: 'of Endurance', type: 'suffix', stat: 'skillDurationPct', min: 5, max: 15, tier: 1 },
+  { id: 'of_persistence', name: 'of Persistence', type: 'suffix', stat: 'skillDurationPct', min: 10, max: 25, tier: 2 },
+  { id: 'of_permanence', name: 'of Permanence', type: 'suffix', stat: 'skillDurationPct', min: 18, max: 35, tier: 3 },
+  // Mana Regen %
+  { id: 'of_meditation', name: 'of Meditation', type: 'suffix', stat: 'manaRegenPct', min: 5, max: 15, tier: 1 },
+  { id: 'of_clarity', name: 'of Clarity', type: 'suffix', stat: 'manaRegenPct', min: 10, max: 25, tier: 2 },
+  { id: 'of_transcendence', name: 'of Transcendence', type: 'suffix', stat: 'manaRegenPct', min: 18, max: 35, tier: 3 },
 ];
 
 export const UNIQUE_ITEMS: UniqueItem[] = [
