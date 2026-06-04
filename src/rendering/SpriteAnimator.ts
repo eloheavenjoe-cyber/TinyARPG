@@ -9,6 +9,7 @@ export type GolemAnimName = 'idle' | 'walk' | 'attack' | 'death';
 
 let warriorFrames: Record<AnimName, Texture[]> | null = null;
 let rangerFrames: Record<AnimName, Texture[]> | null = null;
+let rangerRollFrames: Texture[] | null = null;
 let reaperFrames: Record<ReaperAnimName, Texture[]> | null = null;
 let golemFrames: Record<GolemAnimName, Texture[]> | null = null;
 let pendingWarriorSprites: AnimatedSprite[] = [];
@@ -140,14 +141,16 @@ export async function loadWarriorAnimations(): Promise<void> {
 export async function loadRangerAnimations(): Promise<void> {
   if (rangerFrames) return;
 
-  const [idle, walk, attack] = await Promise.all([
+  const [idle, walk, attack, roll] = await Promise.all([
     loadRangerFrames('sprites/ranger', 'idle', 'idle_{n}.png', 12),
     loadRangerFrames('sprites/ranger', 'walk', 'run_{n}.png', 10),
     loadRangerFrames('sprites/ranger', 'attack', '2_atk_{n}.png', 15),
+    loadRangerFrames('sprites/ranger', 'roll' as AnimName, 'roll_{n}.png', 8),
   ]);
 
   const result = { idle, walk, attack } as Record<AnimName, Texture[]>;
   rangerFrames = result;
+  rangerRollFrames = roll;
 
   for (const sprite of pendingRangerSprites) {
     const f = rangerFrames.idle;
@@ -477,6 +480,14 @@ export function createRangerSprite(): AnimatedSprite {
   sprite.tint = 0x44aa44;
   pendingRangerSprites.push(sprite);
   return sprite;
+}
+
+export function playRangerRollAnimation(sprite: AnimatedSprite) {
+  if (!rangerRollFrames || rangerRollFrames.length === 0) return;
+  sprite.textures = rangerRollFrames;
+  sprite.loop = false;
+  sprite.animationSpeed = 0.2;
+  sprite.gotoAndPlay(0);
 }
 
 // --- Archer animated sprite ---

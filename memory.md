@@ -391,14 +391,21 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
 - Archer completed (2026-06-05): 4 sheets (idle/run/attack/death, 100×100 frames)
 - Grunt completed (2026-06-05): skeleton sprites with per-animation frame sizes (idle 24×32, run 22×33, attack 43×37, death 33×32). Grunt uses `scale.x` flip for facing, triggers attack animation on contact damage via `attackAnimPlayed` flag, plays death animation on kill.
-- Juggernaut completed (2026-06-05): orc directional sprite — 4-row sheets (south/north/east/west), 64×64 frames. Idle: 256×256 (4 cols), Walk/Attack/Death: 512×256 (8 cols). Uses `angleToDirection()` + `direction` field for facing (no rotation/flip). `Scale.set(1.3)` for larger visual. Attack triggered on contact damage, death animation plays on kill.`
+- Juggernaut completed (2026-06-05): orc directional sprite — 4-row sheets (south/north/east/west), 64×64 frames. Idle: 256×256 (4 cols), Walk/Attack/Death: 512×256 (8 cols), Walk: 384×256 (6 cols). Uses `angleToDirection()` + `direction` field for facing (no rotation/flip). `Scale.set(1.6)` (was 1.3, +22.5% compound). Attack triggered on contact damage, death animation plays on kill.
+
+### Phase 5l — Dodge Roll Animation (completed 2026-06-05)
+- Ranger dodge roll animation: 8 individual PNGs (`roll_1.png`–`roll_8.png`) loaded via `loadRangerFrames` pattern
+- `rangerRollFrames` stored separately from main ranger frame cache; `playRangerRollAnimation()` sets textures and plays once
+- `Player.ts`: `isRolling` flag + `'roll'` added to `animState` type; guards idle/walk animation override during roll
+- `Game.ts`: triggers `playRangerRollAnimation` + `player.triggerRollAnimation()` on dash start; restores idle via `playAnimation()` on dash end (`t >= 1`)
+- Dodge roll range increased 120→144 (+20%) in `SkillDefs.ts`
 
 ### Phase 7 — Polish & Expansion
 - Hub NPC interactions (vendor buy/sell, stash deposit/withdraw)
 - Map modifiers (affixes on map items)
 - More room templates for variety
 - Balance pass on difficulty scaling
-- Support skill animations (dash, buff, etc.)
+- Support skill animations (buff, etc.)
 
 ## Co-authoring
 This workspace may be shared between AI agents. Always read before writing —

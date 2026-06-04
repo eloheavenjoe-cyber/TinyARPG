@@ -64,7 +64,8 @@ export class Player {
   private fallbackAttackCooldown = 15;
   private readonly baseManaRegen = 8;
   lastHitInfo: { x: number; y: number; damage: number } | null = null;
-  private animState: 'idle' | 'walk' | 'attack' = 'idle';
+  private animState: 'idle' | 'walk' | 'attack' | 'roll' = 'idle';
+  isRolling = false;
   facingAngle = 0;
   private channeling = false;
   private channelTimer = 0;
@@ -452,7 +453,9 @@ export class Player {
 
     // Animation state switching
     const isMoving = dx !== 0 || dy !== 0;
-    if (isMoving && this.animState === 'idle') {
+    if (this.isRolling) {
+      // Don't override roll animation during dodge
+    } else if (isMoving && this.animState === 'idle') {
       this.animState = 'walk';
       if (this.classType === 'monk') {
         playMonkAnimation(this.sprite, 'run');
@@ -533,6 +536,19 @@ export class Player {
   heal(amount: number) {
     this.health = Math.min(this.maxHealth, this.health + amount);
     Logger.log('combat', `Player healed for ${amount} (hp: ${this.health}/${this.maxHealth})`);
+  }
+
+  triggerRollAnimation() {
+    if (this.classType !== 'ranger') return;
+    this.animState = 'roll';
+    this.isRolling = true;
+  }
+
+  endRollAnimation() {
+    this.isRolling = false;
+    if (this.animState === 'roll') {
+      this.animState = 'idle';
+    }
   }
 
   triggerAttackAnimation(skillId: string) {

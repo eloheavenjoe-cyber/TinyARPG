@@ -161,7 +161,7 @@ export const RANGER_SUPPORT: SkillDef[] = [
     id: 'dodge_roll',
     name: 'Dodge Roll',
     description: 'Quick evade roll in movement direction',
-    category: 'support', classType: 'ranger', manaCost: 6, cooldown: 40, range: 120, damageMult: 0,
+    category: 'support', classType: 'ranger', manaCost: 6, cooldown: 40, range: 144, damageMult: 0,
     effectType: 'dash',
   },
   {
