@@ -2,6 +2,7 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Slot } from '../core/ItemDefs';
 import { GeneratedItem } from '../core/ItemGenerator';
+import { InventorySlot, OrbInfo, EquipSlot } from '../entities/Player';
 
 const COLORS = {
   bg: 0x0c0c1a,
@@ -10,8 +11,8 @@ const COLORS = {
   slotBorder: 0x2a2a44,
   slotHover: 0x3a3a55,
   selected: 0x5588cc,
-  text: '#ccccdd',
-  textDim: '#555566',
+  text: 0xccccdd,
+  textDim: 0x555566,
   textStat: '#ffdd88',
 };
 
@@ -34,10 +35,13 @@ export class InventoryScreen {
   private tooltip?: Container;
   private mouseX = 0;
   private mouseY = 0;
+  private activeOrb: string | null = null;
+  private onCraftOrb: (orbId: string, slot: Slot) => void = () => {};
+  onCraftOrbCallback(cb: (orbId: string, slot: Slot) => void) { this.onCraftOrb = cb; }
 
   constructor(
     screenW: number, screenH: number,
-    inventory: (GeneratedItem | null)[],
+    inventory: InventorySlot[],
     equipment: Record<Slot, GeneratedItem | null>,
     computedStats: any,
   ) {
@@ -79,7 +83,20 @@ export class InventoryScreen {
         const idx = row * cols + col;
         const sx = gridLeft + col * (slotSize + gap);
         const sy = gridTop + row * (slotSize + gap);
-        const item = inventory[idx];
+        const entry = inventory[idx];
+        let displayName = '';
+        let displayColor = COLORS.textDim;
+
+        if (entry) {
+          if (entry.kind === 'equip') {
+            displayName = entry.item.base.name;
+            displayColor = getRarityColor(entry.item.rarity);
+          } else if (entry.kind === 'orb') {
+            const names: Record<string, string> = { empowerment: 'Empower', flux: 'Flux' };
+            displayName = `${names[entry.orbId] || entry.orbId} x${entry.count}`;
+            displayColor = 0x44dddd;
+          }
+        }
 
         const g = new Graphics();
         g.beginFill(COLORS.slotBg);
@@ -90,10 +107,8 @@ export class InventoryScreen {
         g.y = sy;
         this.container.addChild(g);
 
-        const txt = new Text(item ? item.base.name : '', new TextStyle({
-          fontFamily: 'monospace',
-          fontSize: 9,
-          fill: item ? getRarityColor(item.rarity) : COLORS.textDim,
+        const txt = new Text(displayName, new TextStyle({
+          fontFamily: 'monospace', fontSize: 9, fill: displayColor,
         }));
         txt.anchor.set(0.5);
         txt.x = sx + slotSize / 2;
@@ -237,11 +252,34 @@ export class InventoryScreen {
     }
   }
 
+  private showOrbTooltip(orb: OrbInfo) {
+    if (this.tooltip) this.container.removeChild(this.tooltip);
+    const descriptions: Record<string, string> = {
+      empowerment: 'Adds a random affix to a\nrare item',
+      flux: 'Re-rolls all affixes on a\nrare item',
+    };
+    const name = orb.orbId === 'empowerment' ? 'Orb of Empowerment' : 'Orb of Flux';
+    this.tooltip = new Container();
+    const txt = new Text(`${name} (${orb.count})\n${descriptions[orb.orbId] || ''}`, new TextStyle({
+      fontFamily: 'monospace', fontSize: 11, fill: 0x44dddd, lineHeight: 16,
+    }));
+    const pad = 8;
+    const bg = new Graphics();
+    bg.beginFill(0x0a0a18, 0.95);
+    bg.lineStyle(1, 0x44dddd, 0.6);
+    bg.drawRoundedRect(-pad, -pad, txt.width + pad * 2, txt.height + pad * 2, 4);
+    bg.endFill();
+    this.tooltip.addChild(bg, txt);
+    this.tooltip.x = Math.min(this.mouseX + 20, 1920 - txt.width - pad * 2 - 10);
+    this.tooltip.y = Math.min(this.mouseY + 20, 1080 - txt.height - pad * 2 - 10);
+    this.container.addChild(this.tooltip);
+  }
+
   onEquipCallback(cb: (gridIndex: number) => void) { this.onEquip = cb; }
   onUnequipCallback(cb: (slot: Slot) => void) { this.onUnequip = cb; }
 
   update(
-    inventory: (GeneratedItem | null)[],
+    inventory: InventorySlot[],
     equipment: Record<Slot, GeneratedItem | null>,
     computedStats: any,
     input?: InputManager,
@@ -255,28 +293,30 @@ export class InventoryScreen {
     }
 
     // Hover detection for tooltip
-    let hoveredItem: GeneratedItem | null = null;
+    let hoveredEntry: InventorySlot = null;
     this.hoveredSlot = null;
     for (const g of this.gridSlots) {
       if (this.mouseX >= g.bg.x && this.mouseX <= g.bg.x + 50 &&
           this.mouseY >= g.bg.y && this.mouseY <= g.bg.y + 50) {
         this.hoveredSlot = g.index;
-        if (inventory[g.index]) hoveredItem = inventory[g.index];
+        hoveredEntry = inventory[g.index];
         break;
       }
     }
-    if (!hoveredItem) {
+    if (!hoveredEntry) {
       for (const s of this.equipSlots) {
         if (this.mouseX >= s.bg.x && this.mouseX <= s.bg.x + 60 &&
             this.mouseY >= s.bg.y && this.mouseY <= s.bg.y + 60) {
           this.hoveredSlot = s.slot as any;
-          if (equipment[s.slot]) hoveredItem = equipment[s.slot];
+          if (equipment[s.slot]) hoveredEntry = { kind: 'equip', item: equipment[s.slot] } as EquipSlot;
           break;
         }
       }
     }
-    if (hoveredItem) {
-      this.showTooltip(hoveredItem, this.mouseX, this.mouseY);
+    if (hoveredEntry) {
+      if (hoveredEntry.kind === 'equip') this.showTooltip(hoveredEntry.item, this.mouseX, this.mouseY);
+      else if (hoveredEntry.kind === 'orb') this.showOrbTooltip(hoveredEntry);
+      else this.hideTooltip();
     } else {
       this.hideTooltip();
     }
@@ -284,9 +324,22 @@ export class InventoryScreen {
     // Update grid visuals
     for (let i = 0; i < this.gridSlots.length; i++) {
       const slot = this.gridSlots[i];
-      const item = inventory[i];
+      const entry = inventory[i];
       const isHover = this.hoveredSlot === i;
       const isSelected = i === this.selectedIndex;
+
+      let displayName = '';
+      let displayColor = COLORS.textDim;
+      if (entry) {
+        if (entry.kind === 'equip') {
+          displayName = entry.item.base.name;
+          displayColor = getRarityColor(entry.item.rarity);
+        } else if (entry.kind === 'orb') {
+          const names: Record<string, string> = { empowerment: 'Empower', flux: 'Flux' };
+          displayName = `${names[entry.orbId] || entry.orbId} x${entry.count}`;
+          displayColor = 0x44dddd;
+        }
+      }
 
       slot.bg.clear();
       if (isSelected) {
@@ -301,10 +354,9 @@ export class InventoryScreen {
       }
       slot.bg.drawRoundedRect(0, 0, 50, 50, 4);
       slot.bg.endFill();
-      slot.item.text = item ? item.base.name : '';
+      slot.item.text = displayName;
       slot.item.style = new TextStyle({
-        fontFamily: 'monospace', fontSize: 9,
-        fill: item ? getRarityColor(item.rarity) : COLORS.textDim,
+        fontFamily: 'monospace', fontSize: 9, fill: displayColor,
       });
     }
 
@@ -329,31 +381,50 @@ export class InventoryScreen {
     this.refreshStats(computedStats, statsX, statsY);
   }
 
-  private handleClick(inventory: (GeneratedItem | null)[], equipment: Record<Slot, GeneratedItem | null>) {
+  private handleClick(inventory: InventorySlot[], equipment: Record<Slot, GeneratedItem | null>) {
     const mx = this.mouseX;
     const my = this.mouseY;
 
+    // Check grid clicks
     for (const g of this.gridSlots) {
       if (mx >= g.bg.x && mx <= g.bg.x + 50 && my >= g.bg.y && my <= g.bg.y + 50) {
-        if (inventory[g.index]) {
-          if (this.selectedIndex === g.index) {
-            this.selectedIndex = -1;
-            this.onEquip(g.index);
-          } else {
-            this.selectedIndex = g.index;
+        const entry = inventory[g.index];
+        if (entry) {
+          if (entry.kind === 'orb') {
+            this.activeOrb = this.activeOrb === entry.orbId ? null : entry.orbId;
+            this.selectedIndex = this.activeOrb ? g.index : -1;
+          } else if (entry.kind === 'equip') {
+            if (this.activeOrb) {
+              this.activeOrb = null;
+              this.selectedIndex = -1;
+            } else if (this.selectedIndex === g.index) {
+              this.selectedIndex = -1;
+              this.onEquip(g.index);
+            } else {
+              this.selectedIndex = g.index;
+            }
           }
         } else {
+          this.activeOrb = null;
           this.selectedIndex = -1;
         }
         return;
       }
     }
 
+    // Check equipment slot clicks
     for (const s of this.equipSlots) {
       if (mx >= s.bg.x && mx <= s.bg.x + 60 && my >= s.bg.y && my <= s.bg.y + 60) {
-        if (this.selectedIndex >= 0 && inventory[this.selectedIndex]) {
-          this.onEquip(this.selectedIndex);
+        if (this.activeOrb && equipment[s.slot]) {
+          this.onCraftOrb(this.activeOrb, s.slot);
+          this.activeOrb = null;
           this.selectedIndex = -1;
+        } else if (this.selectedIndex >= 0) {
+          const entry = inventory[this.selectedIndex];
+          if (entry && entry.kind === 'equip') {
+            this.onEquip(this.selectedIndex);
+            this.selectedIndex = -1;
+          }
         } else if (equipment[s.slot]) {
           this.onUnequip(s.slot);
         }
@@ -361,6 +432,7 @@ export class InventoryScreen {
       }
     }
 
+    this.activeOrb = null;
     this.selectedIndex = -1;
   }
 
