@@ -484,9 +484,9 @@ let juggernautFrames: Record<JuggernautAnimName, Texture[]> | null = null;
 let pendingJuggernautSprites: AnimatedSprite[] = [];
 
 const JUGGERNAUT_ROW_CONFIG: [JuggernautAnimName, number, number, number][] = [
-  ['idle', 0, 204, 5],
+  ['idle', 0, 200, 5],
   ['run', 1, 128, 8],
-  ['attack', 3, 113, 9],
+  ['attack', 3, 112, 9],
 ];
 
 export async function loadJuggernautAnimations(): Promise<void> {
