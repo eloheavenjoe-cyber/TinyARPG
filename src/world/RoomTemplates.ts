@@ -58,9 +58,9 @@ export const TEMPLATE_L_SHAPE: RoomTemplate = {
 export const TEMPLATE_CROSS: RoomTemplate = {
   walls: [
     { x: 0, y: 400, width: 750, height: 40 },
-    { x: 850, y: 400, width: 750, height: 40 },
+    { x: 858, y: 400, width: 742, height: 40 },
     { x: 750, y: 0, width: 40, height: 400 },
-    { x: 810, y: 440, width: 40, height: 456 },
+    { x: 818, y: 440, width: 40, height: 456 },
   ],
   doors: [],
   portals: [],
@@ -111,7 +111,7 @@ export const TEMPLATE_HUB: RoomTemplate = {
 export const TEMPLATE_TUTORIAL: RoomTemplate = {
   walls: [],
   doors: [
-    { rect: { x: 750, y: 860, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 },
+    { rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 },
   ],
   portals: [],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
@@ -123,7 +123,7 @@ export const TEMPLATE_ARENA: RoomTemplate = {
   walls: [],
   doors: [],
   portals: [
-    { rect: { x: 1500, y: 10, width: 80, height: 50 }, targetZone: 'hub', label: 'Exit' },
+    { rect: { x: 1500, y: 32, width: 80, height: 50 }, targetZone: 'hub', label: 'Exit' },
   ],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   playerStart: { x: 800, y: 448 },
@@ -133,10 +133,10 @@ export const TEMPLATE_ARENA: RoomTemplate = {
 export const TEMPLATE_DUNGEON: RoomTemplate = {
   walls: [],
   doors: [
-    { rect: { x: 750, y: 860, width: 100, height: 36 }, targetZone: 'endless_dungeon', targetRoom: -1 },
+    { rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'endless_dungeon', targetRoom: -1 },
   ],
   portals: [
-    { rect: { x: 1500, y: 10, width: 80, height: 50 }, targetZone: 'hub', label: 'Exit' },
+    { rect: { x: 1500, y: 32, width: 80, height: 50 }, targetZone: 'hub', label: 'Exit' },
   ],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
   playerStart: { x: 800, y: 448 },
@@ -146,7 +146,7 @@ export const TEMPLATE_DUNGEON: RoomTemplate = {
 export const TEMPLATE_DEV: RoomTemplate = {
   walls: [],
   doors: [
-    { rect: { x: 750, y: 860, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 },
+    { rect: { x: 750, y: 828, width: 100, height: 36 }, targetZone: 'hub', targetRoom: 0 },
   ],
   portals: [],
   spawnZones: [{ x: 64, y: 64, width: 1472, height: 768 }],
