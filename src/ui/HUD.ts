@@ -15,6 +15,7 @@ export class HUD {
   private levelText: Text;
   private xpBg: Graphics;
   private xpFill: Graphics;
+  private zoneText: Text;
 
   constructor() {
     this.container = new Container();
@@ -80,6 +81,12 @@ export class HUD {
     this.xpFill.x = left;
     this.xpFill.y = top + barH * 2 + gap + 42;
 
+    this.zoneText = new Text('', { fontFamily: 'monospace', fontSize: 18, fill: 0xcccccc });
+    this.zoneText.anchor.set(0.5, 0);
+    this.zoneText.x = 960;
+    this.zoneText.y = 10;
+    this.container.addChild(this.zoneText);
+
     this.container.addChild(
       this.panel,
       this.hpBg, this.hpFill, this.hpLabel,
@@ -111,6 +118,10 @@ export class HUD {
     this.xpFill.beginFill(0x44aa88);
     this.xpFill.drawRect(0, 0, 220 * Math.min(1, xpPct), 6);
     this.xpFill.endFill();
+  }
+
+  setZoneName(name: string) {
+    this.zoneText.text = name;
   }
 
   destroy() {

@@ -479,6 +479,7 @@ export class Game {
 
     this.tryPickupItems();
     this.hud?.update(this.player);
+    this.hud?.setZoneName(this.zoneManager.state?.config?.name ?? '');
     this.skillBar?.update(this.player.skills);
     if (!this.player.alive) this.showDeathScreen();
   }
@@ -1171,6 +1172,18 @@ export class Game {
         if (!this.player) return 'No player';
         this.player.godMode = !this.player.godMode;
         return `God mode: ${this.player.godMode ? 'ON' : 'OFF'}`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'devroom', aliases: ['dev'],
+      description: 'Teleport to developer room',
+      usage: '/devroom',
+      run: () => {
+        if (!this.player) return 'No player';
+        this.zoneManager.transitionTo('dev');
+        this.buildCurrentZoneRoom();
+        return 'Teleported to Developer Room';
       },
     });
 
