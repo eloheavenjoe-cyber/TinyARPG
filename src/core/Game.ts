@@ -632,10 +632,29 @@ export class Game {
 
       // Boss attack VFX
       if (t.type === 'cone') {
-        this.vfxGroundSlam(t.x, t.y, t.angle || 0);
+        if (this.boss.bossId === 'reaper') {
+          this.vfxGroundSlam(t.x, t.y, t.angle || 0);
+          this.addVfx((g, t2) => {
+            const alpha = Math.max(0, 1 - t2 * 1.5);
+            g.lineStyle(3, 0xaa44cc, alpha);
+            g.drawCircle(0, 0, 120 * t2);
+          }, 20).position.set(t.x, t.y);
+        } else {
+          this.vfxGroundSlam(t.x, t.y, t.angle || 0);
+        }
       } else if (t.type === 'circle') {
         this.vfxRing(t.x, t.y, 0xff6622, (t.radius || 80) * 1.5);
         this.vfxImpact(t.x, t.y);
+        if (this.boss.bossId === 'reaper') {
+          this.addVfx((g, t2) => {
+            const r = 60 * t2;
+            const alpha = Math.max(0, 1 - t2);
+            g.lineStyle(4, 0x6622aa, alpha * 0.6);
+            g.drawCircle(0, 0, r);
+            g.lineStyle(2, 0x8844cc, alpha * 0.3);
+            g.drawCircle(0, 0, r * 0.6);
+          }, 25).position.set(t.x, t.y);
+        }
       }
 
       this.boss.pendingAttackDamage = null;

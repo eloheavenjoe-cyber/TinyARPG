@@ -82,7 +82,11 @@ export class Boss {
       this.sprite = new Sprite(cfg.sprite);
     }
     this.sprite.anchor.set(0.5);
-    this.sprite.scale.set(1.25);
+    if (bossId === 'reaper') {
+      this.sprite.scale.set(1.44);
+    } else {
+      this.sprite.scale.set(1.25);
+    }
     this.sprite.tint = 0xffffff;
     this.sprite.x = x;
     this.sprite.y = y;
@@ -224,14 +228,14 @@ export class Boss {
     }
 
     if (this.aiTimer <= 0 && !this.attacking) {
-      this.aiTimer = 70 + Math.random() * 80;
-      this.attackCooldown = 50;
+      this.aiTimer = 40 + Math.random() * 50;
+      this.attackCooldown = 35;
 
       const available: (() => void)[] = [() => {
         this.playAnim('attack', false);
         this.prepareTelegraph({
           type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
-          radius: 120, duration: 45, maxDuration: 45, color: 0xcc44cc,
+          radius: 160, duration: 35, maxDuration: 35, color: 0xcc44cc,
         });
       }]; // Scythe Sweep
 
@@ -240,7 +244,7 @@ export class Boss {
           this.playAnim('attack', false);
           this.prepareTelegraph({
             type: 'circle', x: px, y: py,
-            radius: 80, duration: 50, maxDuration: 50, color: 0x8822aa,
+            radius: 120, duration: 40, maxDuration: 40, color: 0x8822aa,
           });
         }); // Teleport Slam
       }
@@ -249,14 +253,7 @@ export class Boss {
         available.push(() => {
           this.playAnim('summon', false);
           this.spawnEnemiesCallback!(this.phase >= 3 ? 3 : 2, 'cultist');
-          this.aiTimer = 60;
-        });
-      }
-
-      if (this.phase >= 2 && this.spawnEnemiesCallback) {
-        available.push(() => {
-          this.spawnEnemiesCallback!(this.phase >= 3 ? 3 : 2, 'cultist');
-          this.aiTimer = 60;
+          this.aiTimer = 50;
         });
       }
 
@@ -305,12 +302,20 @@ export class Boss {
         this.telegraphs.drawCircle(t.x, t.y, (t.radius || 80) * progress * 0.85);
         break;
       case 'cone': {
-        const halfA = 0.6;
+        const halfA = 0.7;
         const r = (t.radius || 100) * progress;
+        const a = t.angle || 0;
+        this.telegraphs.beginFill(t.color, alpha * 0.15);
+        this.telegraphs.moveTo(t.x, t.y);
+        this.telegraphs.arc(t.x, t.y, r, a - halfA, a + halfA);
+        this.telegraphs.closePath();
+        this.telegraphs.endFill();
         this.telegraphs.lineStyle(3, t.color, alpha);
         this.telegraphs.moveTo(t.x, t.y);
-        this.telegraphs.arc(t.x, t.y, r, (t.angle || 0) - halfA, (t.angle || 0) + halfA);
+        this.telegraphs.arc(t.x, t.y, r, a - halfA, a + halfA);
         this.telegraphs.closePath();
+        this.telegraphs.lineStyle(1, t.color, alpha * 0.5);
+        this.telegraphs.arc(t.x, t.y, r * 0.6, a - halfA * 0.7, a + halfA * 0.7);
         break;
       }
     }
@@ -388,6 +393,6 @@ function getBossConfig(bossId: BossId): BossConfig {
     case 'golem':
       return { bossId: 'golem', name: 'Stone Golem', hp: 500, size: 96, speed: 1.5, damage: 15, sprite: Sprites.golem, xpReward: 100 };
     case 'reaper':
-      return { bossId: 'reaper', name: 'Death Reaper', hp: 800, size: 96, speed: 2.0, damage: 20, sprite: Sprites.reaper, xpReward: 200 };
+      return { bossId: 'reaper', name: 'Death Reaper', hp: 800, size: 110, speed: 2.0, damage: 30, sprite: Sprites.reaper, xpReward: 200 };
   }
 }
