@@ -256,8 +256,12 @@ export class Game {
       }
     }
 
+    const cullPct = this.player.computedStats.cullingStrikePct || 0;
+    const explodePct = this.player.computedStats.explodeOnKillPct || 0;
+
     for (const enemy of this.enemies) {
       if (enemy.alive) {
+        enemy.cullThreshold = cullPct > 0 ? Math.round(enemy.maxHealth * cullPct / 100) : 0;
         enemy.update(this.player.x, this.player.y, this.room.walls, dt, this.enemies);
         for (const p of enemy.projectiles) {
           this.projectiles.push(p);
@@ -370,6 +374,19 @@ export class Game {
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       if (!this.enemies[i].alive) {
         const dead = this.enemies.splice(i, 1)[0];
+
+        // Explode on kill
+        if (explodePct > 0) {
+          const explodeDmg = Math.round(dead.maxHealth * explodePct / 100);
+          for (const other of this.enemies) {
+            if (!other.alive) continue;
+            if (Math.hypot(other.x - dead.x, other.y - dead.y) < 120) {
+              other.takeDamage(explodeDmg);
+              this.combatText.showDamage(other.x, other.y - 20, explodeDmg, 0xff6600);
+            }
+          }
+        }
+
         this.gameContainer!.removeChild(dead.sprite);
         const healAmt = this.player.skills.healOnKill();
         if (healAmt > 0) this.player.heal(healAmt);

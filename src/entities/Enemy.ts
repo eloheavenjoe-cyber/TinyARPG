@@ -239,8 +239,19 @@ export class Enemy {
     this.attackCooldown = 30;
   }
 
+  cullThreshold = 0;
+
   takeDamage(amount: number): boolean {
     if (!this.alive) return false;
+
+    if (this.cullThreshold > 0 && this.health > 0 && this.health <= this.cullThreshold) {
+      this.health = 0;
+      this.alive = false;
+      this.sprite.visible = false;
+      Logger.log('entity', `${this.type} culled`);
+      return true;
+    }
+
     this.health -= amount;
     this.hitFlashTimer = 10;
     Logger.log('combat', `[${this.type}] took ${amount} dmg (hp: ${Math.max(0, this.health)}/${this.maxHealth})`);

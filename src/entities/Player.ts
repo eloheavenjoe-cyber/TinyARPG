@@ -57,6 +57,7 @@ export class Player {
 
   private invulnTimer = 0;
   slowTimer = 0;
+  private fortifyTimer = 0;
   private attackCooldown = 0;
   private fallbackAttackCooldown = 15;
   private readonly baseManaRegen = 8;
@@ -434,6 +435,8 @@ export class Player {
       this.sprite.tint = 0xffffff;
     }
 
+    if (this.fortifyTimer > 0) this.fortifyTimer -= dt;
+
     const regenMult = 1 + ((this._computedStats.manaRegenPct || 0) / 100);
     const regen = (this.baseManaRegen + this.skills.manaRegenBonus()) * regenMult;
     this.mana = Math.min(this.maxMana, this.mana + regen * (dt / 60));
@@ -451,7 +454,8 @@ export class Player {
 
     const skillReduction = this.skills.damageReduction();
     const treeReduction = (this._computedStats.damageReduction || 0) / 100;
-    const reduction = Math.min(0.5, skillReduction + treeReduction);
+    const fortifyReduction = this.fortifyTimer > 0 ? (this._computedStats.fortifyOnHit || 0) / 100 : 0;
+    const reduction = Math.min(0.5, skillReduction + treeReduction + fortifyReduction);
     const finalDmg = reduction > 0 ? Math.round(amount * (1 - reduction)) : amount;
 
     this.health = Math.max(0, this.health - finalDmg);
@@ -480,15 +484,22 @@ export class Player {
     if (!result) return false;
     this.mana -= result.manaCost;
 
+    const aoeMult = 1 + ((this._computedStats.skillAoePct || 0) / 100);
+    const leechPct = this._computedStats.lifeLeechPct || 0;
+    const fortifyAmt = this._computedStats.fortifyOnHit || 0;
+    let totalDmg = 0;
+    let hitCount = 0;
+
     switch (skill.effectType) {
       case 'cone': {
-        const angleRad = skill.angle || Math.PI / 2;
+        const angleRad = (skill.angle || Math.PI / 2) * aoeMult;
+        const range = (skill.range || 150) * aoeMult;
         for (const enemy of enemies) {
           if (!enemy.alive) continue;
           const dx = enemy.x - this.x;
           const dy = enemy.y - this.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist > skill.range) continue;
+          if (dist > range) continue;
           const angleToEnemy = Math.atan2(dy, dx);
           let diff = angleToEnemy - this.sprite.rotation;
           while (diff > Math.PI) diff -= Math.PI * 2;
@@ -497,13 +508,15 @@ export class Player {
           const dmg = this.calcDamage(skill);
           enemy.takeDamage(dmg);
           this.lastHitInfo = { x: enemy.x, y: enemy.y, damage: dmg };
+          totalDmg += dmg;
+          hitCount++;
           Logger.log('combat', `${skill.name} hit for ${dmg}`);
         }
         break;
       }
       case 'single': {
         let closest: Enemy | null = null;
-        let closestDist = skill.range;
+        let closestDist = (skill.range || 150) * aoeMult;
         for (const enemy of enemies) {
           if (!enemy.alive) continue;
           const d = Math.hypot(enemy.x - this.x, enemy.y - this.y);
@@ -513,23 +526,35 @@ export class Player {
           const dmg = this.calcDamage(skill);
           closest.takeDamage(dmg);
           this.lastHitInfo = { x: closest.x, y: closest.y, damage: dmg };
+          totalDmg += dmg;
+          hitCount++;
           Logger.log('combat', `${skill.name} hit for ${dmg}${skill.duration ? ' (stun)' : ''}`);
         }
         break;
       }
       case 'aoe_self': {
-        const radius = skill.radius || 75;
+        const radius = (skill.radius || 75) * aoeMult;
         for (const enemy of enemies) {
           if (!enemy.alive) continue;
           if (Math.hypot(enemy.x - this.x, enemy.y - this.y) < radius) {
             const dmg = this.calcDamage(skill);
             enemy.takeDamage(dmg);
             this.lastHitInfo = { x: enemy.x, y: enemy.y, damage: dmg };
+            totalDmg += dmg;
+            hitCount++;
           }
         }
         Logger.log('combat', `${skill.name} aoe`);
         break;
       }
+    }
+
+    if (leechPct > 0 && totalDmg > 0) {
+      const heal = Math.round(totalDmg * leechPct / 100);
+      this.health = Math.min(this.maxHealth, this.health + heal);
+    }
+    if (fortifyAmt > 0 && hitCount > 0) {
+      this.fortifyTimer = 120;
     }
 
     this.updateSprite();

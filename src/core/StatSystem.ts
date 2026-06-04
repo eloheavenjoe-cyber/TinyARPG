@@ -49,9 +49,14 @@ export function computeStats(
     damageReduction: Math.min(50, add('damageReduction') || 0),
     cooldownReductionPct: Math.min(50, add('cooldownReductionPct') || 0),
     skillDurationPct: add('skillDurationPct') || 0,
+    skillAoePct: 0,
     manaCostReductionPct: Math.min(40, add('manaCostReductionPct') || 0),
     manaRegenPct: add('manaRegenPct') || 0,
     hpRegen: add('hpRegen') || 0,
+    lifeLeechPct: 0,
+    fortifyOnHit: 0,
+    cullingStrikePct: 0,
+    explodeOnKillPct: 0,
     coldDmg: 0,
     lightningDmg: 0,
     additionalProjectiles: 0,
@@ -67,7 +72,12 @@ export function computeStats(
     else if (key === 'projectileDmgPct') base.projectileDmgMult += val / 100;
     else if (key === 'hpRegen') base.hpRegen += val;
     else if (key === 'skillDurationPct') base.skillDurationPct += val;
+    else if (key === 'skillAoePct') base.skillAoePct += val;
     else if (key === 'manaRegenPct') base.manaRegenPct += val;
+    else if (key === 'lifeLeechPct') base.lifeLeechPct += val;
+    else if (key === 'fortifyOnHit') base.fortifyOnHit += val;
+    else if (key === 'cullingStrikePct') base.cullingStrikePct += val;
+    else if (key === 'explodeOnKillPct') base.explodeOnKillPct += val;
     else if (key === 'coldDmg') base.coldDmg += val;
     else if (key === 'lightningDmg') base.lightningDmg += val;
     else if (key === 'additionalProjectiles') base.additionalProjectiles += val;
