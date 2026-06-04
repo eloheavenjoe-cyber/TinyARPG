@@ -141,9 +141,8 @@ export class Player {
     return true;
   }
 
-  empowerItem(slot: Slot): boolean {
-    const item = this.equipment[slot];
-    if (!item || item.rarity !== 'rare' || item.uniqueId) return false;
+  private empowerItemInternal(item: GeneratedItem): boolean {
+    if (item.rarity !== 'rare' || item.uniqueId) return false;
     if (item.affixes.length >= 6) return false;
 
     const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
@@ -157,13 +156,11 @@ export class Player {
     const roll = pick.min + Math.floor(Math.random() * (pick.max - pick.min + 1));
     item.affixes.push({ affix: pick, roll });
     item.computedStats[pick.stat] = (item.computedStats[pick.stat] || 0) + roll;
-    this.recalcStats();
     return true;
   }
 
-  fluxItem(slot: Slot): boolean {
-    const item = this.equipment[slot];
-    if (!item || item.rarity !== 'rare' || item.uniqueId) return false;
+  private fluxItemInternal(item: GeneratedItem): boolean {
+    if (item.rarity !== 'rare' || item.uniqueId) return false;
 
     const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
     const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
@@ -186,8 +183,39 @@ export class Player {
       stats[p.affix.stat] = (stats[p.affix.stat] || 0) + p.roll;
     }
     item.computedStats = stats;
-    this.recalcStats();
     return true;
+  }
+
+  empowerItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const ok = this.empowerItemInternal(item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  fluxItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const ok = this.fluxItemInternal(item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  empowerInventoryItem(gridIndex: number): boolean {
+    const entry = this.inventory[gridIndex];
+    if (!entry || entry.kind !== 'equip') return false;
+    const ok = this.empowerItemInternal(entry.item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  fluxInventoryItem(gridIndex: number): boolean {
+    const entry = this.inventory[gridIndex];
+    if (!entry || entry.kind !== 'equip') return false;
+    const ok = this.fluxItemInternal(entry.item);
+    if (ok) this.recalcStats();
+    return ok;
   }
 
   addXp(amount: number): boolean {

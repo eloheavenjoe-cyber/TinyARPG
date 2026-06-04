@@ -814,6 +814,27 @@ export class Game {
         );
         return success;
       });
+      this.inventoryScreen.onCraftOrbGridCallback((orbId: string, gridIndex: number): boolean => {
+        if (!this.player) return false;
+        let success = false;
+        if (orbId === 'empowerment') success = this.player.empowerInventoryItem(gridIndex);
+        else if (orbId === 'flux') success = this.player.fluxInventoryItem(gridIndex);
+        if (success) {
+          const orbIdx = this.player.inventory.findIndex(
+            s => s !== null && s.kind === 'orb' && s.orbId === orbId
+          );
+          if (orbIdx >= 0) {
+            const orbSlot = this.player.inventory[orbIdx] as any;
+            orbSlot.count--;
+            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
+          }
+        }
+        this.inventoryScreen?.update(
+          this.player.inventory, this.player.equipment,
+          this.player.computedStats, this.input,
+        );
+        return success;
+      });
       this.app.stage.addChild(this.inventoryScreen.container);
     } else {
       if (this.inventoryScreen) {

@@ -40,7 +40,9 @@ export class InventoryScreen {
   private craftMessageTimer = 0;
   private craftMessageText: Text;
   private onCraftOrb: (orbId: string, slot: Slot) => boolean = () => false;
+  private onCraftOrbGrid: (orbId: string, gridIndex: number) => boolean = () => false;
   onCraftOrbCallback(cb: (orbId: string, slot: Slot) => boolean) { this.onCraftOrb = cb; }
+  onCraftOrbGridCallback(cb: (orbId: string, gridIndex: number) => boolean) { this.onCraftOrbGrid = cb; }
 
   constructor(
     screenW: number, screenH: number,
@@ -432,6 +434,13 @@ export class InventoryScreen {
         if (entry) {
           if (entry.kind === 'equip') {
             if (this.activeOrb) {
+              const success = this.onCraftOrbGrid(this.activeOrb, g.index);
+              if (success) {
+                this.craftMessage = 'Orb applied!';
+              } else {
+                this.craftMessage = 'Item must be rare';
+              }
+              this.craftMessageTimer = 120;
               this.activeOrb = null;
               this.selectedIndex = -1;
             } else if (this.selectedIndex === g.index) {
