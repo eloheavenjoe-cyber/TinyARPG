@@ -420,10 +420,12 @@ export class InventoryScreen {
 
     if (input.consumeRightClick()) {
       this.handleRightClick(inventory);
+      if (!this.container.parent) return;
     }
 
     if (input.consumeClick()) {
       this.handleClick(inventory, equipment);
+      if (!this.container.parent) return;
     }
 
     // Hover detection for tooltip
