@@ -358,9 +358,7 @@ export class Game {
         g.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
       }
       if (this.player && Math.hypot(this.player.x - cx, this.player.y - cy) < 40) {
-        this.recallPortal.active = false;
-        this.gameContainer!.removeChild(rp.graphic);
-        rp.graphic.destroy();
+        this.recallPortal = null;
         this.zoneManager.transitionTo('hub');
         this.buildCurrentZoneRoom();
       }
@@ -1065,7 +1063,6 @@ export class Game {
           active: true,
         };
         this.gameContainer.addChild(this.recallPortal.graphic);
-        this.inventoryOpen = false;
         this.toggleInventory();
         Logger.log('system', 'Portal Scroll used — recall portal opened');
       });
