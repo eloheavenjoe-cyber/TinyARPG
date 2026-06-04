@@ -13,9 +13,10 @@ import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
-import { ItemDrop, createRandomLoot } from '../entities/ItemDrop';
+import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop } from '../entities/ItemDrop';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
+import { generateItemDrop } from './ItemGenerator';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -61,6 +62,7 @@ export class Game {
   private dash: DashState | null = null;
 
   private lastKeys: Set<string> = new Set();
+  private wasPKeyDown = false;
   private pendingClassType: ClassType = 'warrior';
   private treeOpen = false;
   private passiveTreeScreen?: PassiveTreeScreen;
@@ -150,6 +152,11 @@ export class Game {
   }
 
   private update(dt: number) {
+    if (this.state === State.Playing) {
+      const pDown = this.input.isKeyDown('KeyP');
+      if (pDown && !this.wasPKeyDown) this.toggleTree();
+      this.wasPKeyDown = pDown;
+    }
     switch (this.state) {
       case State.Menu: this.mainMenu?.update(this.input); break;
       case State.Picking:
@@ -197,10 +204,6 @@ export class Game {
       }
 
       if (t >= 1) this.dash = null;
-    }
-
-    if (this.input.isKeyDown('KeyP') && !this.lastKeys.has('KeyP')) {
-      this.toggleTree();
     }
 
     this.player.update(this.input, mouseWX, mouseWY, this.room.walls, dt);
@@ -275,7 +278,21 @@ export class Game {
     this.handleSkillKeys(mouseWX, mouseWY);
 
     if (this.input.consumeClick()) {
-      this.useMainAbility();
+      let clickedItem = false;
+      for (const drop of this.itemDrops) {
+        if (drop.pickedUp) continue;
+        if (isEquippableDrop(drop) && Math.hypot(mouseWX - drop.x, mouseWY - drop.y) < 30) {
+          drop.pickup();
+          this.gameContainer!.removeChild(drop.container);
+          drop.destroy();
+          this.itemDrops.splice(this.itemDrops.indexOf(drop), 1);
+          clickedItem = true;
+          break;
+        }
+      }
+      if (!clickedItem) {
+        this.useMainAbility();
+      }
     }
 
     for (let i = this.enemies.length - 1; i >= 0; i--) {
@@ -617,6 +634,12 @@ export class Game {
       this.itemDrops.push(drop);
       this.gameContainer!.addChild(drop.container);
     }
+    if (Math.random() < 0.4) {
+      const gen = generateItemDrop();
+      const drop = createItemDrop(x, y, gen);
+      this.itemDrops.push(drop);
+      this.gameContainer!.addChild(drop.container);
+    }
   }
 
   private tryPickupItems() {
@@ -652,9 +675,6 @@ export class Game {
       this.player.passivePoints, this.player.attrs,
       this.player.unspentAttrPoints,
     );
-    if (this.input.isKeyDown('KeyP') && !this.lastKeys.has('KeyP')) {
-      this.toggleTree();
-    }
   }
 
   private toggleTree() {
