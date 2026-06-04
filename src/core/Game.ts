@@ -695,7 +695,7 @@ export class Game {
   private useMainAbility() {
     if (!this.player?.alive) return;
     const skill = this.player.skills.mainAbility;
-    const angle = this.player.sprite.rotation;
+    const angle = this.player.facingAngle;
 
     const isProjectileType = skill?.effectType === 'projectile' || skill?.effectType === 'projectile_spread' || skill?.effectType === 'projectile_pierce';
     const isAoeTarget = skill?.effectType === 'aoe_target';
@@ -835,7 +835,7 @@ export class Game {
         break;
       }
       case 'cone': {
-        this.vfxGroundSlam(this.player.x, this.player.y, this.player.sprite.rotation);
+        this.vfxGroundSlam(this.player.x, this.player.y, this.player.facingAngle);
         const angleRad = result.angle || Math.PI / 2;
         for (const enemy of this.enemies) {
           if (!enemy.alive) continue;
@@ -844,7 +844,7 @@ export class Game {
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist > result.range) continue;
           const angleToEnemy = Math.atan2(dy, dx);
-          let diff = angleToEnemy - this.player.sprite.rotation;
+          let diff = angleToEnemy - this.player.facingAngle;
           while (diff > Math.PI) diff -= Math.PI * 2;
           while (diff < -Math.PI) diff += Math.PI * 2;
           if (Math.abs(diff) > angleRad / 2) continue;

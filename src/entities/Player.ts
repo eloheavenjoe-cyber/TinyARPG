@@ -65,6 +65,7 @@ export class Player {
   private readonly baseManaRegen = 8;
   lastHitInfo: { x: number; y: number; damage: number } | null = null;
   private animState: 'idle' | 'walk' | 'attack' = 'idle';
+  facingAngle = 0;
 
   private _computedStats = computeStats(this.passiveTree, this.attrs, 100, 50);
 
@@ -424,7 +425,8 @@ export class Player {
     this.x = newX;
     this.y = newY;
 
-    this.sprite.rotation = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
+    this.facingAngle = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
+    this.sprite.scale.x = Math.abs(this.facingAngle) > Math.PI / 2 ? -1 : 1;
 
     // Animation state switching (warrior animated sprites only)
     const isMoving = dx !== 0 || dy !== 0;
@@ -527,7 +529,7 @@ export class Player {
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist > range) continue;
           const angleToEnemy = Math.atan2(dy, dx);
-          let diff = angleToEnemy - this.sprite.rotation;
+          let diff = angleToEnemy - this.facingAngle;
           while (diff > Math.PI) diff -= Math.PI * 2;
           while (diff < -Math.PI) diff += Math.PI * 2;
           if (Math.abs(diff) > angleRad / 2) continue;
