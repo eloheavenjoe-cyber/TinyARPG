@@ -743,11 +743,11 @@ export function playJuggernautAnimation(sprite: AnimatedSprite, name: Juggernaut
 // --- Cthulhu boss animated sprite (individual PNGs per animation) ---
 
 const CTHULHU_FRAME_CONFIGS: [CthulhuAnimName, string, number][] = [
-  ['idle', 'idle_{n}.png', 6],
-  ['walk', 'walk_{n}.png', 8],
-  ['1atk', '1atk_{n}.png', 10],
-  ['2atk', '2atk_{n}.png', 10],
-  ['death', 'death_{n}.png', 10],
+  ['idle', 'idle_{n}.png', 15],
+  ['walk', 'walk_{n}.png', 12],
+  ['1atk', '1atk_{n}.png', 7],
+  ['2atk', '2atk_{n}.png', 9],
+  ['death', 'death_{n}.png', 11],
 ];
 
 export async function loadCthulhuAnimations(): Promise<void> {
@@ -755,7 +755,7 @@ export async function loadCthulhuAnimations(): Promise<void> {
 
   const results = await Promise.all(CTHULHU_FRAME_CONFIGS.map(async ([name, pattern, count]) => {
     try {
-      return { name, frames: await loadRangerFrames('sprites/cthulhu', 'idle' as any, pattern, count) };
+      return { name, frames: await loadRangerFrames('sprites/cthulu', 'idle' as any, pattern, count) };
     } catch {
       const canvas = document.createElement('canvas');
       canvas.width = 100;
