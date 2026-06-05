@@ -1,4 +1,4 @@
-import { Sprite, Texture, AnimatedSprite, Text, TextStyle } from 'pixi.js';
+import { Sprite, Texture, AnimatedSprite, Text, TextStyle, Container, Graphics } from 'pixi.js';
 import { MonsterRarity, MonsterMod, RARITY_COLORS } from '../core/MonsterMods';
 import { Sprites } from '../rendering/Sprites';
 import { createCultistSprite, playCultistAnimation, CultistAnimName, createArcherSprite, playArcherAnimation, ArcherAnimName, createGruntSprite, playGruntAnimation, GruntAnimName, createJuggernautSprite, playJuggernautAnimation, JuggernautAnimName, Direction, angleToDirection } from '../rendering/SpriteAnimator';
@@ -56,7 +56,7 @@ export class Enemy {
   frostAuraRadius = 150;
   volatileActive = false;
   markedTimer = 0;
-  nameplate: Text | null = null;
+  nameplate: Container | null = null;
 
   sprite: Sprite;
   private hitFlashTimer = 0;
@@ -420,6 +420,13 @@ export class Enemy {
     };
   }
 
+  private getDisplayName(): string {
+    const names: Record<string, string> = {
+      grunt: 'Grunt', archer: 'Archer', juggernaut: 'Juggernaut', cultist: 'Cultist',
+    };
+    return names[this.type] || this.type;
+  }
+
   applyRarity(rarity: MonsterRarity, mods: MonsterMod[]) {
     this.rarity = rarity;
     this.mods = mods;
@@ -431,21 +438,51 @@ export class Enemy {
       this.sprite.scale.set(
         (this.sprite.scale.x > 0 ? 1 : -1) * Math.abs(this.sprite.scale.x) * scaleBonus
       );
-      this.createNameplate(rarity, mods);
     }
+    this.createNameplate(rarity, mods);
   }
 
   private createNameplate(rarity: MonsterRarity, mods: MonsterMod[]) {
-    const modNames = mods.map(m => m.name).join(' ');
-    this.nameplate = new Text(`[${rarity.toUpperCase()}] ${modNames}`, new TextStyle({
-      fontFamily: 'monospace',
-      fontSize: 11,
-      fill: RARITY_COLORS[rarity],
-      stroke: 0x000000,
-      strokeThickness: 3,
-      fontWeight: 'bold',
+    this.nameplate = new Container();
+
+    const barW = Math.max(32, this.width);
+    const barH = 4;
+
+    // HP bar background
+    const hpBg = new Graphics();
+    hpBg.beginFill(0x222222, 0.8);
+    hpBg.drawRoundedRect(-barW / 2, 0, barW, barH, 1);
+    hpBg.endFill();
+    this.nameplate.addChild(hpBg);
+
+    // HP bar fill — stored as a named child for per-frame updates
+    const hpFill = new Graphics();
+    hpFill.name = 'hpFill';
+    this.nameplate.addChild(hpFill);
+
+    // Name
+    const nameText = new Text(this.getDisplayName(), new TextStyle({
+      fontFamily: 'monospace', fontSize: 10, fontWeight: 'bold',
+      fill: '#ffffff',
+      stroke: '#000000', strokeThickness: 2,
     }));
-    this.nameplate.anchor.set(0.5, 0);
+    nameText.anchor.set(0.5, 0);
+    nameText.y = barH + 1;
+    this.nameplate.addChild(nameText);
+
+    // Mod lines — colored by rarity (blue=magic, yellow=rare)
+    let modY = nameText.y + 12;
+    for (const mod of mods) {
+      const mt = new Text(mod.name, new TextStyle({
+        fontFamily: 'monospace', fontSize: 9,
+        fill: RARITY_COLORS[rarity],
+        stroke: '#000000', strokeThickness: 2,
+      }));
+      mt.anchor.set(0.5, 0);
+      mt.y = modY;
+      this.nameplate.addChild(mt);
+      modY += 11;
+    }
   }
 
   private updateSprite() {
@@ -453,13 +490,25 @@ export class Enemy {
     this.sprite.y = this.y;
     if (this.nameplate) {
       this.nameplate.x = this.x;
-      this.nameplate.y = this.y - this.height / 2 - 18;
+      this.nameplate.y = this.y - this.height / 2 - 22;
+
+      // Update HP bar fill
+      const hpFill = this.nameplate.getChildByName('hpFill') as Graphics;
+      if (hpFill) {
+        const pct = this.health / this.maxHealth;
+        const barW = Math.max(32, this.width);
+        const color = pct > 0.6 ? 0x44cc44 : pct > 0.3 ? 0xcccc44 : 0xcc4444;
+        hpFill.clear();
+        hpFill.beginFill(color);
+        hpFill.drawRoundedRect(-barW / 2, 0, barW * pct, 4, 1);
+        hpFill.endFill();
+      }
     }
   }
 
   destroy() {
     this.sprite.destroy();
-    if (this.nameplate) this.nameplate.destroy();
+    if (this.nameplate) { this.nameplate.destroy({ children: true }); }
     for (const p of this.projectiles) p.destroy();
     this.projectiles = [];
   }
