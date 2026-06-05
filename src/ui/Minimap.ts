@@ -17,11 +17,13 @@ export class Minimap {
   container: Container;
   private gfx: Graphics;
   private bgGfx: Graphics;
+  private targetAlpha = 1;
+  private currentAlpha = 1;
 
   constructor() {
     this.container = new Container();
     const screenX = 1920 - MINIMAP_W - PAD;
-    const screenY = 1080 - MINIMAP_H - PAD;
+    const screenY = PAD;
     this.container.x = screenX;
     this.container.y = screenY;
 
@@ -38,6 +40,9 @@ export class Minimap {
   }
 
   update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[]) {
+    this.currentAlpha += (this.targetAlpha - this.currentAlpha) * 0.1;
+    this.container.alpha = this.currentAlpha;
+
     const g = this.gfx;
     g.clear();
 
@@ -82,6 +87,14 @@ export class Minimap {
     g.beginFill(PLAYER_COLOR);
     g.drawCircle(playerX * sx, playerY * sy, 3);
     g.endFill();
+  }
+
+  fadeIn() {
+    this.targetAlpha = 1;
+  }
+
+  fadeOut() {
+    this.targetAlpha = 0;
   }
 
   destroy() {
