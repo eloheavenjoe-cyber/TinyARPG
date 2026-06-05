@@ -130,6 +130,8 @@ export class SkillSubTree {
       const node = this.nodes.get(cur);
       if (!node) continue;
       for (const conn of node.connections) {
+        const connNode = this.nodes.get(conn);
+        if (connNode?.type === 'start') continue;
         if (this.allocated.has(conn) && !toRemove.has(conn)) {
           toRemove.add(conn);
           queue.push(conn);
