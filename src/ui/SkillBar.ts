@@ -91,7 +91,7 @@ export class SkillBar {
         const startAngle = -Math.PI / 2;
         const endAngle = startAngle + Math.PI * 2 * cdRatio;
         slot.fill.moveTo(SLOT_W / 2, SLOT_H / 2);
-        slot.fill.arc(SLOT_W / 2, SLOT_H / 2, SLOT_W / 2, startAngle, endAngle);
+        slot.fill.arc(SLOT_W / 2, SLOT_H / 2, SLOT_H / 2, startAngle, endAngle);
         slot.fill.closePath();
         slot.fill.endFill();
       }
