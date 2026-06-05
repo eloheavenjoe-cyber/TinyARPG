@@ -1253,7 +1253,7 @@ export class Game {
       }
     }
     switch (this.state) {
-      case State.Menu: this.mainMenu?.update(this.input); break;
+      case State.Menu: this.mainMenu?.update(this.input, dt); break;
       case State.Picking:
         this.classSelect?.update(this.input);
         this.abilitySelect?.update(this.input);

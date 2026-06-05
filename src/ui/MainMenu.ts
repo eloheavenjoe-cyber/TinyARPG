@@ -1,4 +1,4 @@
-import { Container, Text, TextStyle, Graphics } from 'pixi.js';
+import { Container, Text, TextStyle, Graphics, Sprite, Texture, BaseTexture } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Logger } from '../core/Logger';
 
@@ -12,50 +12,74 @@ export class MainMenu {
   private startButton!: Container;
   private continueButton!: Container;
   private loadGameButton!: Container;
+  private bgSprites: Sprite[] = [];
+  private screenWidth: number;
+  private screenHeight: number;
 
   constructor(screenWidth: number, screenHeight: number) {
+    this.screenWidth = screenWidth;
+    this.screenHeight = screenHeight;
     this.container = new Container();
 
-    const bg = new Graphics();
-    bg.beginFill(0x0a0a1a);
-    bg.drawRect(0, 0, screenWidth, screenHeight);
-    bg.endFill();
+    const img = new Image();
+    img.src = 'menu-bg.png';
+    const baseTexture = new BaseTexture(img);
+    const bgTexture = new Texture(baseTexture);
+    baseTexture.scaleMode = 0;
+
+    const scaleX = screenWidth / 576;
+    const scaleY = screenHeight / 324;
+    for (let i = 0; i < 2; i++) {
+      const s = new Sprite(bgTexture);
+      s.scale.set(scaleX, scaleY);
+      s.x = i * screenWidth;
+      s.y = 0;
+      this.container.addChildAt(s, 0);
+      this.bgSprites.push(s);
+    }
+
+    const overlay = new Graphics();
+    overlay.beginFill(0x000000, 0.5);
+    overlay.drawRect(0, 0, screenWidth, screenHeight);
+    overlay.endFill();
+    this.container.addChild(overlay);
 
     const accent = new Graphics();
-    accent.beginFill(0x1a1a2e);
-    accent.drawRect(0, 0, screenWidth, 4);
-    accent.drawRect(0, screenHeight - 4, screenWidth, 4);
+    accent.beginFill(0xc0a060, 0.3);
+    accent.drawRect(0, 0, screenWidth, 2);
+    accent.drawRect(0, screenHeight - 2, screenWidth, 2);
     accent.endFill();
-
-    this.container.addChild(bg, accent);
+    this.container.addChild(accent);
 
     const title = new Text('TinyARPG', new TextStyle({
       fontFamily: 'Georgia, serif',
-      fontSize: 72,
-      fill: ['#c0a060', '#8a6a30'],
+      fontSize: 80,
+      fill: ['#d4b87a', '#8a6a30'],
       stroke: '#000',
-      strokeThickness: 4,
-      letterSpacing: 8,
+      strokeThickness: 6,
+      letterSpacing: 10,
     }));
     title.anchor.set(0.5);
     title.x = screenWidth / 2;
-    title.y = screenHeight / 3;
+    title.y = screenHeight * 0.28;
     this.container.addChild(title);
 
     const subtitle = new Text('A Tiny Action RPG', new TextStyle({
       fontFamily: 'Georgia, serif',
-      fontSize: 20,
-      fill: '#6a6a7a',
-      letterSpacing: 4,
+      fontSize: 18,
+      fill: '#a0a0b0',
+      stroke: '#000',
+      strokeThickness: 3,
+      letterSpacing: 6,
     }));
     subtitle.anchor.set(0.5);
     subtitle.x = screenWidth / 2;
-    subtitle.y = screenHeight / 3 + 60;
+    subtitle.y = screenHeight * 0.28 + 65;
     this.container.addChild(subtitle);
 
-    this.createStartButton(screenWidth / 2, screenHeight / 2 + 20);
-    this.createContinueButton(screenWidth / 2, screenHeight / 2 + 75);
-    this.createLoadGameButton(screenWidth / 2, screenHeight / 2 + 130);
+    this.createStartButton(screenWidth / 2, screenHeight / 2 + 30);
+    this.createContinueButton(screenWidth / 2, screenHeight / 2 + 85);
+    this.createLoadGameButton(screenWidth / 2, screenHeight / 2 + 140);
 
     Logger.log('ui', 'Main menu created');
   }
@@ -64,19 +88,21 @@ export class MainMenu {
     const btn = new Container();
 
     const btnBg = new Graphics();
-    btnBg.beginFill(0x2a2a3a);
-    btnBg.drawRoundedRect(-100, -20, 200, 40, 4);
+    btnBg.beginFill(0x1a1a2a, 0.7);
+    btnBg.drawRoundedRect(-110, -22, 220, 44, 6);
     btnBg.endFill();
 
     const btnBorder = new Graphics();
-    btnBorder.lineStyle(1, 0x5a4a2a);
-    btnBorder.drawRoundedRect(-100, -20, 200, 40, 4);
+    btnBorder.lineStyle(1, 0x8a7a5a, 0.6);
+    btnBorder.drawRoundedRect(-110, -22, 220, 44, 6);
 
     const btnText = new Text(label, new TextStyle({
       fontFamily: 'Georgia, serif',
       fontSize: 18,
-      fill: '#c0a060',
-      letterSpacing: 2,
+      fill: '#d4b87a',
+      stroke: '#000',
+      strokeThickness: 2,
+      letterSpacing: 3,
     }));
     btnText.anchor.set(0.5);
 
@@ -111,7 +137,13 @@ export class MainMenu {
     this.loadGameCallback = callback;
   }
 
-  update(input: InputManager) {
+  update(input: InputManager, dt: number) {
+    const speed = 0.25;
+    for (const s of this.bgSprites) {
+      s.x -= speed * dt;
+      if (s.x + this.screenWidth <= 0) s.x += this.screenWidth * 2;
+    }
+
     if (!input.consumeClick()) return;
 
     const sb = this.startButton.getBounds();
