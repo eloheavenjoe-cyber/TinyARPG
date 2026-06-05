@@ -2584,6 +2584,18 @@ export class Game {
           );
         }
       });
+      this.passiveTreeScreen.onRefundCallback((id) => {
+        if (this.player) {
+          const refunded = this.player.passiveTree.refund(id);
+          this.player.passivePoints += refunded;
+          this.player.recalcStats();
+          this.passiveTreeScreen?.update(
+            this.input, this.player.passiveTree,
+            this.player.passivePoints, this.player.attrs,
+            this.player.unspentAttrPoints,
+          );
+        }
+      });
       this.passiveTreeScreen.onAttrChangeCallback((stat, delta) => {
         if (this.player && this.player.unspentAttrPoints > 0) {
           this.player.attrs[stat] += delta;
@@ -2623,6 +2635,13 @@ export class Game {
     this.subTreeScreen.onAllocateCallback((id: string) => {
       if (this.player && tree.allocate(id)) {
         this.player.skillSubPoints--;
+        this.subTreeScreen?.update(this.input, tree, this.player.skillSubPoints);
+      }
+    });
+    this.subTreeScreen.onRefundCallback((id: string) => {
+      if (this.player) {
+        const refunded = tree.refund(id);
+        this.player.skillSubPoints += refunded;
         this.subTreeScreen?.update(this.input, tree, this.player.skillSubPoints);
       }
     });

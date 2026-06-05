@@ -10,6 +10,7 @@ export class PassiveTreeScreen {
   private attrs: { str: number; dex: number; int: number };
   private unspentAttrs: number;
   private onAllocate: (id: string) => void;
+  private onRefund: (id: string) => void;
   private onAttrChange: (stat: 'str' | 'dex' | 'int', delta: number) => void;
 
   private nodeGfx: Map<string, { bg: Graphics; fill: Graphics; text: Text }> = new Map();
@@ -28,6 +29,7 @@ export class PassiveTreeScreen {
     this.attrs = { ...attrs };
     this.unspentAttrs = unspentAttrs;
     this.onAllocate = () => {};
+    this.onRefund = () => {};
     this.onAttrChange = () => {};
 
     const bg = new Graphics();
@@ -164,6 +166,7 @@ export class PassiveTreeScreen {
   }
 
   onAllocateCallback(cb: (id: string) => void) { this.onAllocate = cb; }
+  onRefundCallback(cb: (id: string) => void) { this.onRefund = cb; }
   onAttrChangeCallback(cb: (stat: 'str' | 'dex' | 'int', delta: number) => void) { this.onAttrChange = cb; }
 
   update(input: InputManager, tree: PassiveTree, points: number, attrs: { str: number; dex: number; int: number }, unspentAttrs: number) {
@@ -207,28 +210,45 @@ export class PassiveTreeScreen {
   }
 
   private handleClick(input: InputManager) {
-    if (!input.consumeClick()) return;
     if (!this.tree) return;
 
-    // Check node clicks
-    for (const [id, gfx] of this.nodeGfx) {
-      const r = this.getNodeRadius(this.tree.getNode(id)!);
-      const dx = input.mouseX - gfx.bg.x;
-      const dy = input.mouseY - gfx.bg.y;
-      if (dx * dx + dy * dy < r * r) {
-        if (this.tree.canAllocate(id) && this.points > 0) {
-          this.onAllocate(id);
+    if (input.consumeClick()) {
+      for (const [id, gfx] of this.nodeGfx) {
+        const node = this.tree.getNode(id);
+        if (!node) continue;
+        const r = this.getNodeRadius(node);
+        const dx = input.mouseX - gfx.bg.x;
+        const dy = input.mouseY - gfx.bg.y;
+        if (dx * dx + dy * dy < r * r) {
+          if (this.tree.canAllocate(id) && this.points > 0) {
+            this.onAllocate(id);
+          }
+          return;
         }
-        return;
+      }
+
+      for (const btn of this.attrBtns) {
+        if (input.mouseX >= btn.bg.x && input.mouseX <= btn.bg.x + 160 &&
+            input.mouseY >= btn.bg.y && input.mouseY <= btn.bg.y + 60) {
+          this.onAttrChange(btn.stat, 1);
+          return;
+        }
       }
     }
 
-    // Check attribute clicks
-    for (const btn of this.attrBtns) {
-      if (input.mouseX >= btn.bg.x && input.mouseX <= btn.bg.x + 160 &&
-          input.mouseY >= btn.bg.y && input.mouseY <= btn.bg.y + 60) {
-        this.onAttrChange(btn.stat, 1);
-        return;
+    if (input.consumeRightClick()) {
+      for (const [id, gfx] of this.nodeGfx) {
+        const node = this.tree.getNode(id);
+        if (!node) continue;
+        const r = this.getNodeRadius(node);
+        const dx = input.mouseX - gfx.bg.x;
+        const dy = input.mouseY - gfx.bg.y;
+        if (dx * dx + dy * dy < r * r) {
+          if (this.tree.canRefund(id)) {
+            this.onRefund(id);
+          }
+          return;
+        }
       }
     }
   }

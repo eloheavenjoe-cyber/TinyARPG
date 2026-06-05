@@ -8,6 +8,7 @@ export class SkillSubTreeScreen {
   private tree: SkillSubTree;
   private points: number;
   private onAllocate: (id: string) => void;
+  private onRefund: (id: string) => void;
 
   private nodeGfx: Map<string, { bg: Graphics; fill: Graphics; text: Text }> = new Map();
   private lines: Graphics;
@@ -23,6 +24,7 @@ export class SkillSubTreeScreen {
     this.tree = tree;
     this.points = points;
     this.onAllocate = () => {};
+    this.onRefund = () => {};
 
     const bg = new Graphics();
     bg.beginFill(0x080812);
@@ -100,6 +102,7 @@ export class SkillSubTreeScreen {
   }
 
   onAllocateCallback(cb: (id: string) => void) { this.onAllocate = cb; }
+  onRefundCallback(cb: (id: string) => void) { this.onRefund = cb; }
 
   update(input: InputManager, tree: SkillSubTree, points: number) {
     this.tree = tree;
@@ -136,30 +139,47 @@ export class SkillSubTreeScreen {
   }
 
   private handleClick(input: InputManager) {
-    if (!input.consumeClick()) return;
     if (!this.tree) return;
 
-    for (const [id, gfx] of this.nodeGfx) {
-      const node = this.tree.getNode(id);
-      if (!node) continue;
-      const r = this.getNodeRadius(node);
-      const dx = input.mouseX - gfx.bg.x;
-      const dy = input.mouseY - gfx.bg.y;
-      if (dx * dx + dy * dy < r * r) {
-        if (this.tree.canAllocate(id)) {
-          if (this.points > 0 || node.type !== 'keystone') {
-            this.onAllocate(id);
+    if (input.consumeClick()) {
+      for (const [id, gfx] of this.nodeGfx) {
+        const node = this.tree.getNode(id);
+        if (!node) continue;
+        const r = this.getNodeRadius(node);
+        const dx = input.mouseX - gfx.bg.x;
+        const dy = input.mouseY - gfx.bg.y;
+        if (dx * dx + dy * dy < r * r) {
+          if (this.tree.canAllocate(id)) {
+            if (this.points > 0 || node.type !== 'keystone') {
+              this.onAllocate(id);
+            }
+          } else if (node.type === 'keystone' && this.tree.keystoneCount >= 2) {
+            this.messageText = 'Max 2 keystones';
+            this.messageTimer = 60;
+            this.infoText.text = this.messageText;
+          } else if (this.points <= 0) {
+            this.messageText = 'No sub skill points remaining';
+            this.messageTimer = 60;
+            this.infoText.text = this.messageText;
           }
-        } else if (node.type === 'keystone' && this.tree.keystoneCount >= 2) {
-          this.messageText = 'Max 2 keystones';
-          this.messageTimer = 60;
-          this.infoText.text = this.messageText;
-        } else if (this.points <= 0) {
-          this.messageText = 'No sub skill points remaining';
-          this.messageTimer = 60;
-          this.infoText.text = this.messageText;
+          return;
         }
-        return;
+      }
+    }
+
+    if (input.consumeRightClick()) {
+      for (const [id, gfx] of this.nodeGfx) {
+        const node = this.tree.getNode(id);
+        if (!node) continue;
+        const r = this.getNodeRadius(node);
+        const dx = input.mouseX - gfx.bg.x;
+        const dy = input.mouseY - gfx.bg.y;
+        if (dx * dx + dy * dy < r * r) {
+          if (this.tree.canRefund(id)) {
+            this.onRefund(id);
+          }
+          return;
+        }
       }
     }
   }

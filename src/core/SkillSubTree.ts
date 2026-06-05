@@ -113,6 +113,49 @@ export class SkillSubTree {
     return true;
   }
 
+  canRefund(id: string): boolean {
+    if (!this.allocated.has(id)) return false;
+    const node = this.nodes.get(id);
+    if (!node || node.type === 'start') return false;
+    return true;
+  }
+
+  refund(id: string): number {
+    if (!this.canRefund(id)) return 0;
+
+    const toRemove = new Set<string>([id]);
+    const queue = [id];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      const node = this.nodes.get(cur);
+      if (!node) continue;
+      for (const conn of node.connections) {
+        if (this.allocated.has(conn) && !toRemove.has(conn)) {
+          toRemove.add(conn);
+          queue.push(conn);
+        }
+      }
+    }
+
+    let refunded = 0;
+    for (const nid of toRemove) {
+      this.allocated.delete(nid);
+      refunded++;
+      const n = this.nodes.get(nid);
+      if (n?.type === 'keystone') this.keystoneCount--;
+    }
+
+    this.available.clear();
+    for (const nid of this.allocated) {
+      const n = this.nodes.get(nid);
+      if (n) for (const c of n.connections) {
+        if (!this.allocated.has(c)) this.available.add(c);
+      }
+    }
+
+    return refunded;
+  }
+
   hasKeystone(id: string): boolean {
     return this.allocated.has(id);
   }
