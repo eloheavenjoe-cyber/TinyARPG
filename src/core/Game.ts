@@ -2,7 +2,7 @@ import { Application, Container, Point, Graphics, Text, TextStyle, AnimatedSprit
 import { InputManager } from './InputManager';
 import { Camera } from './Camera';
 import { Logger } from './Logger';
-import { Sprites } from '../rendering/Sprites';
+import { Sprites, loadTileSet } from '../rendering/Sprites';
 import { MainMenu } from '../ui/MainMenu';
 import { ClassSelect } from '../ui/ClassSelect';
 import { AbilitySelect } from '../ui/AbilitySelect';
@@ -198,6 +198,7 @@ export class Game {
       loadVendorAnimations(),
       loadStashAnimations(),
       loadItemIcons(),
+      ...Object.keys(TILE_CONFIGS).map(biomeId => loadTileSet(biomeId)),
     ]);
 
     barFill.clear();

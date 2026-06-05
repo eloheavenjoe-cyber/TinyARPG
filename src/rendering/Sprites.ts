@@ -1,4 +1,7 @@
 import { Texture } from 'pixi.js';
+import { loadTileSheet } from './TileLoader';
+import { TILE_CONFIGS, tileTextures, setTileTextures } from '../core/TileConfigs';
+import { BiomeId } from '../core/ZoneConfig';
 
 export class Sprites {
   static player: Texture;
@@ -618,4 +621,11 @@ Sprites.pathTile = Sprites.createTexture(32, 32, (ctx) => {
     draw(ctx);
     return Texture.from(canvas);
   }
+}
+
+export async function loadTileSet(biomeId: string): Promise<void> {
+  const config = TILE_CONFIGS[biomeId as BiomeId];
+  if (!config) return;
+  const textures = await loadTileSheet(config.sheetUrl, config.jsonUrl);
+  setTileTextures({ ...tileTextures, ...textures });
 }
