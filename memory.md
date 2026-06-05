@@ -24,6 +24,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     ItemGenerator.ts          Item/orb generation: rarity, tiered affixes, ilvl, levelReq
     SaveManager.ts            localStorage save/load, 5 slots, stash persistence
     VendorManager.ts          Vendor stock generation + pricing
+    TileConfigs.ts            Tile interface + registry + texture cache for biome spritesheets
   entities/
     Player.ts                 Player with SkillManager, mana, buffs, projectile firing, leveling, passive tree, inventory, equipment, slow debuff, skill AOE scaling, life leech, fortify, isRolling flag
     Enemy.ts                  4 types (Grunt/Archer/Juggernaut/Cultist), kiting AI, blink, repulsion, wobble, culling strike, animated sprites for all types, slowTimer
@@ -33,12 +34,13 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     Chest.ts                  Interactable chests with open/close states, loot drops
     Breakable.ts              Destructible pots/barrels
   world/
-    Room.ts                   6400×3584 room, wall collision resolver, biome-aware floor/walls, door/portal markers, buildings, NPCs, decorations
+    Room.ts                   6400×3584 room, wall collision resolver, TilingSprite floor/walls with programmatic fallback, stone path rendering, door/portal markers, buildings, NPCs, decorations
     RoomTemplates.ts          Pre-defined room layout templates (5 base + hub/tutorial/arena/dungeon/dev + 12 story zone + buildings/NPCs)
-    RoomDecorator.ts          Procedural decoration: trees, rocks, bushes, grass
+    RoomDecorator.ts          Procedural decoration: trees, rocks, bushes, grass; tile-texture-aware with road block rect
   rendering/
-    Sprites.ts                Programmatic pixel-art textures (player, enemy, archer, cultist, juggernaut, floor, wall, buildings)
+    Sprites.ts                Programmatic pixel-art textures (player, enemy, archer, cultist, juggernaut, floor, wall, buildings), loadTileSet export
     SpriteAnimator.ts         Sprite sheet loader + frame slicer + animation manager (warrior, ranger, reaper, golem, monk, cultist, archer, grunt, juggernaut, vendor, stash animated sprites)
+    TileLoader.ts             PNG+JSON spritesheet loader (fetch → blob → Image → BaseTexture → named Textures)
     Camera.ts                 Player-following camera with smooth lerp, edge clamping
     Minimap.ts                Bottom-right minimap overlay (walls, player, enemies, chests, breakables)
   ui/
@@ -298,7 +300,9 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 ## Architecture Notes (current state)
 - Zone system: ZoneConfig (types + registry) + ZoneRegistry (templates merged) + ZoneManager (state machine)
 - ZoneRegistry.ts created to break circular dependency between ZoneConfig.ts ↔ RoomTemplates.ts ↔ Room.ts
-- Room constructor accepts `(biome, doors, portals, decorations, buildings, npcs)` — all optional with defaults
+- Room constructor accepts `(biome, doors, portals, decorations, buildings, npcs, isPortalUnlocked, playerStart)` — all optional with defaults
+- `renderRoad()` draws a 64px-wide stone path from `playerStart` to the center of each door using programmatic stone tiles (hub-style)
+- `drawStoneTile()` renders a single 32×32 stone tile with mortar lines, texture blocks, and highlights
 - `cloneTemplate()` deep-clones all arrays (walls, doors, portals, spawnZones, decorations, buildings, npcs)
 - Hub buildings rendered as: wall body + triangle roof + door + 2 windows + label text
 - Hub NPCs rendered as: rounded rect body (tinted) + circle head + label text
@@ -376,6 +380,33 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **ItemIcons.ts**: Loads `sprites/items.png` (384×384, 16×16 grid of 24×24 cells), slices by baseId+rarity and orbId mappings.
 - 28 item base icons (7 bases × 4 rarities), 6 orb icons, portal scroll icon mapped via user-provided (row,col) coordinates.
 - InventoryScreen: each grid slot shows 24×24 icon with item name below. Icons loaded during startup loading screen.
+
+### Phase 9 — Save/Load Stability & Bug Fixes (completed 2026-06-05)
+- **Unique affix deserialization**: `deserializeItem()` now falls back to synthetic affix when an affix ID isn't in `AFFIXES` (fixes "Unknown affix: skillAoePct" crash on loading saves with Titan's Reach and other unique items with unique-only stats like `fortifyOnHit`, `lifeLeechPct`, `cullingStrikePct`)
+- **exitToMenu guards**: `saveGame()` wrapped in try-catch so cleanup always runs; state set to `State.Menu` at the very top before any save/cleanup logic
+- **loadGame guards**: inventory/equipment/stash deserialization wrapped in try-catch with empty defaults
+- **Stale Graphics refCount crash**: `cleanupGameSession()` and `restartGame()` now reset `modGfx`, `chillZones`, `chests`, `breakables`, `decorationSprites` arrays after `gameContainer.destroy()` to prevent stale references from causing null `_geometry.refCount` on the next session
+- **modGfx destroy loop**: guarded with try-catch + `g.parent` check to prevent crash on already-destroyed Graphics
+- **SaveSlotScreen background**: `eventMode = 'static'` added to prevent pointer events passing through to MainMenu behind it (fixes accidental class-select trigger on delete confirmation)
+- **SaveSlotScreen MainMenu cleanup**: `showSaveSlotScreen()` now destroys `this.mainMenu` before showing slot screen, preventing behind-the-scene clicks on "New Game" button
+- **MainMenu leak**: `showMainMenu()` now cleans up existing `this.mainMenu` before creating a new one
+
+### Phase 10 — Zone Visual Overhaul: Tile System (completed 2026-06-05)
+- **TileConfig system**: `src/core/TileConfigs.ts` — interface with `TileConfig`, registry `TILE_CONFIGS`, global `tileTextures` cache. Supports both spritesheet mode (PNG+JSON) and individual file mode (per-tile PNG with optional crop rects)
+- **TileLoader**: `src/rendering/TileLoader.ts` — `loadTileSheet()` fetches PNG blob + JSON frame definitions, creates named `Texture` objects via `BaseTexture` + `Rectangle`
+- **TilingSprite floor/walls**: `Room.build()` uses `TilingSprite` for floor and walls when a `TileConfig` is available, with full fallback to programmatic Graphics for zones without tile configs
+- **Tile-aware decorator**: `RoomDecorator.decorateRoom()` accepts optional `TileConfig`, uses tile textures for props (trees/bushes/rocks) and config-based count ranges
+- **Startup loading**: `loadTileSet()` in Sprites.ts loads tile textures during the startup loading screen
+- **Tutorial zone wired**: Uses user-provided PNGs — grass floor (`Grass0-4`), stone wall (`Wall1`), accent grass (`Grass0-1`), trees (`Trees.png` sprite 1, `Trees2.png` sprites 4 & 5), stumps
+
+### Phase 10b — Tutorial Zone Visual Polish (completed 2026-06-05)
+- **Grass darkened**: `TilingSprite` floor gets `tint = 0x999999` for deeper color
+- **Stone path**: Programmatic stone path (2 tiles wide, 64px) from `playerStart` (room center) to exit door, using hub-style stone tiles with mortar lines, texture blocks, and highlights
+- **Path blending**: First ~200px of path fades in with scattered partial stones that increase to full 2-tile-width path; extra edge stone fragments for natural look
+- **Trees blocked from road**: `roadBlock` rect passed to `decorateRoom()` to prevent tree spawning on the path
+- **Tree count**: 80-120 trees per room (from 60-90), using both `Trees.png` and `Trees2.png` sprites for variety
+- **Spawn zone block removed**: `template.spawnZones` removed from decoration blocked rects so trees spread across the entire room instead of only the 256px perimeter margin
+- **Accent tiles**: darkened with `tint = 0x999999` to match the floor
 
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
