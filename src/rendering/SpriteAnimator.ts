@@ -902,6 +902,71 @@ export function createStashSprite(): AnimatedSprite {
   return sprite;
 }
 
+// --- Chest sprite sheet (240x256, 5 cols x 8 rows, 48x32 each) ---
+
+export type ChestAnimName = 'closed' | 'opening';
+
+let chestFrames: Record<string, Texture[]> | null = null;
+let pendingChestSprites: AnimatedSprite[] = [];
+
+export async function loadChestAnimations(): Promise<void> {
+  if (chestFrames) return;
+  try {
+    const img = await loadImage('sprites/chest/Chests.png');
+    const base = new BaseTexture(img);
+    const COLS = 5, FRAME_W = 48, FRAME_H = 32;
+    const frames: Texture[] = [];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < COLS; col++) {
+        frames.push(new Texture(base, new Rectangle(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)));
+      }
+    }
+    chestFrames = {
+      closed: [frames[0], frames[1], frames[2], frames[3], frames[4]],    // row 0: variants 1 closed frames
+      opening: frames.slice(5, 10),                                        // row 1: variant 1 opening animation
+    };
+  } catch {
+    // fallback single frame
+    const canvas = document.createElement('canvas');
+    canvas.width = 48; canvas.height = 32;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#8a6a3a';
+    ctx.fillRect(4, 8, 40, 20);
+    ctx.fillStyle = '#ffcc44';
+    ctx.fillRect(20, 14, 4, 4);
+    const f = [Texture.from(canvas)];
+    chestFrames = { closed: f, opening: f };
+  }
+  for (const sprite of pendingChestSprites) {
+    const f = chestFrames.closed;
+    if (f.length > 0) { sprite.textures = f; sprite.animationSpeed = 0.08; sprite.play(); }
+  }
+  pendingChestSprites = [];
+}
+
+export function createChestSprite(): AnimatedSprite {
+  if (chestFrames && chestFrames.closed.length > 0) {
+    const sprite = new AnimatedSprite(chestFrames.closed);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.08;
+    sprite.play();
+    return sprite;
+  }
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x8a6a3a;
+  pendingChestSprites.push(sprite);
+  return sprite;
+}
+
+export function playChestOpenAnimation(sprite: AnimatedSprite) {
+  if (!chestFrames || !chestFrames.opening || chestFrames.opening.length === 0) return;
+  sprite.textures = chestFrames.opening;
+  sprite.loop = false;
+  sprite.animationSpeed = 0.1;
+  sprite.gotoAndPlay(0);
+}
+
 export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true, classType: 'warrior' | 'ranger' | 'monk' = 'warrior') {
   if (classType === 'monk') return;
   const frames = getFrames(classType);

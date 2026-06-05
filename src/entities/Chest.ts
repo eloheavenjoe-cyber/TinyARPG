@@ -1,5 +1,5 @@
-import { Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
-import { Sprites } from '../rendering/Sprites';
+import { Container, AnimatedSprite, Graphics, Text, TextStyle } from 'pixi.js';
+import { createChestSprite, playChestOpenAnimation } from '../rendering/SpriteAnimator';
 import { Rect } from '../world/Room';
 
 export interface ChestOptions {
@@ -9,7 +9,7 @@ export interface ChestOptions {
 
 export class Chest {
   container: Container;
-  private sprite: Sprite;
+  private sprite: AnimatedSprite;
   private interactLabel: Text;
   private lockOverlay: Graphics;
   isOpen = false;
@@ -27,8 +27,7 @@ export class Chest {
     this.locked = opts?.locked ?? false;
     this.container = new Container();
 
-    this.sprite = new Sprite(Sprites.chestClosed);
-    this.sprite.anchor.set(0.5, 0.5);
+    this.sprite = createChestSprite();
     if (this.isJackpot) this.sprite.tint = 0xddaaff;
     this.container.addChild(this.sprite);
 
@@ -75,7 +74,7 @@ export class Chest {
   open() {
     if (this.isOpen) return;
     this.isOpen = true;
-    this.sprite.texture = Sprites.chestOpen;
+    playChestOpenAnimation(this.sprite);
     this.interactLabel.visible = false;
     this.lockOverlay.visible = false;
   }
