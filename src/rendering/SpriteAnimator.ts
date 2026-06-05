@@ -6,6 +6,7 @@ const FRAME_H = 84;
 export type AnimName = 'idle' | 'walk' | 'attack';
 export type ReaperAnimName = 'idle' | 'attack' | 'death' | 'summon';
 export type GolemAnimName = 'idle' | 'walk' | 'attack' | 'death';
+export type CthulhuAnimName = 'idle' | 'walk' | '1atk' | '2atk' | 'death';
 
 let warriorFrames: Record<AnimName, Texture[]> | null = null;
 let rangerFrames: Record<AnimName, Texture[]> | null = null;
@@ -21,6 +22,9 @@ export type MonkAnimName = 'idle' | 'run' | 'basic_strike' | 'dragon_palm' | 'wh
 
 let monkFrames: Record<MonkAnimName, Texture[]> | null = null;
 let pendingMonkSprites: AnimatedSprite[] = [];
+
+let cthulhuFrames: Record<CthulhuAnimName, Texture[]> | null = null;
+let pendingCthulhuSprites: AnimatedSprite[] = [];
 
 function getFrames(classType: 'warrior' | 'ranger' | 'monk'): Record<AnimName, Texture[]> | null {
   if (classType === 'monk') return null;
@@ -733,6 +737,78 @@ export function playJuggernautAnimation(sprite: AnimatedSprite, name: Juggernaut
   sprite.textures = f;
   sprite.loop = loop;
   sprite.animationSpeed = name === 'attack' ? 0.15 : 0.1;
+  sprite.gotoAndPlay(0);
+}
+
+// --- Cthulhu boss animated sprite (individual PNGs per animation) ---
+
+const CTHULHU_FRAME_CONFIGS: [CthulhuAnimName, string, number][] = [
+  ['idle', 'idle_{n}.png', 6],
+  ['walk', 'walk_{n}.png', 8],
+  ['1atk', '1atk_{n}.png', 10],
+  ['2atk', '2atk_{n}.png', 10],
+  ['death', 'death_{n}.png', 10],
+];
+
+export async function loadCthulhuAnimations(): Promise<void> {
+  if (cthulhuFrames) return;
+
+  const results = await Promise.all(CTHULHU_FRAME_CONFIGS.map(async ([name, pattern, count]) => {
+    try {
+      return { name, frames: await loadRangerFrames('sprites/cthulhu', 'idle' as any, pattern, count) };
+    } catch {
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 100;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#55aa88';
+      ctx.fillRect(0, 0, 100, 100);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px monospace';
+      ctx.fillText(name, 20, 52);
+      return { name, frames: [Texture.from(canvas)] };
+    }
+  }));
+
+  const result = {} as Record<CthulhuAnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
+  cthulhuFrames = result;
+
+  for (const sprite of pendingCthulhuSprites) {
+    const f = cthulhuFrames.idle;
+    if (f && f.length > 0) {
+      sprite.textures = f;
+      sprite.tint = 0xffffff;
+      sprite.animationSpeed = 0.12;
+      sprite.play();
+    }
+  }
+  pendingCthulhuSprites = [];
+}
+
+export function createCthulhuSprite(): AnimatedSprite {
+  if (cthulhuFrames && cthulhuFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(cthulhuFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.12;
+    sprite.play();
+    return sprite;
+  }
+
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x55aa88;
+  pendingCthulhuSprites.push(sprite);
+  return sprite;
+}
+
+export function playCthulhuAnimation(sprite: AnimatedSprite, name: CthulhuAnimName, loop = true) {
+  if (!cthulhuFrames) return;
+  const f = cthulhuFrames[name];
+  if (!f || f.length === 0 || sprite.textures === f) return;
+  sprite.textures = f;
+  sprite.loop = loop;
+  sprite.animationSpeed = name === '1atk' || name === '2atk' ? 0.15 : 0.12;
   sprite.gotoAndPlay(0);
 }
 

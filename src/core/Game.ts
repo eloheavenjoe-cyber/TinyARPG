@@ -30,7 +30,7 @@ import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
-import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation, playRangerRollAnimation, playAnimation } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadCthulhuAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation, playRangerRollAnimation, playAnimation } from '../rendering/SpriteAnimator';
 import { loadItemIcons } from '../rendering/ItemIcons';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
@@ -203,6 +203,7 @@ export class Game {
       loadArcherAnimations(),
       loadGruntAnimations(),
       loadJuggernautAnimations(),
+      loadCthulhuAnimations(),
       loadVendorAnimations(),
       loadStashAnimations(),
       loadItemIcons(),

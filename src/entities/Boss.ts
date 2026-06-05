@@ -3,7 +3,7 @@ import { Sprites } from '../rendering/Sprites';
 import { Projectile } from './Projectile';
 import { Rect, resolveCollision } from '../world/Room';
 import { Logger } from '../core/Logger';
-import { createReaperSprite, playReaperAnimation, createGolemSprite, playGolemAnimation, ReaperAnimName, GolemAnimName } from '../rendering/SpriteAnimator';
+import { createReaperSprite, playReaperAnimation, createGolemSprite, playGolemAnimation, createCthulhuSprite, playCthulhuAnimation, ReaperAnimName, GolemAnimName, CthulhuAnimName } from '../rendering/SpriteAnimator';
 
 export type BossId = 'golem' | 'reaper' | 'cthulhu';
 
@@ -79,6 +79,8 @@ export class Boss {
       this.sprite = createReaperSprite();
     } else if (bossId === 'golem') {
       this.sprite = createGolemSprite();
+    } else if (bossId === 'cthulhu') {
+      this.sprite = createCthulhuSprite();
     } else {
       this.sprite = new Sprite(cfg.sprite);
     }
@@ -86,7 +88,7 @@ export class Boss {
     if (bossId === 'reaper') {
       this.sprite.scale.set(1.44);
     } else if (bossId === 'cthulhu') {
-      this.sprite.scale.set(1.5);
+      this.sprite.scale.set(2.0);
     } else {
       this.sprite.scale.set(1.25);
     }
@@ -100,11 +102,13 @@ export class Boss {
     }
   }
 
-  playAnim(name: ReaperAnimName | GolemAnimName, loop = true) {
+  playAnim(name: ReaperAnimName | GolemAnimName | CthulhuAnimName, loop = true) {
     if (this.bossId === 'reaper') {
       playReaperAnimation(this.sprite as AnimatedSprite, name as ReaperAnimName, loop);
     } else if (this.bossId === 'golem') {
       playGolemAnimation(this.sprite as AnimatedSprite, name as GolemAnimName, loop);
+    } else if (this.bossId === 'cthulhu') {
+      playCthulhuAnimation(this.sprite as AnimatedSprite, name as CthulhuAnimName, loop);
     }
   }
 
@@ -276,6 +280,15 @@ export class Boss {
       this.y += moveY;
     }
 
+    // Animation: walk when moving, idle when stationary
+    if (!this.attacking) {
+      if (dist > 120) {
+        this.playAnim('walk');
+      } else {
+        this.playAnim('idle');
+      }
+    }
+
     if (this.aiTimer <= 0 && !this.attacking) {
       this.attackCooldown = 35;
 
@@ -283,6 +296,7 @@ export class Boss {
 
       // Tentacle Swipe (phase 1+)
       available.push(() => {
+        this.playAnim('1atk', false);
         this.prepareTelegraph({
           type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
           radius: 100 + this.phase * 20, duration: 40, maxDuration: 40, color: 0x66ffaa,
@@ -292,6 +306,7 @@ export class Boss {
       // Grasping Reach (phase 2+)
       if (this.phase >= 1) {
         available.push(() => {
+          this.playAnim('2atk', false);
           const graspDist = Math.min(dist, 400 + this.phase * 50);
           const graspAngle = Math.atan2(dy, dx);
           this.prepareTelegraph({
@@ -311,6 +326,7 @@ export class Boss {
     // Phase 4: double swipe chance
     if (this.phase >= 3 && !this.attacking && Math.random() < 0.015) {
       if (this.aiTimer <= 0) {
+        this.playAnim('1atk', false);
         this.prepareTelegraph({
           type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
           radius: 120, duration: 25, maxDuration: 25, color: 0x66ffaa,
