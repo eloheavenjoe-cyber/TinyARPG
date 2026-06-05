@@ -1,0 +1,100 @@
+import { Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
+import { Sprites } from '../rendering/Sprites';
+import { Logger } from '../core/Logger';
+
+export type BushState = 'hidden' | 'rustling' | 'destroyed';
+
+export class SecretBush {
+  container: Container;
+  x: number;
+  y: number;
+  state: BushState = 'hidden';
+  private sprite: Sprite;
+  private glowOverlay: Graphics;
+  private sparkleText: Text;
+  private wobbleTimer = 0;
+  private glowTimer = 0;
+  private onDestroyed: () => void;
+
+  constructor(x: number, y: number, onDestroyed: () => void) {
+    this.x = x;
+    this.y = y;
+    this.onDestroyed = onDestroyed;
+    this.container = new Container();
+
+    this.sprite = new Sprite(Sprites.bush);
+    this.sprite.anchor.set(0.5, 1);
+    this.sprite.x = 0;
+    this.sprite.y = 0;
+    this.sprite.tint = 0x559944;
+    this.container.addChild(this.sprite);
+
+    this.glowOverlay = new Graphics();
+    this.glowOverlay.visible = false;
+    this.container.addChild(this.glowOverlay);
+
+    this.sparkleText = new Text('☆', new TextStyle({
+      fontFamily: 'monospace', fontSize: 16, fill: '#ffff88',
+    }));
+    this.sparkleText.anchor.set(0.5, 1);
+    this.sparkleText.y = -24;
+    this.sparkleText.visible = false;
+    this.container.addChild(this.sparkleText);
+
+    this.container.x = x;
+    this.container.y = y;
+  }
+
+  checkClick(mouseWX: number, mouseWY: number, clicked: boolean): boolean {
+    const dist = Math.hypot(mouseWX - this.x, mouseWY - this.y);
+    const inRange = dist < 24;
+    if (this.state === 'hidden') {
+      if (inRange && clicked) {
+        this.state = 'rustling';
+        this.sparkleText.visible = true;
+        this.glowOverlay.visible = true;
+        this.wobbleTimer = 0;
+        this.glowTimer = 0;
+        Logger.log('system', 'Bush rustling! Click again to destroy');
+        return true;
+      }
+    } else if (this.state === 'rustling') {
+      if (clicked) {
+        this.state = 'destroyed';
+        this.sparkleText.visible = false;
+        this.sprite.visible = false;
+        this.glowOverlay.visible = false;
+        this.onDestroyed();
+        Logger.log('system', 'Bush destroyed! Hidden door revealed');
+        return true;
+      }
+    }
+    return false;
+  }
+
+  update(dt: number, playerX: number, playerY: number) {
+    if (this.state === 'rustling') {
+      this.wobbleTimer += dt * 0.003;
+      this.sprite.x = Math.sin(this.wobbleTimer * 3) * 2;
+
+      this.glowTimer += dt * 0.003;
+      this.glowOverlay.clear();
+      const alpha = 0.3 + Math.sin(this.glowTimer * 4) * 0.15;
+      this.glowOverlay.beginFill(0xffff88, alpha);
+      this.glowOverlay.drawCircle(0, -12, 14);
+      this.glowOverlay.endFill();
+
+      const dist = Math.hypot(playerX - this.x, playerY - this.y);
+      if (dist > 200) {
+        this.state = 'hidden';
+        this.sparkleText.visible = false;
+        this.glowOverlay.visible = false;
+        this.sprite.x = 0;
+      }
+    }
+  }
+
+  destroy() {
+    this.container.destroy({ children: true });
+  }
+}
