@@ -726,6 +726,12 @@ export class Game {
       this.subTreeScreen.destroy();
       this.subTreeScreen = undefined;
     }
+    if (this.characterScreen) {
+      this.app.stage.removeChild(this.characterScreen.container);
+      this.characterScreen.destroy();
+      this.characterScreen = undefined;
+    }
+    this.characterScreenOpen = false;
     if (this.deathScreen) {
       this.app.stage.removeChild(this.deathScreen.container);
       this.deathScreen.destroy();
