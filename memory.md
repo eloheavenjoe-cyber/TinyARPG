@@ -408,6 +408,17 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Spawn zone block removed**: `template.spawnZones` removed from decoration blocked rects so trees spread across the entire room instead of only the 256px perimeter margin
 - **Accent tiles**: darkened with `tint = 0x999999` to match the floor
 
+### Phase 10c — Pixel-Art Stone Arch Doors (completed 2026-06-05)
+- Yellow-bordered door rects replaced with clean stone arches drawn programmatically via PixiJS Graphics
+- **Architecture**: Outer rectangle `(x-pW, y-archH, w+2pW, h+archH)` with a `beginHole`/`endHole` cutout for the opening. Opening uses a cubic bezier curve for a smooth arch shape.
+- **Dimensions**: 24px pillars, 36px arch top height, smooth bezier arch from `(x+w, y)` to `(x, y)` with control points at `y-archH`
+- **Style**: Medium gray stone (`0x8a8a8a`) with 1px outline (`0x5a5a5a`), subtle horizontal block lines every 20px (pillars) and 14px (arch top)
+- **No dark fill**: The opening shows the floor behind (no transparent black box)
+- **Moss**: 4 small green circle accents at pillar bases and arch corners
+- **Vines**: 2 thin hanging lines from the arch top
+- **Label**: "Enter Town" for hub-bound doors, "▶ Exit [zone]" otherwise, positioned above the arch
+- **Per-door variation**: Moss/vine positions use deterministic offsets based on door position
+
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
