@@ -130,14 +130,14 @@ export const RANGER_MAIN: SkillDef[] = [
     id: 'quick_shot',
     name: 'Quick Shot',
     description: 'Fast single projectile toward cursor',
-    category: 'main', classType: 'ranger', manaCost: 6, cooldown: 8, range: 500, damageMult: 0.8,
+    category: 'main', classType: 'ranger', manaCost: 6, cooldown: 8, range: 650, damageMult: 0.8,
     effectType: 'projectile',
   },
   {
     id: 'multi_shot',
     name: 'Multi Shot',
     description: 'Fire 8 projectiles in all directions',
-    category: 'main', classType: 'ranger', manaCost: 14, cooldown: 35, range: 300, damageMult: 0.5,
+    category: 'main', classType: 'ranger', manaCost: 14, cooldown: 35, range: 390, damageMult: 0.5,
     effectType: 'projectile_spread', value: 8,
   },
   {
@@ -151,7 +151,7 @@ export const RANGER_MAIN: SkillDef[] = [
     id: 'snipe',
     name: 'Snipe',
     description: 'High damage piercing shot',
-    category: 'main', classType: 'ranger', manaCost: 12, cooldown: 40, range: 600, damageMult: 2.5,
+    category: 'main', classType: 'ranger', manaCost: 12, cooldown: 40, range: 780, damageMult: 2.5,
     effectType: 'projectile_pierce',
   },
 ];
@@ -182,7 +182,7 @@ export const RANGER_SUPPORT: SkillDef[] = [
     id: 'poison_arrow',
     name: 'Poison Arrow',
     description: 'A poisoned arrow dealing damage over time',
-    category: 'support', classType: 'ranger', manaCost: 8, cooldown: 120, range: 400, damageMult: 0.4,
+    category: 'support', classType: 'ranger', manaCost: 8, cooldown: 120, range: 520, damageMult: 0.4,
     effectType: 'debuff', duration: 240, value: 3,
   },
   {
@@ -217,14 +217,14 @@ export const RANGER_SUPPORT: SkillDef[] = [
     id: 'spread_shot',
     name: 'Spread Shot',
     description: 'Fire 5 projectiles in a forward cone',
-    category: 'support', classType: 'ranger', manaCost: 10, cooldown: 30, range: 350, damageMult: 0.5,
+    category: 'support', classType: 'ranger', manaCost: 10, cooldown: 30, range: 455, damageMult: 0.5,
     effectType: 'projectile_spread', angle: 30, value: 5,
   },
   {
     id: 'barrage',
     name: 'Barrage',
     description: 'Rapidly fire 3 projectiles forward',
-    category: 'support', classType: 'ranger', manaCost: 8, cooldown: 20, range: 450, damageMult: 0.6,
+    category: 'support', classType: 'ranger', manaCost: 8, cooldown: 20, range: 585, damageMult: 0.6,
     effectType: 'projectile', value: 3,
   },
 ];
