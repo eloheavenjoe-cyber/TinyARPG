@@ -2,6 +2,7 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Player } from '../entities/Player';
 import { Logger } from '../core/Logger';
 
+const SCREEN_W = 1920;
 const SCREEN_H = 1080;
 
 export class HUD {
@@ -36,15 +37,15 @@ export class HUD {
 
     const panelY = SCREEN_H - this.PANEL_H - this.BOTTOM_MARGIN;
     const left = 18;
-    const centerX = 960;
+    const centerX = SCREEN_W / 2;
 
     this.panel = new Graphics();
     this.panel.beginFill(0x1a1a28, 0.92);
-    this.panel.drawRoundedRect(0, panelY, 1920, this.PANEL_H, 6);
+    this.panel.drawRoundedRect(0, panelY, SCREEN_W, this.PANEL_H, 6);
     this.panel.endFill();
     this.panel.lineStyle(1, 0x8a7a3a, 0.6);
     this.panel.moveTo(0, panelY);
-    this.panel.lineTo(1920, panelY);
+    this.panel.lineTo(SCREEN_W, panelY);
 
     const hpY = panelY + 12;
     const barH = 22;
@@ -148,7 +149,7 @@ export class HUD {
     const barH = 22;
     const mpH = 18;
 
-    const hpTarget = player.health / player.maxHealth;
+    const hpTarget = player.maxHealth > 0 ? player.health / player.maxHealth : 1;
     if (hpTarget >= 0) {
       this.hpDisplayed += (hpTarget - this.hpDisplayed) * Math.min(1, 0.15 * dt);
     }
@@ -171,7 +172,7 @@ export class HUD {
     this.hpFill.endFill();
     this.hpLabel.text = `${Math.ceil(player.health)} / ${player.maxHealth}`;
 
-    const mpTarget = player.mana / player.maxMana;
+    const mpTarget = player.maxMana > 0 ? player.mana / player.maxMana : 1;
     if (mpTarget >= 0) {
       this.mpDisplayed += (mpTarget - this.mpDisplayed) * Math.min(1, 0.15 * dt);
     }
