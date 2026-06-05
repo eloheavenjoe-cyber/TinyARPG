@@ -343,29 +343,18 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Magic Find affixes: prefix only, 3 tiers (8-15%, 16-25%, 26-40%)
 - Item Quantity affixes: suffix only, 3 tiers (8-12%, 13-20%, 21-30%)
 
-## Current Development — Monster Rarity + Game Balance (in progress, 2026-06-05)
+## Current Development — (completed 2026-06-05)
 
-Design spec written: `docs/superpowers/specs/2026-06-05-monster-rarity-and-balance-design.md`
-Plan pending. Items:
+### Phase 7 — Monster Rarity & Game Balance (completed 2026-06-05)
 
-### Monster Rarity System
-- Normal / Magic (2 mods) / Rare (3-5 mods) enemy variants
-- Mod ideas: Hasted, Goliath, Proximal Tangibility (shield bubble), Vampiric, Volatile, Frost Aura, etc.
-- Higher rarity → more loot drops
-
-### Game Balance
-- Monsters die too easily (1-2 shot in tutorial, should be 3-5)
-- Adjust monster HP scaling across zones
-- May need to adjust player damage formula (currently hardcoded `25 * skill.damageMult` with no stat/gear scaling)
-
-### Completed Mods (in this session)
-- Save/load system + escape menu (Phase 5k)
-- Grunt skeleton sprites (Phase 6)
-- Juggernaut directional orc sprites (Phase 6)
-- Enemy size adjustments (grunt/jugg +30%, archer +20%, cultist +15%)
-- Ranger dodge roll animation (Phase 5l)
-- Hub NPC interactions — vendor buy/sell, stash deposit/withdraw (Phase 5m)
-- Ranger projectile upgrades — speed, range, VFX, Rain of Arrows redesign (Phase 5n)
+- **Rarity system**: 50% normal, 35% magic (2 mods), 15% rare (3 mods). Rolled during ZoneManager.spawnEnemies().
+- **4 core mods**: Hasted (+50% move/atk speed, speed lines VFX), Goliath (+100% HP, +30% size, +50% XP), Frost Aura (25% slow to player in 150px radius, blue ring VFX), Volatile (explodes on death for 50% max HP AoE damage, red pulse VFX).
+- **Visual identification**: Magic/rare enemies get nameplates with mod names and rarity color (blue/yellow), +10%/+20% sprite scale.
+- **Loot multipliers**: Magic = 2× loot quantity, Rare = 3× loot quantity.
+- **Damage formula**: Base damage 20 (from 25) × skill.damageMult × (1 + primaryStat × 0.01). STR→warrior, DEX→ranger, INT→monk. Equipment meleeDmgPct/projectileDmgPct multiplicatively stacked. Flat cold/lightning from equipment added on top.
+- **Zone HP multipliers**: Tutorial 1.0×, Forest 1.5×, Desert 2.5×, Ice 4.0×.
+- **Monster density**: +10% across all zones.
+- **Enemy size changes**: Grunt hitbox 36→47 (+30%), sprite 1.3→1.7. Juggernaut hitbox 55→72 (+30%), sprite 1.7→2.2. Cultist hitbox 32→27 (-15%), sprite 1.15→1.0.
 
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
@@ -381,7 +370,6 @@ Plan pending. Items:
 - Weapon swapping not implemented (monk uses all techniques, no weapon slots for stances)
 - Enemy sprite files must be tracked in git (case-sensitive on Linux deployment)
 - Golem was missing from git (PNGs existed locally but weren't committed)
-- No stat/gear scaling on player damage (hardcoded `25 * skill.damageMult`)
 - Execute passive (3.0x dmg, 20% threshold) defined in SkillDefs but not wired into damage
 
 ### Phase 5j — Room Expansion & Camera System (completed 2026-06-05)
