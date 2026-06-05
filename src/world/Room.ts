@@ -312,12 +312,9 @@ export class Room {
   }
 
   private renderRoad() {
-    const tc = TILE_CONFIGS[this.biomeId];
-    if (!tc || !this.playerStart || this.doors.length === 0) return;
-    const roadTx = tileTextures['road'];
-    if (!roadTx) return;
+    if (!this.playerStart || this.doors.length === 0) return;
 
-    const roadWidth = 96;
+    const roadWidth = 64;
     const halfRoad = roadWidth / 2;
 
     for (const door of this.doors) {
@@ -331,21 +328,36 @@ export class Room {
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 1) continue;
 
-      const steps = Math.floor(dist / TILE_SIZE);
-      for (let i = 0; i <= steps; i++) {
+      const road = new Graphics();
+
+      // Main dirt path — thick line from start to door
+      road.lineStyle(roadWidth, 0x8a7a5a, 0.8);
+      road.moveTo(sx, sy);
+      road.lineTo(doorCx, doorCy);
+
+      // Darker edge borders (perpendicular offset for any angle)
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      road.lineStyle(3, 0x6a5a3a, 0.5);
+      road.moveTo(sx + nx * (halfRoad - 8), sy + ny * (halfRoad - 8));
+      road.lineTo(doorCx + nx * (halfRoad - 8), doorCy + ny * (halfRoad - 8));
+      road.moveTo(sx - nx * (halfRoad - 8), sy - ny * (halfRoad - 8));
+      road.lineTo(doorCx - nx * (halfRoad - 8), doorCy - ny * (halfRoad - 8));
+
+      // Scatter darker pebbles along the path
+      const steps = Math.floor(dist / 32);
+      for (let i = 0; i < steps; i++) {
         const t = i / steps;
         const px = sx + dx * t;
         const py = sy + dy * t;
-
-        for (let row = -Math.floor(roadWidth / TILE_SIZE / 2); row <= Math.floor(roadWidth / TILE_SIZE / 2); row++) {
-          const tileX = px + row * TILE_SIZE - TILE_SIZE / 2;
-          const tileY = py - TILE_SIZE / 2;
-          const s = new Sprite(roadTx);
-          s.x = Math.round(tileX / TILE_SIZE) * TILE_SIZE;
-          s.y = Math.round(tileY / TILE_SIZE) * TILE_SIZE;
-          this.container.addChild(s);
-        }
+        const offX = (Math.random() - 0.5) * (roadWidth - 16);
+        const size = 2 + Math.random() * 4;
+        road.beginFill(0x6a5a3a, 0.3 + Math.random() * 0.3);
+        road.drawRect(px + offX - size / 2, py - size / 2, size, size);
+        road.endFill();
       }
+
+      this.container.addChild(road);
     }
   }
 }
