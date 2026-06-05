@@ -15,11 +15,21 @@ export class CombatTextManager {
     this.container = new Container();
   }
 
-  showDamage(x: number, y: number, amount: number, color: number = 0xffffff) {
+  showDamage(x: number, y: number, amount: number, color: number = 0xffffff, rarityColor?: number, damageType?: 'cold' | 'lightning') {
+    let finalColor = rarityColor ?? color;
+
+    if (damageType === 'cold') {
+      finalColor = this.blendColors(finalColor, 0x4488ff, 0.4);
+    } else if (damageType === 'lightning') {
+      finalColor = this.blendColors(finalColor, 0xffdd44, 0.4);
+    }
+
+    const size = Math.min(22, Math.max(14, 12 + Math.floor(amount / 10)));
+
     const t = new Text(`${amount}`, new TextStyle({
       fontFamily: 'monospace',
-      fontSize: 18,
-      fill: color,
+      fontSize: size,
+      fill: finalColor,
       stroke: 0x000000,
       strokeThickness: 3,
       fontWeight: 'bold',
@@ -30,6 +40,15 @@ export class CombatTextManager {
 
     this.container.addChild(t);
     this.items.push({ text: t, vy: -1.8, life: 55, maxLife: 55 });
+  }
+
+  private blendColors(a: number, b: number, ratio: number): number {
+    const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
+    const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+    const r = Math.round(ar + (br - ar) * ratio);
+    const g = Math.round(ag + (bg - ag) * ratio);
+    const bl = Math.round(ab + (bb - ab) * ratio);
+    return (r << 16) | (g << 8) | bl;
   }
 
   update(dt: number) {
