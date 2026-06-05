@@ -30,6 +30,11 @@ export type SerializedInventorySlot =
   | { kind: 'orb'; orbId: string; count: number }
   | null;
 
+export interface StashTab {
+  name: string;
+  slots: (SerializedInventorySlot | null)[];
+}
+
 export interface SaveData {
   version: number;
   timestamp: number;
@@ -61,6 +66,9 @@ export interface SaveData {
     passiveTree: {
       allocatedNodeIds: string[];
     };
+  };
+  stashData?: {
+    tabs: StashTab[];
   };
 }
 

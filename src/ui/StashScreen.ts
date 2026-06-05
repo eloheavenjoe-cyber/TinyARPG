@@ -1,5 +1,6 @@
 import { Container, Text, TextStyle, Graphics } from 'pixi.js';
 import { InventorySlot } from '../entities/Player';
+import { StashTab } from '../core/SaveManager';
 import { Logger } from '../core/Logger';
 
 const SLOT = 50;
@@ -15,14 +16,14 @@ export class StashScreen {
   private onRenameTab: ((tabIndex: number, name: string) => void) | null = null;
   private onClose: (() => void) | null = null;
   private activeTab = 0;
-  private tabs: any[];
+  private tabs: StashTab[];
   private tabButtons: Container[] = [];
   private stashSlotContainers: Container[] = [];
   private inventory: InventorySlot[] = [];
 
   constructor(
     screenWidth: number, screenHeight: number,
-    tabs: any[],
+    tabs: StashTab[],
     inventory: InventorySlot[],
   ) {
     this.tabs = tabs;
