@@ -20,6 +20,7 @@ import { Chest } from '../entities/Chest';
 import { Breakable } from '../entities/Breakable';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
+import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
 import { generateItemDrop, generateOrbDrop, GeneratedItem } from './ItemGenerator';
 import { Slot, ITEM_BASES, AFFIXES } from './ItemDefs';
@@ -126,6 +127,8 @@ export class Game {
   private saveSlotScreen?: SaveSlotScreen;
   private settingsPlaceholder?: SettingsPlaceholder;
   private wasEscapeKeyDown = false;
+  private wasKKeyDown = false;
+  private subTreeScreen?: SkillSubTreeScreen;
   private vendorOpen = false;
   private stashOpen = false;
   private vendorScreen?: VendorScreen;
@@ -308,6 +311,19 @@ export class Game {
       this.player.passiveTree.allocate(nodeId);
     }
 
+    // Restore sub skill tree allocations
+    if (data.player.skillSubTrees) {
+      this.player.skillSubPoints = data.player.skillSubPoints || 0;
+      for (const [abilityId, nodeIds] of Object.entries(data.player.skillSubTrees)) {
+        const tree = this.player.skillSubTrees.get(abilityId);
+        if (tree) {
+          for (const nid of nodeIds) {
+            if (tree.canAllocate(nid)) tree.allocate(nid);
+          }
+        }
+      }
+    }
+
     // Restore inventory
     this.player.inventory = this.deserializeInventory(data.player.inventory);
 
@@ -392,6 +408,14 @@ export class Game {
         passiveTree: {
           allocatedNodeIds: [...p.passiveTree.allocated],
         },
+        skillSubPoints: p.skillSubPoints,
+        skillSubTrees: (() => {
+          const result: Record<string, string[]> = {};
+          for (const [id, tree] of p.skillSubTrees) {
+            result[id] = [...tree.allocated];
+          }
+          return result;
+        })(),
       },
       stashData: {
         tabs: this.stashTabs.map(t => ({
@@ -627,6 +651,11 @@ export class Game {
     if (this.escapeMenuOpen) this.toggleEscapeMenu();
     if (this.inventoryOpen) this.toggleInventory();
     if (this.treeOpen) this.toggleTree();
+    if (this.subTreeScreen) {
+      this.app.stage.removeChild(this.subTreeScreen.container);
+      this.subTreeScreen.destroy();
+      this.subTreeScreen = undefined;
+    }
     if (this.deathScreen) {
       this.app.stage.removeChild(this.deathScreen.container);
       this.deathScreen.destroy();
@@ -1121,7 +1150,9 @@ export class Game {
             this.closeVendor();
           } else if (this.stashOpen) {
             this.closeStash();
-          } else if (!this.inventoryOpen && !this.treeOpen) {
+          } else if (this.subTreeScreen) {
+            this.toggleSubTree();
+          } else if (!this.inventoryOpen && !this.treeOpen && !this.subTreeScreen) {
             this.toggleEscapeMenu();
           } else if (this.inventoryOpen) {
             this.toggleInventory();
@@ -1140,6 +1171,9 @@ export class Game {
         this.escapeMenu?.update();
         this.vendorScreen?.update();
         this.stashScreen?.update();
+        return;
+      }
+      if (this.subTreeScreen) {
         return;
       }
 
@@ -1180,6 +1214,14 @@ export class Game {
         const pDown = this.input.isKeyDown('KeyP');
         if (pDown && !this.wasPKeyDown) this.toggleTree();
         this.wasPKeyDown = pDown;
+
+        const kDown = this.input.isKeyDown('KeyK');
+        if (kDown && !this.wasKKeyDown) {
+          if (!this.treeOpen && !this.inventoryOpen && !this.escapeMenuOpen && !this.vendorOpen && !this.stashOpen) {
+            this.toggleSubTree();
+          }
+        }
+        this.wasKKeyDown = kDown;
 
         const iDown = this.input.isKeyDown('KeyI');
         if (iDown && !this.wasIKeyDown) this.toggleInventory();
@@ -2382,6 +2424,34 @@ export class Game {
         this.passiveTreeScreen = undefined;
       }
     }
+  }
+
+  private toggleSubTree() {
+    if (!this.player) return;
+    if (this.subTreeScreen) {
+      this.app.stage.removeChild(this.subTreeScreen.container);
+      this.subTreeScreen.destroy();
+      this.subTreeScreen = undefined;
+      this.app.ticker.started = true;
+      return;
+    }
+    const skill = this.player.skills.mainAbility;
+    if (!skill?.subTreeId) return;
+    const tree = this.player.skillSubTrees.get(skill.subTreeId);
+    if (!tree) return;
+
+    this.subTreeScreen = new SkillSubTreeScreen(
+      SCREEN_WIDTH, SCREEN_HEIGHT,
+      tree, this.player.skillSubPoints,
+    );
+    this.subTreeScreen.onAllocateCallback((id: string) => {
+      if (this.player && tree.allocate(id)) {
+        this.player.skillSubPoints--;
+        this.subTreeScreen?.update(this.input, tree, this.player.skillSubPoints);
+      }
+    });
+    this.app.stage.addChild(this.subTreeScreen.container);
+    this.app.ticker.started = true;
   }
 
   private toggleInventory() {

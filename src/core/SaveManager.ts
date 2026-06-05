@@ -71,6 +71,8 @@ export interface SaveData {
     passiveTree: {
       allocatedNodeIds: string[];
     };
+    skillSubTrees?: Record<string, string[]>;
+    skillSubPoints?: number;
   };
   stashData?: {
     tabs: SerializedStashTab[];
