@@ -15,6 +15,7 @@ export interface SkillDef {
   radius?: number;
   duration?: number;
   value?: number;
+  subTreeId?: string;
 }
 
 const D = (Math.PI / 180);
@@ -131,28 +132,28 @@ export const RANGER_MAIN: SkillDef[] = [
     name: 'Quick Shot',
     description: 'Fast single projectile toward cursor',
     category: 'main', classType: 'ranger', manaCost: 6, cooldown: 8, range: 650, damageMult: 0.8,
-    effectType: 'projectile',
+    effectType: 'projectile', subTreeId: 'quick_shot',
   },
   {
     id: 'multi_shot',
     name: 'Multi Shot',
     description: 'Fire 8 projectiles in all directions',
     category: 'main', classType: 'ranger', manaCost: 14, cooldown: 35, range: 390, damageMult: 0.5,
-    effectType: 'projectile_spread', value: 8,
+    effectType: 'projectile_spread', value: 8, subTreeId: 'multi_shot',
   },
   {
     id: 'rain_of_arrows',
     name: 'Rain of Arrows',
     description: 'Arrows rain in a target area',
     category: 'main', classType: 'ranger', manaCost: 16, cooldown: 50, range: 350, damageMult: 0.6,
-    effectType: 'aoe_target', radius: 100,
+    effectType: 'aoe_target', radius: 100, subTreeId: 'rain_of_arrows',
   },
   {
     id: 'snipe',
     name: 'Snipe',
     description: 'High damage piercing shot',
     category: 'main', classType: 'ranger', manaCost: 12, cooldown: 40, range: 780, damageMult: 2.5,
-    effectType: 'projectile_pierce',
+    effectType: 'projectile_pierce', subTreeId: 'snipe',
   },
 ];
 

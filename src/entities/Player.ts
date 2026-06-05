@@ -4,6 +4,7 @@ import { InputManager } from '../core/InputManager';
 import { createWarriorSprite, createRangerSprite, createMonkSprite, playMonkAnimation, MonkAnimName, isMonkLoaded, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
 import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
+import { SkillSubTree, RANGER_SUB_TREES } from '../core/SkillSubTree';
 import { PassiveTree } from '../core/PassiveTree';
 import { computeStats } from '../core/StatSystem';
 import { Slot, AFFIXES } from '../core/ItemDefs';
@@ -50,6 +51,8 @@ export class Player {
   attrs = { str: 0, dex: 0, int: 0 };
   unspentAttrPoints = 0;
   passivePoints = 0;
+  skillSubTrees: Map<string, SkillSubTree> = new Map();
+  skillSubPoints = 0;
   inventory: InventorySlot[] = new Array(30).fill(null);
   equipment: Record<Slot, GeneratedItem | null> = {
     weapon: null, body: null, helmet: null, boots: null,
@@ -91,6 +94,11 @@ export class Player {
       this.sprite = s;
     }
     this.skills = new SkillManager(classType);
+    if (classType === 'ranger') {
+      for (const [id, data] of Object.entries(RANGER_SUB_TREES)) {
+        this.skillSubTrees.set(id, new SkillSubTree(id, data));
+      }
+    }
     this.updateSprite();
   }
 
@@ -393,6 +401,7 @@ export class Player {
       this.level++;
       this.passivePoints++;
       this.unspentAttrPoints += 3;
+      if (this.level % 4 === 0) this.skillSubPoints++;
       leveled = true;
       this.recalcStats();
       Logger.log('combat', `Level up! Now level ${this.level} (${this.passivePoints} passive, ${this.unspentAttrPoints} attr points)`);
