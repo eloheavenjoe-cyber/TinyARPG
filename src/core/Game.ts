@@ -815,6 +815,11 @@ export class Game {
   }
 
   private showSaveSlotScreen(mode: 'load' | 'save') {
+    if (this.mainMenu) {
+      this.app.stage.removeChild(this.mainMenu.container);
+      this.mainMenu.destroy();
+      this.mainMenu = undefined;
+    }
     this.saveSlotScreen = new SaveSlotScreen(SCREEN_WIDTH, SCREEN_HEIGHT, mode);
     this.saveSlotScreen.onSelectCallback((index: number) => {
       if (this.saveSlotScreen) {

@@ -249,6 +249,7 @@ export class SaveSlotScreen {
     bg.beginFill(0x0a0a1a, 0.95);
     bg.drawRect(0, 0, this.screenWidth, this.screenHeight);
     bg.endFill();
+    bg.eventMode = 'static';
     this.container.addChild(bg);
 
     const title = new Text('Load Game', new TextStyle({
