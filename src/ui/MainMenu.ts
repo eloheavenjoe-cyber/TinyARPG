@@ -1,4 +1,4 @@
-import { Container, Text, TextStyle, Graphics, Sprite, Texture, BaseTexture } from 'pixi.js';
+import { Container, Text, TextStyle, Graphics, Sprite, Texture } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Logger } from '../core/Logger';
 
@@ -21,11 +21,8 @@ export class MainMenu {
     this.screenHeight = screenHeight;
     this.container = new Container();
 
-    const img = new Image();
-    img.src = 'menu-bg.png';
-    const baseTexture = new BaseTexture(img);
-    const bgTexture = new Texture(baseTexture);
-    baseTexture.scaleMode = 0;
+    const bgTexture = Texture.from('menu-bg.png');
+    bgTexture.baseTexture.scaleMode = 0;
 
     const scaleX = screenWidth / 576;
     const scaleY = screenHeight / 324;

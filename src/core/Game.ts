@@ -531,7 +531,11 @@ export class Game {
 
   private exitToMenu() {
     this.saveGame();
-    this.cleanupGameSession();
+    try {
+      this.cleanupGameSession();
+    } catch (e) {
+      Logger.log('game', `Cleanup error during exit: ${e}`);
+    }
     this.currentSaveSlot = null;
     this.autoSaveTimer = 0;
     this.showMainMenu();
@@ -698,23 +702,21 @@ export class Game {
       this.bossHpBar = undefined;
     }
     this.bossSpawned = false;
+    this.enemies = [];
+    for (const p of this.projectiles) if (p.alive) { p.destroy(); }
+    this.projectiles = [];
+    this.itemDrops = [];
+    this.rainZones = [];
+    this.vfx = [];
+    this.dash = null;
+    this.waveCooldown = 0;
+    this.zoneManager = new ZoneManager();
     if (this.gameContainer) {
       this.app.stage.removeChild(this.gameContainer);
       this.gameContainer.destroy({ children: true });
       this.gameContainer = undefined;
     }
     this.devConsole.hide();
-    this.enemies = [];
-    for (const p of this.projectiles) { p.destroy(); }
-    this.projectiles = [];
-    this.itemDrops = [];
-    this.vfx = [];
-    this.waveCooldown = 0;
-    this.zoneManager = new ZoneManager();
-    if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
-    this.dash = null;
-    this.rainZones = [];
-    this.chillZones = [];
     this.combatText.destroy();
     this.combatText = new CombatTextManager();
     this.player = undefined;
