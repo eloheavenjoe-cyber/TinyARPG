@@ -2330,7 +2330,7 @@ export class Game {
     }
 
     this.tryPickupItems();
-    this.hud?.update(this.player);
+    this.hud?.update(this.player, dt);
     this.hud?.setZoneName(this.zoneManager.state?.config?.name ?? '');
     this.skillBar?.update(this.player.skills);
     if (!this.player.alive) this.showDeathScreen();

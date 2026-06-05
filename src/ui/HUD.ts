@@ -2,6 +2,8 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Player } from '../entities/Player';
 import { Logger } from '../core/Logger';
 
+const SCREEN_H = 1080;
+
 export class HUD {
   container: Container;
 
@@ -9,115 +11,213 @@ export class HUD {
   private hpBg: Graphics;
   private hpFill: Graphics;
   private hpLabel: Text;
+  private hpDisplayed = 0;
   private mpBg: Graphics;
   private mpFill: Graphics;
+  private mpLabel: Text;
+  private mpDisplayed = 0;
   private goldText: Text;
   private levelText: Text;
   private xpBg: Graphics;
   private xpFill: Graphics;
   private zoneText: Text;
+  private buffContainer: Container = new Container();
+
+  private readonly BAR_W = 200;
+  private readonly BAR_GAP = 8;
+  private readonly PANEL_H = 100;
+  private readonly BOTTOM_MARGIN = 6;
+
+  private pulseTimer = 0;
 
   constructor() {
     this.container = new Container();
     Logger.log('ui', 'HUD constructor called');
 
-    const left = 18, top = 1030, barW = 220, barH = 22, gap = 8;
-    const panelH = barH * 2 + gap + 52;
+    const panelY = SCREEN_H - this.PANEL_H - this.BOTTOM_MARGIN;
+    const left = 18;
+    const centerX = 960;
 
     this.panel = new Graphics();
-    this.panel.beginFill(0x000000, 0.55);
-    this.panel.drawRoundedRect(left - 8, top - 6, barW + 16, panelH, 6);
+    this.panel.beginFill(0x1a1a28, 0.92);
+    this.panel.drawRoundedRect(0, panelY, 1920, this.PANEL_H, 6);
     this.panel.endFill();
+    this.panel.lineStyle(1, 0x8a7a3a, 0.6);
+    this.panel.moveTo(0, panelY);
+    this.panel.lineTo(1920, panelY);
+
+    const hpY = panelY + 12;
+    const barH = 22;
 
     this.hpBg = new Graphics();
     this.hpBg.beginFill(0x111111, 0.6);
-    this.hpBg.drawRect(0, 0, barW, barH);
+    this.hpBg.drawRoundedRect(0, 0, this.BAR_W, barH, 3);
     this.hpBg.endFill();
+    this.hpBg.lineStyle(1, 0x8a7a3a, 0.4);
+    this.hpBg.drawRoundedRect(0, 0, this.BAR_W, barH, 3);
     this.hpBg.x = left;
-    this.hpBg.y = top;
+    this.hpBg.y = hpY;
 
     this.hpFill = new Graphics();
     this.hpFill.x = left;
-    this.hpFill.y = top;
+    this.hpFill.y = hpY;
 
-    const labelStyle = new TextStyle({ fontFamily: 'monospace', fontSize: 11, fill: '#ffffff' });
+    const labelStyle = new TextStyle({
+      fontFamily: 'monospace', fontSize: 11, fill: '#ffffff',
+      stroke: '#000000', strokeThickness: 2,
+    });
     this.hpLabel = new Text('', labelStyle);
-    this.hpLabel.x = left + 4;
-    this.hpLabel.y = top + 5;
+    this.hpLabel.anchor.set(0.5, 0.5);
+    this.hpLabel.x = left + this.BAR_W / 2;
+    this.hpLabel.y = hpY + barH / 2 + 1;
+
+    const mpY = hpY + barH + this.BAR_GAP;
+    const mpH = 18;
 
     this.mpBg = new Graphics();
     this.mpBg.beginFill(0x111111, 0.6);
-    this.mpBg.drawRect(0, 0, barW, 18);
+    this.mpBg.drawRoundedRect(0, 0, this.BAR_W, mpH, 3);
     this.mpBg.endFill();
+    this.mpBg.lineStyle(1, 0x8a7a3a, 0.4);
+    this.mpBg.drawRoundedRect(0, 0, this.BAR_W, mpH, 3);
     this.mpBg.x = left;
-    this.mpBg.y = top + barH + gap;
+    this.mpBg.y = mpY;
 
     this.mpFill = new Graphics();
     this.mpFill.x = left;
-    this.mpFill.y = top + barH + gap;
+    this.mpFill.y = mpY;
+
+    this.mpLabel = new Text('', labelStyle);
+    this.mpLabel.anchor.set(0.5, 0.5);
+    this.mpLabel.x = left + this.BAR_W / 2;
+    this.mpLabel.y = mpY + mpH / 2 + 1;
+
+    const rightX = 1500;
+    const rightY = panelY + 12;
 
     this.goldText = new Text('', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 15, fill: '#FFD700',
+      fontFamily: 'Georgia, serif', fontSize: 16, fill: '#FFD700',
       stroke: '#000000', strokeThickness: 2,
     }));
-    this.goldText.x = left;
-    this.goldText.y = top + barH * 2 + gap + 2;
+    this.goldText.x = rightX;
+    this.goldText.y = rightY;
 
     this.levelText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 13, fill: '#aaaacc',
+      fontFamily: 'monospace', fontSize: 13, fill: '#ddddee',
       stroke: '#000000', strokeThickness: 2,
     }));
-    this.levelText.x = left;
-    this.levelText.y = top + barH * 2 + gap + 22;
+    this.levelText.x = rightX;
+    this.levelText.y = rightY + 22;
 
+    const xpY = rightY + 46;
+    const xpH = 8;
     this.xpBg = new Graphics();
     this.xpBg.beginFill(0x222222, 0.6);
-    this.xpBg.drawRect(0, 0, barW, 6);
+    this.xpBg.drawRoundedRect(0, 0, 160, xpH, 2);
     this.xpBg.endFill();
-    this.xpBg.x = left;
-    this.xpBg.y = top + barH * 2 + gap + 42;
+    this.xpBg.x = rightX;
+    this.xpBg.y = xpY;
 
     this.xpFill = new Graphics();
-    this.xpFill.x = left;
-    this.xpFill.y = top + barH * 2 + gap + 42;
+    this.xpFill.x = rightX;
+    this.xpFill.y = xpY;
 
-    this.zoneText = new Text('', { fontFamily: 'monospace', fontSize: 18, fill: 0xcccccc });
+    this.buffContainer.x = rightX;
+    this.buffContainer.y = xpY + 14;
+
+    this.zoneText = new Text('', new TextStyle({
+      fontFamily: 'Georgia, serif', fontSize: 22, fill: '#ddaa55',
+      stroke: '#000000', strokeThickness: 3,
+    }));
     this.zoneText.anchor.set(0.5, 0);
-    this.zoneText.x = 960;
-    this.zoneText.y = 10;
-    this.container.addChild(this.zoneText);
+    this.zoneText.x = centerX;
+    this.zoneText.y = 6;
 
     this.container.addChild(
       this.panel,
       this.hpBg, this.hpFill, this.hpLabel,
-      this.mpBg, this.mpFill,
+      this.mpBg, this.mpFill, this.mpLabel,
       this.goldText, this.levelText,
       this.xpBg, this.xpFill,
+      this.buffContainer,
+      this.zoneText,
     );
   }
 
-  update(player: Player) {
-    const hpPct = player.health / player.maxHealth;
-    this.hpFill.clear();
-    this.hpFill.beginFill(hpPct > 0.5 ? 0xdd3333 : hpPct > 0.25 ? 0xdd8800 : 0xff3333);
-    this.hpFill.drawRect(0, 0, 220 * hpPct, 22);
-    this.hpFill.endFill();
-    this.hpLabel.text = `${Math.ceil(player.health)}/${player.maxHealth}`;
+  update(player: Player, dt: number) {
+    const barH = 22;
+    const mpH = 18;
 
-    const mpPct = player.mana / player.maxMana;
+    const hpTarget = player.health / player.maxHealth;
+    if (hpTarget >= 0) {
+      this.hpDisplayed += (hpTarget - this.hpDisplayed) * Math.min(1, 0.15 * dt);
+    }
+    const hpPct = Math.max(0, Math.min(1, this.hpDisplayed));
+    const hpColor = hpPct > 0.6 ? 0xdd3333 : hpPct > 0.3 ? 0xdd8800 : 0xff3333;
+
+    this.hpFill.clear();
+    this.hpFill.beginFill(hpColor);
+
+    let pulseAlpha = 1;
+    if (hpPct < 0.3) {
+      this.pulseTimer += dt * 0.15;
+      pulseAlpha = 0.7 + 0.3 * Math.sin(this.pulseTimer);
+    } else {
+      this.pulseTimer = 0;
+    }
+    this.hpFill.alpha = pulseAlpha;
+
+    this.hpFill.drawRoundedRect(0, 0, this.BAR_W * hpPct, barH, 3);
+    this.hpFill.endFill();
+    this.hpLabel.text = `${Math.ceil(player.health)} / ${player.maxHealth}`;
+
+    const mpTarget = player.mana / player.maxMana;
+    if (mpTarget >= 0) {
+      this.mpDisplayed += (mpTarget - this.mpDisplayed) * Math.min(1, 0.15 * dt);
+    }
+    const mpPct = Math.max(0, Math.min(1, this.mpDisplayed));
+
     this.mpFill.clear();
     this.mpFill.beginFill(0x3366dd);
-    this.mpFill.drawRect(0, 0, 220 * mpPct, 18);
+    this.mpFill.drawRoundedRect(0, 0, this.BAR_W * mpPct, mpH, 3);
     this.mpFill.endFill();
+    this.mpLabel.text = `${Math.ceil(player.mana)} / ${player.maxMana}`;
 
     this.goldText.text = `${player.gold} Gold`;
-    this.levelText.text = `Level ${player.level}`;
+    this.levelText.text = `Lv ${player.level}`;
 
     const xpPct = player.xpToNext > 0 ? player.xp / player.xpToNext : 0;
     this.xpFill.clear();
     this.xpFill.beginFill(0x44aa88);
-    this.xpFill.drawRect(0, 0, 220 * Math.min(1, xpPct), 6);
+    this.xpFill.drawRoundedRect(0, 0, 160 * Math.min(1, xpPct), 8, 2);
     this.xpFill.endFill();
+
+    this.buffContainer.removeChildren();
+    let bx = 0;
+    const buffList = this.getActiveBuffs(player);
+    for (const buff of buffList.slice(0, 4)) {
+      const b = new Text(`◆ ${buff.name} ${buff.remaining.toFixed(1)}s`, new TextStyle({
+        fontFamily: 'monospace', fontSize: 10, fill: buff.color,
+        stroke: '#000000', strokeThickness: 2,
+      }));
+      b.x = bx;
+      b.y = 0;
+      this.buffContainer.addChild(b);
+      bx += b.width + 8;
+    }
+  }
+
+  private getActiveBuffs(player: Player): { name: string; remaining: number; color: string }[] {
+    const buffs: { name: string; remaining: number; color: string }[] = [];
+    const sm = player.skills;
+    if (sm.hasBuff('fortify')) buffs.push({ name: 'Fortify', remaining: sm.getBuffTimer('fortify') / 60, color: '#4488ff' });
+    if (sm.hasBuff('battle_rage')) buffs.push({ name: 'Battle Rage', remaining: sm.getBuffTimer('battle_rage') / 60, color: '#ff4444' });
+    if (sm.hasBuff('bloodlust')) buffs.push({ name: 'Bloodlust', remaining: sm.getBuffTimer('bloodlust') / 60, color: '#ff6644' });
+    if (sm.hasBuff('eagle_eye')) buffs.push({ name: 'Eagle Eye', remaining: sm.getBuffTimer('eagle_eye') / 60, color: '#44dd88' });
+    if (sm.hasBuff('haste')) buffs.push({ name: 'Haste', remaining: sm.getBuffTimer('haste') / 60, color: '#88dd44' });
+    if (sm.hasBuff('meditate_damage')) buffs.push({ name: 'Meditate (DMG)', remaining: sm.getBuffTimer('meditate_damage') / 60, color: '#ffaa00' });
+    if (sm.currentStance) buffs.push({ name: `Stance: ${sm.currentStance}`, remaining: 0, color: '#aa88ff' });
+    return buffs;
   }
 
   setZoneName(name: string) {

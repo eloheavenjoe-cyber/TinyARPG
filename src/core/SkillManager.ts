@@ -99,6 +99,11 @@ export class SkillManager {
     return this.activeBuffs.some(b => b.skillId === skillId && b.remaining > 0);
   }
 
+  getBuffTimer(skillId: string): number {
+    const buff = this.activeBuffs.find(b => b.skillId === skillId);
+    return buff ? buff.remaining : 0;
+  }
+
   update(dt: number) {
     for (const [id, rem] of this.cooldowns) {
       const next = rem - dt;
