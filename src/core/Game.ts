@@ -1416,6 +1416,7 @@ export class Game {
           if (rectsOverlap(p.getBounds(), enemy.getBounds())) {
             enemy.takeDamage(p.damage);
             this.combatText.showDamage(enemy.x, enemy.y - 20, p.damage, 0xffaa00);
+            if (!p.hostile) this.vfxArrowImpact(enemy.x, enemy.y);
             p.hitTargets.add(enemy);
             if (!p.pierce) {
               hit = true;
@@ -1441,6 +1442,7 @@ export class Game {
             if (brk.takeDamage()) {
               this.spawnBreakableLoot(brk.x, brk.y);
             }
+            if (!p.hostile) this.vfxArrowImpact(brk.x, brk.y);
             p.hitTargets.add(brk);
             if (!p.pierce) { hit = true; break; }
           }
@@ -1807,11 +1809,33 @@ export class Game {
 
   private vfxProjectileTrail(p: Projectile) {
     this.addVfx((g, t) => {
-      const alpha = Math.max(0, 0.4 - t * 1.2);
-      g.lineStyle(1, 0xffdd44, alpha);
+      const alpha = Math.max(0, 0.6 - t * 1.2);
+      g.lineStyle(2, 0xffee44, alpha);
+      g.moveTo(0, 0);
+      g.lineTo(-p.vx * 0.6, -p.vy * 0.6);
+    }, 20).position.set(p.x, p.y);
+    this.addVfx((g, t) => {
+      const alpha = Math.max(0, 0.3 - t * 0.8);
+      g.lineStyle(1, 0xffffff, alpha);
       g.moveTo(0, 0);
       g.lineTo(-p.vx * 0.5, -p.vy * 0.5);
-    }, 15).position.set(p.x, p.y);
+    }, 20).position.set(p.x, p.y);
+  }
+
+  private vfxArrowImpact(x: number, y: number) {
+    this.addVfx((g, t) => {
+      const r = 15 + 25 * t;
+      const alpha = Math.max(0, 1 - t * 1.5);
+      g.lineStyle(2, 0xffcc00, alpha);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        g.moveTo(0, 0);
+        g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      g.beginFill(0xffffaa, alpha * 0.4);
+      g.drawCircle(0, 0, 6);
+      g.endFill();
+    }, 15).position.set(x, y);
   }
 
   private vfxGroundSlam(x: number, y: number, angle: number) {
