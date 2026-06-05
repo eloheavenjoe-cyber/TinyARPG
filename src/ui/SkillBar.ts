@@ -3,53 +3,63 @@ import { SkillManager } from '../core/SkillManager';
 import { Logger } from '../core/Logger';
 
 const SLOT_COUNT = 6;
-const SLOT_W = 85;
-const SLOT_H = 40;
-const GAP = 5;
+const SLOT_W = 90;
+const SLOT_H = 44;
+const GAP = 6;
 const TOTAL_W = SLOT_COUNT * SLOT_W + (SLOT_COUNT - 1) * GAP;
-const START_X = (1920 - TOTAL_W) / 2;
-const Y = 1030;
 
 export class SkillBar {
   container: Container;
-  private slots: { bg: Graphics; fill: Graphics; name: Text; key: Text }[] = [];
+  private slots: { bg: Graphics; fill: Graphics; name: Text; key: Text; cdText: Text }[] = [];
 
   constructor() {
     this.container = new Container();
     Logger.log('ui', 'SkillBar created');
 
+    const startX = -TOTAL_W / 2;
+    const barY = 0;
+
     for (let i = 0; i < SLOT_COUNT; i++) {
-      const x = START_X + i * (SLOT_W + GAP);
+      const x = startX + i * (SLOT_W + GAP);
 
       const bg = new Graphics();
-      bg.beginFill(0x111111, 0.55);
+      bg.beginFill(0x1a1a28, 0.85);
       bg.drawRoundedRect(0, 0, SLOT_W, SLOT_H, 4);
       bg.endFill();
-      bg.lineStyle(1, 0x333355, 0.5);
+      bg.lineStyle(1, 0x8a7a3a, 0.5);
       bg.drawRoundedRect(0, 0, SLOT_W, SLOT_H, 4);
       bg.x = x;
-      bg.y = Y;
+      bg.y = barY;
 
       const fill = new Graphics();
       fill.x = x;
-      fill.y = Y;
+      fill.y = barY;
 
       const name = new Text('', new TextStyle({
-        fontFamily: 'monospace', fontSize: 10, fill: '#cccccc',
+        fontFamily: 'monospace', fontSize: 10, fill: '#eeeeee',
         stroke: '#000000', strokeThickness: 2,
       }));
       name.anchor.set(0.5);
       name.x = x + SLOT_W / 2;
-      name.y = Y + SLOT_H / 2;
+      name.y = barY + SLOT_H / 2 - 2;
 
       const key = new Text(`${i + 1}`, new TextStyle({
-        fontFamily: 'monospace', fontSize: 10, fill: '#666688',
+        fontFamily: 'monospace', fontSize: 10, fill: '#8a7a3a',
+        stroke: '#000000', strokeThickness: 2,
       }));
-      key.x = x + 3;
-      key.y = Y + 3;
+      key.x = x + 4;
+      key.y = barY + 3;
 
-      this.container.addChild(bg, fill, name, key);
-      this.slots.push({ bg, fill, name, key });
+      const cdText = new Text('', new TextStyle({
+        fontFamily: 'monospace', fontSize: 14, fill: '#ffffff', fontWeight: 'bold',
+        stroke: '#000000', strokeThickness: 3,
+      }));
+      cdText.anchor.set(0.5);
+      cdText.x = x + SLOT_W / 2;
+      cdText.y = barY + SLOT_H / 2 + 5;
+
+      this.container.addChild(bg, fill, name, key, cdText);
+      this.slots.push({ bg, fill, name, key, cdText });
     }
   }
 
@@ -61,6 +71,7 @@ export class SkillBar {
       if (!skill) {
         slot.name.text = '';
         slot.fill.clear();
+        slot.cdText.text = '';
         continue;
       }
 
@@ -69,9 +80,19 @@ export class SkillBar {
 
       const cdRatio = skills.cooldownRatio(skill.id);
       slot.fill.clear();
+      slot.cdText.text = '';
+
       if (cdRatio > 0) {
-        slot.fill.beginFill(0x000000, 0.6);
-        slot.fill.drawRect(0, 0, SLOT_W, SLOT_H * cdRatio);
+        const remaining = skills.cooldownRemaining(skill.id);
+        const secs = Math.ceil(remaining / 60);
+        slot.cdText.text = secs > 0 ? `${secs}` : '';
+
+        slot.fill.beginFill(0x000000, 0.55);
+        const startAngle = -Math.PI / 2;
+        const endAngle = startAngle + Math.PI * 2 * cdRatio;
+        slot.fill.moveTo(SLOT_W / 2, SLOT_H / 2);
+        slot.fill.arc(SLOT_W / 2, SLOT_H / 2, SLOT_W / 2, startAngle, endAngle);
+        slot.fill.closePath();
         slot.fill.endFill();
       }
     }
