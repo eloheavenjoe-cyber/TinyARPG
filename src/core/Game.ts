@@ -903,7 +903,7 @@ export class Game {
       this.tutorialKeyWasDown = new Set();
     }
 
-    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone));
+    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone), template.playerStart);
     this.gameContainer.addChild(this.room.container);
 
     // Procedural decoration

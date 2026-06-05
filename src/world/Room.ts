@@ -67,7 +67,9 @@ export class Room {
   private npcs: NpcData[];
   private isPortalUnlocked: (targetZone: string) => boolean;
 
-  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = [], isPortalUnlocked?: (targetZone: string) => boolean) {
+  private playerStart?: { x: number; y: number };
+
+  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = [], isPortalUnlocked?: (targetZone: string) => boolean, playerStart?: { x: number; y: number }) {
     this.container = new Container();
     this.walkableArea = {
       x: WALL_THICKNESS,
@@ -83,6 +85,7 @@ export class Room {
     this.buildings = buildings;
     this.npcs = npcs;
     this.isPortalUnlocked = isPortalUnlocked || (() => true);
+    this.playerStart = playerStart;
     this.build();
     Logger.log('system', `Room created: ${ROOM_WIDTH}x${ROOM_HEIGHT}, walkable: ${this.walkableArea.width}x${this.walkableArea.height}`);
   }
@@ -93,6 +96,7 @@ export class Room {
 
     if (floorTx && tc) {
       const floor = new TilingSprite(floorTx, ROOM_WIDTH, ROOM_HEIGHT);
+      floor.tint = 0x999999;
       this.container.addChild(floor);
 
       if (tc.accentTiles && tc.accentTiles.tiles.length > 0) {
@@ -168,6 +172,7 @@ export class Room {
       this.container.addChild(wallGfx, wallBorder);
     }
 
+    this.renderRoad();
     this.renderDecorations();
     this.renderBuildings();
     this.renderNpcs();
@@ -302,6 +307,44 @@ export class Room {
       label.x = cx;
       label.y = cy + 16;
       this.container.addChild(label);
+    }
+  }
+
+  private renderRoad() {
+    const tc = TILE_CONFIGS[this.biomeId];
+    if (!tc || !this.playerStart || this.doors.length === 0) return;
+    const roadTx = tileTextures['road'];
+    if (!roadTx) return;
+
+    const roadWidth = 96;
+    const halfRoad = roadWidth / 2;
+
+    for (const door of this.doors) {
+      const doorCx = door.rect.x + door.rect.width / 2;
+      const doorCy = door.rect.y + door.rect.height / 2;
+      const sx = this.playerStart.x;
+      const sy = this.playerStart.y;
+
+      const dx = doorCx - sx;
+      const dy = doorCy - sy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 1) continue;
+
+      const steps = Math.floor(dist / TILE_SIZE);
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const px = sx + dx * t;
+        const py = sy + dy * t;
+
+        for (let row = -Math.floor(roadWidth / TILE_SIZE / 2); row <= Math.floor(roadWidth / TILE_SIZE / 2); row++) {
+          const tileX = px + row * TILE_SIZE - TILE_SIZE / 2;
+          const tileY = py - TILE_SIZE / 2;
+          const s = new Sprite(roadTx);
+          s.x = Math.round(tileX / TILE_SIZE) * TILE_SIZE;
+          s.y = Math.round(tileY / TILE_SIZE) * TILE_SIZE;
+          this.container.addChild(s);
+        }
+      }
     }
   }
 }

@@ -36,8 +36,8 @@ export const TILE_CONFIGS: Partial<Record<BiomeId, TileConfig>> = {
     floorTile: 'grass',
     wallTile: 'wall',
     accentTiles: {
-      tiles: ['accent', 'road'],
-      chance: 0.12,
+      tiles: ['accent'],
+      chance: 0.08,
     },
     props: {
       treeTiles: ['tree'],
