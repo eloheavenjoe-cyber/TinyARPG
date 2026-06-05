@@ -975,6 +975,6 @@ export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: bool
   if (!f || f.length === 0 || sprite.textures === f) return;
   sprite.textures = f;
   sprite.loop = loop;
-  sprite.animationSpeed = name === 'attack' ? 0.2 : 0.12;
+  sprite.animationSpeed = name === 'attack' ? (classType === 'ranger' ? 0.4 : 0.2) : 0.12;
   sprite.gotoAndPlay(0);
 }
