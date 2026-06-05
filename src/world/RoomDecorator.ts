@@ -39,7 +39,7 @@ function getBiomeTint(biome: BiomeId): number {
   }
 }
 
-export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?: TileConfig): DecoratorResult {
+export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?: TileConfig, roadBlock?: Rect): DecoratorResult {
   const result: DecoratorResult = { decorations: [], obstacles: [], chests: [], breakables: [] };
   const config = BIOME_DECOR[biome];
   if (!config || config.treeChance === 0) return result;
@@ -50,6 +50,7 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?
     ...template.portals.map(p => p.rect),
     ...template.buildings.map(b => ({ x: b.x, y: b.y, width: b.width, height: b.height })),
   ];
+  if (roadBlock) blockedRects.push(roadBlock);
 
   const margin = WALL_THICKNESS + 64;
   const maxX = ROOM_WIDTH - margin;

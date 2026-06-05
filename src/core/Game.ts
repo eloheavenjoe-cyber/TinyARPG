@@ -909,7 +909,19 @@ export class Game {
 
     // Procedural decoration
     const tileConfig = zone.tileConfig ? TILE_CONFIGS[zone.tileConfig as BiomeId] : undefined;
-    const decor = decorateRoom(template, zone.biome, tileConfig);
+    const roadBlock = template.doors.length > 0 ? (() => {
+      const door = template.doors[0];
+      const cx = door.rect.x + door.rect.width / 2;
+      const cy = door.rect.y + door.rect.height / 2;
+      const sx = template.playerStart.x;
+      const sy = template.playerStart.y;
+      const minX = Math.min(sx, cx) - 32;
+      const maxX = Math.max(sx, cx) + 32;
+      const minY = Math.min(sy, cy) - 32;
+      const maxY = Math.max(sy, cy) + 32;
+      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    })() : undefined;
+    const decor = decorateRoom(template, zone.biome, tileConfig, roadBlock);
     for (const d of decor.decorations) { this.gameContainer.addChild(d.sprite); this.decorationSprites.push(d.sprite); }
     for (const ob of decor.obstacles) this.room.walls.push(ob);
     for (const cp of decor.chests) {

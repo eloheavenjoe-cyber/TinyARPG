@@ -314,9 +314,6 @@ export class Room {
   private renderRoad() {
     if (!this.playerStart || this.doors.length === 0) return;
 
-    const roadWidth = 64;
-    const halfRoad = roadWidth / 2;
-
     for (const door of this.doors) {
       const doorCx = door.rect.x + door.rect.width / 2;
       const doorCy = door.rect.y + door.rect.height / 2;
@@ -328,36 +325,84 @@ export class Room {
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 1) continue;
 
-      const road = new Graphics();
-
-      // Main dirt path — thick line from start to door
-      road.lineStyle(roadWidth, 0x8a7a5a, 0.8);
-      road.moveTo(sx, sy);
-      road.lineTo(doorCx, doorCy);
-
-      // Darker edge borders (perpendicular offset for any angle)
       const nx = -dy / dist;
       const ny = dx / dist;
-      road.lineStyle(3, 0x6a5a3a, 0.5);
-      road.moveTo(sx + nx * (halfRoad - 8), sy + ny * (halfRoad - 8));
-      road.lineTo(doorCx + nx * (halfRoad - 8), doorCy + ny * (halfRoad - 8));
-      road.moveTo(sx - nx * (halfRoad - 8), sy - ny * (halfRoad - 8));
-      road.lineTo(doorCx - nx * (halfRoad - 8), doorCy - ny * (halfRoad - 8));
 
-      // Scatter darker pebbles along the path
-      const steps = Math.floor(dist / 32);
-      for (let i = 0; i < steps; i++) {
-        const t = i / steps;
+      const g = new Graphics();
+
+      // Stone path: 2 tiles wide (64px), placed every 32px along the path
+      const totalTiles = Math.floor(dist / 32);
+      const fadeInTiles = 6;
+
+      for (let i = 0; i <= totalTiles; i++) {
+        const t = i / totalTiles;
         const px = sx + dx * t;
         const py = sy + dy * t;
-        const offX = (Math.random() - 0.5) * (roadWidth - 16);
-        const size = 2 + Math.random() * 4;
-        road.beginFill(0x6a5a3a, 0.3 + Math.random() * 0.3);
-        road.drawRect(px + offX - size / 2, py - size / 2, size, size);
-        road.endFill();
+
+        // Left tile position
+        const lx = px + nx * 16 - 16;
+        const ly = py + ny * 16 - 16;
+        // Right tile position
+        const rx = px - nx * 16 - 16;
+        const ry = py - ny * 16 - 16;
+
+        // Fade in: gradually transition from scattered edge stones to full path
+        if (i < fadeInTiles) {
+          const fade = i / fadeInTiles;
+          // Scatter individual fragments at the start
+          if (Math.random() < fade) { this.drawStoneTile(g, lx, ly, fade * 0.6 + 0.4); }
+          if (Math.random() < fade) { this.drawStoneTile(g, rx, ry, fade * 0.6 + 0.4); }
+          // Extra scattered stones at edges for a natural look
+          if (Math.random() < fade * 0.5) {
+            const ex = px + nx * (16 + Math.random() * 20) - 12 + Math.random() * 8;
+            const ey = py + ny * (16 + Math.random() * 20) - 12 + Math.random() * 8;
+            this.drawStoneTile(g, ex, ey, fade * 0.3);
+          }
+          if (Math.random() < fade * 0.5) {
+            const ex = px - nx * (16 + Math.random() * 20) - 12 + Math.random() * 8;
+            const ey = py - ny * (16 + Math.random() * 20) - 12 + Math.random() * 8;
+            this.drawStoneTile(g, ex, ey, fade * 0.3);
+          }
+        } else {
+          // Full road
+          this.drawStoneTile(g, lx, ly, 1);
+          this.drawStoneTile(g, rx, ry, 1);
+
+          // Occasional edge stone fragments along the sides
+          if (Math.random() < 0.15) {
+            const ex = px + nx * (16 + 8 + Math.random() * 12) - 10;
+            const ey = py + ny * (16 + 8 + Math.random() * 12) - 10;
+            this.drawStoneTile(g, ex, ey, 0.3 + Math.random() * 0.2);
+          }
+          if (Math.random() < 0.15) {
+            const ex = px - nx * (16 + 8 + Math.random() * 12) - 10;
+            const ey = py - ny * (16 + 8 + Math.random() * 12) - 10;
+            this.drawStoneTile(g, ex, ey, 0.3 + Math.random() * 0.2);
+          }
+        }
       }
 
-      this.container.addChild(road);
+      this.container.addChild(g);
     }
+  }
+
+  private drawStoneTile(g: Graphics, x: number, y: number, alpha: number) {
+    if (alpha <= 0) return;
+    g.beginFill(0x7a7a6a, alpha);
+    g.drawRect(x, y, 32, 32);
+    g.endFill();
+    g.beginFill(0x6a6a5a, alpha);
+    g.drawRect(x + 2, y + 2, 12, 14);
+    g.drawRect(x + 18, y + 4, 10, 10);
+    g.drawRect(x + 4, y + 20, 20, 8);
+    g.drawRect(x + 26, y + 16, 4, 14);
+    g.endFill();
+    g.lineStyle(1, 0x5a5a4a, alpha * 0.8);
+    g.drawRect(x, y, 32, 32);
+    g.lineStyle(0);
+    g.beginFill(0x8a8a7a, alpha * 0.6);
+    g.drawRect(x + 1, y + 1, 6, 6);
+    g.drawRect(x + 16, y + 16, 6, 6);
+    g.endFill();
   }
 }

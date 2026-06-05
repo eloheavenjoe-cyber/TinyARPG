@@ -27,7 +27,6 @@ export const TILE_CONFIGS: Partial<Record<BiomeId, TileConfig>> = {
   tutorial: {
     files: {
       grass: { path: 'sprites/tiles/tutorial/Grass0 - 4.png' },
-      road: { path: 'sprites/tiles/tutorial/Road4.png' },
       wall: { path: 'sprites/tiles/tutorial/Wall1.png' },
       accent: { path: 'sprites/tiles/tutorial/Grass0 - 1.png' },
       tree: { path: 'sprites/tiles/tutorial/Trees.png', x: 0, y: 0, w: 96, h: 208 },
