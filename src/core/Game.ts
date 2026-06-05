@@ -1185,6 +1185,19 @@ export class Game {
         return;
       }
       if (this.subTreeScreen) {
+        const kDown = this.input.isKeyDown('KeyK');
+        if (kDown && !this.wasKKeyDown) {
+          this.wasKKeyDown = true;
+          this.toggleSubTree();
+          return;
+        }
+        this.wasKKeyDown = kDown;
+
+        const skill = this.player?.skills.mainAbility;
+        const tree = skill?.subTreeId ? this.player?.skillSubTrees.get(skill.subTreeId) : undefined;
+        if (tree && this.player) {
+          this.subTreeScreen.update(this.input, tree, this.player.skillSubPoints);
+        }
         return;
       }
 
