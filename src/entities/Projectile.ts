@@ -34,11 +34,11 @@ export class Projectile {
       this.sprite.drawCircle(0, 0, size);
       this.sprite.endFill();
     } else {
-      this.sprite.beginFill(0xffdd44);
-      this.sprite.drawRect(-3, -1, 6, 2);
+      this.sprite.beginFill(0xffee44);
+      this.sprite.drawRect(-3, -1, 7, 3);
       this.sprite.endFill();
-      this.sprite.beginFill(0xffaa00);
-      this.sprite.drawRect(1, -1, 3, 2);
+      this.sprite.beginFill(0xffcc00);
+      this.sprite.drawRect(3, -1, 3, 2);
       this.sprite.endFill();
     }
     this.sprite.x = x;
@@ -59,7 +59,7 @@ export class Projectile {
       const s = this.size;
       return { x: this.x - s, y: this.y - s, width: s * 2, height: s * 2 };
     }
-    return { x: this.x - 3, y: this.y - 1, width: 6, height: 2 };
+    return { x: this.x - 3, y: this.y - 1, width: 7, height: 3 };
   }
 
   destroy() {
