@@ -700,7 +700,7 @@ export class Player {
 
   fireProjectile(x: number, y: number, angle: number, skill: SkillDef, projectiles: Projectile[]): Projectile[] {
     const speed = 10 * this.skills.projectileSpeedBonus();
-    const damage = Math.round(25 * skill.damageMult);
+    const damage = this.calcDamage(skill);
     const pierce = skill.effectType === 'projectile_pierce';
     const created: Projectile[] = [];
 
@@ -758,13 +758,32 @@ export class Player {
 
   private calcDamage(skill: SkillDef): number {
     let mult = skill.damageMult;
+
+    let primaryStat = 0;
+    if (this.classType === 'warrior') primaryStat = this.attrs.str;
+    else if (this.classType === 'ranger') primaryStat = this.attrs.dex;
+    else if (this.classType === 'monk') primaryStat = this.attrs.int;
+
+    if (this.classType === 'warrior' || this.classType === 'monk') {
+      mult *= this._computedStats.meleeDmgMult;
+    } else if (this.classType === 'ranger') {
+      mult *= this._computedStats.projectileDmgMult;
+    }
+
     if (this.classType === 'monk') {
       mult *= this.skills.stanceDamageMultBonus();
-      if (this.skills.hasBuff('meditate_damage')) {
-        mult *= 1.2;
-      }
+      if (this.skills.hasBuff('meditate_damage')) mult *= 1.2;
     }
-    return Math.round(25 * mult);
+
+    const baseDmg = 20;
+    const statBonus = 1 + primaryStat * 0.01;
+    let damage = Math.round(baseDmg * mult * statBonus);
+
+    const coldDmg = this._computedStats.coldDmg || 0;
+    const lightningDmg = this._computedStats.lightningDmg || 0;
+    damage += coldDmg + lightningDmg;
+
+    return damage;
   }
 
   getAttackCooldown(): number {
