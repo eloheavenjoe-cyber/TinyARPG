@@ -743,11 +743,16 @@ export class Game {
     }
     this.bossSpawned = false;
     this.enemies = [];
-    for (const p of this.projectiles) if (p.alive) { p.destroy(); }
+    for (const p of this.projectiles) if (p.alive) { try { p.destroy(); } catch (_) {} }
     this.projectiles = [];
     this.itemDrops = [];
     this.rainZones = [];
     this.vfx = [];
+    this.modGfx = [];
+    this.chillZones = [];
+    this.chests = [];
+    this.breakables = [];
+    this.decorationSprites = [];
     this.dash = null;
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();
@@ -1325,8 +1330,8 @@ export class Game {
 
     // Clean up per-frame mod VFX
     for (const g of this.modGfx) {
-      this.gameContainer!.removeChild(g);
-      g.destroy();
+      try { if (g.parent) this.gameContainer!.removeChild(g); } catch (_) {}
+      try { g.destroy(); } catch (_) {}
     }
     this.modGfx = [];
 
@@ -3095,6 +3100,11 @@ export class Game {
     this.projectiles = [];
     this.itemDrops = [];
     this.vfx = [];
+    this.modGfx = [];
+    this.chillZones = [];
+    this.chests = [];
+    this.breakables = [];
+    this.decorationSprites = [];
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();
     if (this.recallPortal) { try { this.recallPortal.graphic.destroy(); } catch (_) {} this.recallPortal = null; }
