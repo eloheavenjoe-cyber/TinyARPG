@@ -470,18 +470,16 @@ export class Enemy {
     nameText.y = barH + 1;
     this.nameplate.addChild(nameText);
 
-    // Mod lines — colored by rarity (blue=magic, yellow=rare)
-    let modY = nameText.y + 12;
-    for (const mod of mods) {
-      const mt = new Text(mod.name, new TextStyle({
+    // Mod text — single line, colored by rarity (blue=magic, yellow=rare)
+    if (mods.length > 0) {
+      const modText = new Text(mods.map(m => m.name).join(' | '), new TextStyle({
         fontFamily: 'monospace', fontSize: 9,
         fill: RARITY_COLORS[rarity],
         stroke: '#000000', strokeThickness: 2,
       }));
-      mt.anchor.set(0.5, 0);
-      mt.y = modY;
-      this.nameplate.addChild(mt);
-      modY += 11;
+      modText.anchor.set(0.5, 0);
+      modText.y = nameText.y + 12;
+      this.nameplate.addChild(modText);
     }
   }
 
@@ -490,7 +488,7 @@ export class Enemy {
     this.sprite.y = this.y;
     if (this.nameplate) {
       this.nameplate.x = this.x;
-      this.nameplate.y = this.y - this.height / 2 - 22;
+      this.nameplate.y = this.y - this.height / 2 - 40;
 
       // Update HP bar fill
       const hpFill = this.nameplate.getChildByName('hpFill') as Graphics;
