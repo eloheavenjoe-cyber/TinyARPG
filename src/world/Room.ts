@@ -1,6 +1,7 @@
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle, TilingSprite, Sprite } from 'pixi.js';
 import { Logger } from '../core/Logger';
 import { BiomeData, BIOME_DATA, BiomeId, DoorMarker, PortalMarker, BuildingData, NpcData } from '../core/ZoneConfig';
+import { tileTextures, TILE_CONFIGS } from '../core/TileConfigs';
 
 export interface Rect {
   x: number;
@@ -58,6 +59,7 @@ export class Room {
   walls: Rect[] = [];
   walkableArea: Rect;
   biomeData: BiomeData;
+  biomeId: BiomeId;
   doors: DoorMarker[];
   portals: PortalMarker[];
   private decorations: Rect[];
@@ -74,6 +76,7 @@ export class Room {
       height: ROOM_HEIGHT - WALL_THICKNESS * 2,
     };
     this.biomeData = BIOME_DATA[biome];
+    this.biomeId = biome;
     this.doors = doors;
     this.portals = portals;
     this.decorations = decorations;
@@ -85,45 +88,85 @@ export class Room {
   }
 
   private build() {
-    // Solid floor background
-    const floor = new Graphics().beginFill(this.biomeData.floorColor).drawRect(0, 0, ROOM_WIDTH, ROOM_HEIGHT).endFill();
-    this.container.addChild(floor);
+    const tc = TILE_CONFIGS[this.biomeId];
+    const floorTx = tc ? tileTextures[tc.floorTile] : undefined;
 
-    // Scatter tiles for floor variation
-    const scatter = new Graphics();
-    for (let i = 0; i < 200; i++) {
-      const sx = Math.random() * ROOM_WIDTH;
-      const sy = Math.random() * ROOM_HEIGHT;
-      const shade = Math.random() < 0.5 ? 0.05 : -0.05;
-      const r = ((this.biomeData.floorColor >> 16) & 0xff) + Math.round(shade * 255);
-      const g = ((this.biomeData.floorColor >> 8) & 0xff) + Math.round(shade * 255);
-      const b = (this.biomeData.floorColor & 0xff) + Math.round(shade * 255);
-      const c = Math.min(255, Math.max(0, r)) << 16 | Math.min(255, Math.max(0, g)) << 8 | Math.min(255, Math.max(0, b));
-      scatter.beginFill(c, 0.4);
-      scatter.drawRect(sx, sy, 6 + Math.random() * 8, 6 + Math.random() * 6);
-      scatter.endFill();
+    if (floorTx && tc) {
+      const floor = new TilingSprite(floorTx, ROOM_WIDTH, ROOM_HEIGHT);
+      this.container.addChild(floor);
+
+      if (tc.accentTiles && tc.accentTiles.tiles.length > 0) {
+        const accentContainer = new Container();
+        for (let i = 0; i < 200; i++) {
+          const tileName = tc.accentTiles.tiles[Math.floor(Math.random() * tc.accentTiles.tiles.length)];
+          const accentTx = tileTextures[tileName];
+          if (!accentTx) continue;
+          const s = new Sprite(accentTx);
+          s.x = Math.random() * ROOM_WIDTH;
+          s.y = Math.random() * ROOM_HEIGHT;
+          s.alpha = 0.3 + Math.random() * 0.4;
+          accentContainer.addChild(s);
+        }
+        this.container.addChild(accentContainer);
+      }
+    } else {
+      const floor = new Graphics().beginFill(this.biomeData.floorColor).drawRect(0, 0, ROOM_WIDTH, ROOM_HEIGHT).endFill();
+      this.container.addChild(floor);
+
+      const scatter = new Graphics();
+      for (let i = 0; i < 200; i++) {
+        const sx = Math.random() * ROOM_WIDTH;
+        const sy = Math.random() * ROOM_HEIGHT;
+        const shade = Math.random() < 0.5 ? 0.05 : -0.05;
+        const r = ((this.biomeData.floorColor >> 16) & 0xff) + Math.round(shade * 255);
+        const g = ((this.biomeData.floorColor >> 8) & 0xff) + Math.round(shade * 255);
+        const b = (this.biomeData.floorColor & 0xff) + Math.round(shade * 255);
+        const c = Math.min(255, Math.max(0, r)) << 16 | Math.min(255, Math.max(0, g)) << 8 | Math.min(255, Math.max(0, b));
+        scatter.beginFill(c, 0.4);
+        scatter.drawRect(sx, sy, 6 + Math.random() * 8, 6 + Math.random() * 6);
+        scatter.endFill();
+      }
+      this.container.addChild(scatter);
     }
-    this.container.addChild(scatter);
 
     this.walls.push({ x: 0, y: 0, width: ROOM_WIDTH, height: WALL_THICKNESS });
     this.walls.push({ x: 0, y: ROOM_HEIGHT - WALL_THICKNESS, width: ROOM_WIDTH, height: WALL_THICKNESS });
     this.walls.push({ x: 0, y: 0, width: WALL_THICKNESS, height: ROOM_HEIGHT });
     this.walls.push({ x: ROOM_WIDTH - WALL_THICKNESS, y: 0, width: WALL_THICKNESS, height: ROOM_HEIGHT });
 
-    const wallGfx = new Graphics();
-    wallGfx.beginFill(this.biomeData.wallColor);
-    for (const wall of this.walls) {
-      wallGfx.drawRect(wall.x, wall.y, wall.width, wall.height);
-    }
-    wallGfx.endFill();
+    const wallTx = tc ? tileTextures[tc.wallTile] : undefined;
 
-    const wallBorder = new Graphics();
-    wallBorder.lineStyle(1, this.biomeData.wallBorderColor);
-    for (const wall of this.walls) {
-      wallBorder.drawRect(wall.x, wall.y, wall.width, wall.height);
-    }
+    if (wallTx && tc) {
+      const wallRects = this.walls;
+      for (const wall of wallRects) {
+        const ws = new TilingSprite(wallTx, wall.width, wall.height);
+        ws.x = wall.x;
+        ws.y = wall.y;
+        this.container.addChild(ws);
+      }
 
-    this.container.addChild(wallGfx, wallBorder);
+      if (tc.wallTrimColor !== undefined) {
+        const trim = new Graphics();
+        trim.lineStyle(2, tc.wallTrimColor, tc.wallTrimAlpha ?? 0.6);
+        trim.drawRect(WALL_THICKNESS, WALL_THICKNESS, ROOM_WIDTH - WALL_THICKNESS * 2, ROOM_HEIGHT - WALL_THICKNESS * 2);
+        this.container.addChild(trim);
+      }
+    } else {
+      const wallGfx = new Graphics();
+      wallGfx.beginFill(this.biomeData.wallColor);
+      for (const wall of this.walls) {
+        wallGfx.drawRect(wall.x, wall.y, wall.width, wall.height);
+      }
+      wallGfx.endFill();
+
+      const wallBorder = new Graphics();
+      wallBorder.lineStyle(1, this.biomeData.wallBorderColor);
+      for (const wall of this.walls) {
+        wallBorder.drawRect(wall.x, wall.y, wall.width, wall.height);
+      }
+
+      this.container.addChild(wallGfx, wallBorder);
+    }
 
     this.renderDecorations();
     this.renderBuildings();
