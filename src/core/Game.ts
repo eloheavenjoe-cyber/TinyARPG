@@ -9,7 +9,7 @@ import { AbilitySelect } from '../ui/AbilitySelect';
 import { DeathScreen } from '../ui/DeathScreen';
 import { HUD } from '../ui/HUD';
 import { SkillBar } from '../ui/SkillBar';
-import { Room, ROOM_WIDTH, ROOM_HEIGHT, rectsOverlap } from '../world/Room';
+import { Room, ROOM_WIDTH, ROOM_HEIGHT, rectsOverlap, resolveCollision } from '../world/Room';
 import { Player, InventorySlot, EquipSlot } from '../entities/Player';
 import { Enemy, EnemyType } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
@@ -20,6 +20,7 @@ import { TILE_CONFIGS } from '../core/TileConfigs';
 import { BiomeId } from './ZoneConfig';
 import { Chest } from '../entities/Chest';
 import { Breakable } from '../entities/Breakable';
+import { SecretBush } from '../entities/SecretBush';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
@@ -149,6 +150,13 @@ export class Game {
   private stashTabs: StashTab[] = this.getDefaultStashTabs();
   private interactPrompt?: Text;
   private wasEKeyDown = false;
+  private secretBush: SecretBush | null = null;
+  private bushRevealed: boolean = false;
+  private cryptWaveCount: number = 0;
+  private cryptWaveActive: boolean = false;
+  private jackpotChest: Chest | null = null;
+  private cryptJackpotClaimed: boolean = false;
+  private playerPullTimer: number = 0;
   private currentSaveData: SaveData | null = null;
 
   constructor(app: Application) {
@@ -398,6 +406,7 @@ export class Game {
     for (const zoneId of data.zone.completedZoneIds) {
       this.zoneManager.completedZoneIds.add(zoneId);
     }
+    this.cryptJackpotClaimed = data.zone.cryptJackpotClaimed ?? false;
     this.zoneManager.transitionTo(data.zone.currentZoneId, data.zone.currentRoomIndex);
     this.buildCurrentZoneRoom();
 
@@ -433,6 +442,7 @@ export class Game {
         currentZoneId: this.zoneManager.zoneId,
         currentRoomIndex: this.zoneManager.roomIndex,
         completedZoneIds: [...this.zoneManager.completedZoneIds],
+        cryptJackpotClaimed: this.cryptJackpotClaimed || undefined,
       },
       player: {
         x: p.x, y: p.y,
@@ -859,6 +869,12 @@ export class Game {
     this.decorationSprites = [];
     this.chests = [];
     this.breakables = [];
+    if (this.secretBush) {
+      try { this.gameContainer.removeChild(this.secretBush.container); } catch (_) {}
+      try { this.secretBush.destroy(); } catch (_) {}
+      this.secretBush = null;
+    }
+    this.jackpotChest = null;
     this.vfx = [];
     this.chillZones = [];
     this.dash = null;
@@ -933,6 +949,34 @@ export class Game {
       const brk = new Breakable(bp.x, bp.y);
       this.breakables.push(brk);
       this.gameContainer.addChild(brk.container);
+    }
+
+    // Secret bush for hidden crypt door (tutorial zone only)
+    if (zone.id === 'tutorial' && !this.bushRevealed) {
+      this.secretBush = new SecretBush(5300, 400, () => {
+        this.bushRevealed = true;
+        const t = this.zoneManager.state?.currentTemplate;
+        if (!t) return;
+        t.doors.push({
+          rect: { x: 5240, y: 360, width: 160, height: 100 },
+          targetZone: 'secret_crypt',
+          targetRoom: 0,
+        });
+        this.buildCurrentZoneRoom();
+      });
+      this.gameContainer.addChild(this.secretBush.container);
+    }
+
+    // Hidden Crypt wave and jackpot setup
+    if (zone.id === 'secret_crypt') {
+      this.cryptWaveCount = 0;
+      this.cryptWaveActive = true;
+
+      if (!this.cryptJackpotClaimed) {
+        this.jackpotChest = new Chest(3200, 2000, { isJackpot: true, locked: true });
+        this.chests.push(this.jackpotChest);
+        this.gameContainer.addChild(this.jackpotChest.container);
+      }
     }
 
     // Hub-specific detailed visuals
@@ -1395,7 +1439,10 @@ export class Game {
       }
     }
 
-    this.player.update(this.input, mouseWX, mouseWY, this.room.walls, dt);
+    const inputDisabled = this.playerPullTimer > 0;
+    if (!inputDisabled) {
+      this.player.update(this.input, mouseWX, mouseWY, this.room.walls, dt);
+    }
 
     // HP regen from passive tree
     if (this.player.health < this.player.maxHealth) {
@@ -1490,6 +1537,25 @@ export class Game {
     // Boss update
     if (this.boss?.alive) {
       this.boss.update(this.player.x, this.player.y, dt, this.room!.walls);
+
+      // Cthulhu pull mechanic
+      if (this.boss.pendingPull) {
+        this.playerPullTimer = 30;
+        const pull = this.boss.pendingPull;
+        const pullTargetX = this.player.x + Math.cos(pull.angle) * pull.distance;
+        const pullTargetY = this.player.y + Math.sin(pull.angle) * pull.distance;
+        const resolved = resolveCollision(
+          { x: pullTargetX - this.player.width / 2, y: pullTargetY - this.player.height / 2, width: this.player.width, height: this.player.height },
+          this.room?.walls ?? []
+        );
+        this.player.x = resolved.x + this.player.width / 2;
+        this.player.y = resolved.y + this.player.height / 2;
+        this.boss.pendingPull = null;
+      }
+      if (this.playerPullTimer > 0) {
+        this.playerPullTimer--;
+      }
+
       for (const p of this.boss.projectiles) {
         this.projectiles.push(p);
         this.gameContainer!.addChild(p.sprite);
@@ -1673,10 +1739,24 @@ export class Game {
       const dist = Math.hypot(this.player.x - chest.x, this.player.y - chest.y);
       chest.showPrompt(dist < 48);
       if (dist < 48 && interactKey) {
+        if (chest.locked) {
+          this.combatText.showDamage(chest.x, chest.y - 30, 0, 0x8888ff);
+          continue;
+        }
         chest.open();
+        if (chest.isJackpot) {
+          this.itemDrops.push(new ItemDrop(chest.x, chest.y, {
+            type: 'gold', name: '1000 Gold', color: 0xffd700, value: 1000,
+          }));
+          this.gameContainer!.addChild(this.itemDrops[this.itemDrops.length - 1].container);
+          this.cryptJackpotClaimed = true;
+        }
         this.spawnChestLoot(chest.x, chest.y);
       }
     }
+
+    // Secret bush update (wobble/glow animation, proximity revert)
+    this.secretBush?.update(dt, this.player.x, this.player.y);
 
     // Vendor proximity
     const nearVendor = Math.hypot(this.player.x - 2900, this.player.y - 1380) < 150;
@@ -1936,6 +2016,13 @@ export class Game {
       if (inZone) {
         this.player.takeDamage(t.damageAmt);
         this.combatText.showDamage(this.player.x, this.player.y - 20, t.damageAmt, 0xff6666);
+        // Cthulhu: on grasp hit, set pending pull
+        if (this.boss?.bossId === 'cthulhu' && t.type === 'line') {
+          this.boss.pendingPull = {
+            distance: 180,
+            angle: Math.atan2(this.boss.y - this.player.y, this.boss.x - this.player.x),
+          };
+        }
       }
 
       // Boss attack VFX
@@ -2078,6 +2165,11 @@ export class Game {
       this.spawnLoot(this.boss.x - 40, this.boss.y);
       this.spawnLoot(this.boss.x + 40, this.boss.y);
 
+      // Unlock jackpot chest for crypt boss
+      if (this.boss.bossId === 'cthulhu' && this.jackpotChest) {
+        this.jackpotChest.unlock();
+      }
+
       if (this.player.addXp(this.boss.xpReward)) {
         this.combatText.showDamage(this.boss.x, this.boss.y - 30, this.player.level - 1, 0x44ff88);
       }
@@ -2117,6 +2209,36 @@ export class Game {
             this.zoneManager.nextWave();
             this.buildCurrentZoneRoom();
           }
+        }
+      }
+    }
+
+    // Hidden Crypt wave system (manual wave management)
+    if (zone?.id === 'secret_crypt' && this.cryptWaveActive) {
+      if (this.enemies.length === 0 && !this.boss && !this.bossSpawned) {
+        this.cryptWaveCount++;
+        if (this.cryptWaveCount >= 3) {
+          this.cryptWaveActive = false;
+          this.spawnBoss('cthulhu');
+        } else {
+          const count = 3 + this.cryptWaveCount;
+          const hpMult = 2.0 + this.cryptWaveCount * 0.1;
+          const template = this.zoneManager.state?.currentTemplate;
+          if (!template) return;
+          for (let i = 0; i < count; i++) {
+            const spawnZone = template.spawnZones[Math.floor(Math.random() * template.spawnZones.length)];
+            const x = spawnZone.x + Math.random() * spawnZone.width;
+            const y = spawnZone.y + Math.random() * spawnZone.height;
+            const type = Math.random() < 0.4 ? 'juggernaut' : 'grunt';
+            const e = new Enemy(x, y, type as any);
+            e.health = Math.round(e.health * hpMult);
+            e.maxHealth = e.health;
+            e.damage = Math.round(e.damage * 1.1);
+            this.enemies.push(e);
+            this.gameContainer!.addChild(e.sprite);
+            if (e.nameplate) this.gameContainer!.addChild(e.nameplate);
+          }
+          Logger.log('system', `Crypt wave ${this.cryptWaveCount} spawned (${count} enemies, ${hpMult}x HP)`);
         }
       }
     }
