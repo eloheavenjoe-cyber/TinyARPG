@@ -11,32 +11,38 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
   src/
   main.ts                     Entry — creates PixiJS Application, boots Game
   core/
-    Game.ts                   State machine, game loop, dev console wiring, projectile management, zone transitions
+    Game.ts                   State machine, game loop, dev console wiring, projectile management, zone transitions, rain zone system
     ZoneConfig.ts             Zone definitions, biome data, room template types, ZONE_REGISTRY
     ZoneManager.ts            Zone state, transitions, enemy spawning, endless scaling
-    ZoneRegistry.ts           ZONE_REGISTRY building (combined ZoneConfig types + RoomTemplates values, breaks circular dep)
     InputManager.ts           WASD + mouse, canvas-coordinate conversion, right-click support
     Logger.ts                 Categorized logging ([Input] [Combat] [Skill] etc)
-    SkillDefs.ts              All Warrior + Ranger skill data (main + support skills)
+    SkillDefs.ts              All Warrior + Ranger + Monk skill data (main + support skills)
     SkillManager.ts           Cooldowns, buffs, skill activation validation, class-aware
     PassiveTree.ts            ~40 node passive tree data, allocation, effects computation
     StatSystem.ts             Computes final stats from base + attributes + tree nodes + equipment
     ItemDefs.ts               Item base data (7 bases), 25 affix types × 3 tiers, 9 unique items
     ItemGenerator.ts          Item/orb generation: rarity, tiered affixes, ilvl, levelReq
+    SaveManager.ts            localStorage save/load, 5 slots, stash persistence
+    VendorManager.ts          Vendor stock generation + pricing
   entities/
-    Player.ts                 Player with SkillManager, mana, buffs, projectile firing, leveling, passive tree, inventory, equipment, slow debuff, skill AOE scaling, life leech, fortify
-    Enemy.ts                  4 types (Grunt/Archer/Juggernaut/Cultist), kiting AI, blink, repulsion, wobble, culling strike
+    Player.ts                 Player with SkillManager, mana, buffs, projectile firing, leveling, passive tree, inventory, equipment, slow debuff, skill AOE scaling, life leech, fortify, isRolling flag
+    Enemy.ts                  4 types (Grunt/Archer/Juggernaut/Cultist), kiting AI, blink, repulsion, wobble, culling strike, animated sprites for all types, slowTimer
     CombatText.ts             Floating damage numbers
     ItemDrop.ts               Ground loot nameplates (gold/potions/items/orbs) with rarity colors
-    Projectile.ts             Projectiles with hostile flag, slow effect, colored orbs
+    Projectile.ts             Projectiles with hostile flag, slow effect, colored orbs, 7×3 arrow sprite
+    Chest.ts                  Interactable chests with open/close states, loot drops
+    Breakable.ts              Destructible pots/barrels
   world/
-    Room.ts                   1600×896 room, wall collision resolver, biome-aware floor/walls, door/portal markers, buildings, NPCs, decorations
+    Room.ts                   6400×3584 room, wall collision resolver, biome-aware floor/walls, door/portal markers, buildings, NPCs, decorations
     RoomTemplates.ts          Pre-defined room layout templates (5 base + hub/tutorial/arena/dungeon/dev + 12 story zone + buildings/NPCs)
+    RoomDecorator.ts          Procedural decoration: trees, rocks, bushes, grass
   rendering/
-    Sprites.ts                Programmatic pixel-art textures (player, enemy, archer, cultist, juggernaut, floor, wall)
-    SpriteAnimator.ts         Sprite sheet loader + frame slicer + animation manager (warrior, ranger, reaper, golem, monk, cultist, archer, vendor, stash animated sprites)
+    Sprites.ts                Programmatic pixel-art textures (player, enemy, archer, cultist, juggernaut, floor, wall, buildings)
+    SpriteAnimator.ts         Sprite sheet loader + frame slicer + animation manager (warrior, ranger, reaper, golem, monk, cultist, archer, grunt, juggernaut, vendor, stash animated sprites)
+    Camera.ts                 Player-following camera with smooth lerp, edge clamping
+    Minimap.ts                Bottom-right minimap overlay (walls, player, enemies, chests, breakables)
   ui/
-    MainMenu.ts               Title screen
+    MainMenu.ts               Title screen with New Game / Continue / Load Game
     ClassSelect.ts            Class picker (Warrior/Ranger)
     AbilitySelect.ts          Main ability picker (4 per class)
     PassiveTreeScreen.ts      Full-screen passive tree overlay with clickable attribute buttons
@@ -45,6 +51,14 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     HUD.ts                    Health/mana bars (bottom-left), gold counter, level, XP bar
     SkillBar.ts               6-slot skill bar (bottom-center), keybinds 1-6
     DeveloperConsole.ts       In-game dev console (backtick), DOM-based, command history, autocomplete
+    EscapeMenu.ts             In-game menu: Resume / Save / Settings / Save & Exit
+    SaveSlotScreen.ts         5-slot save/load picker with delete confirmation
+    SettingsPlaceholder.ts    Visual-only Audio/Graphics/Controls panels
+    VendorScreen.ts           Vendor buy/sell overlay with hover tooltips
+    StashScreen.ts            Stash deposit/withdraw overlay with 4 tabs, hover tooltips
+    Tooltip.ts                Shared item/orb tooltip builder (rarity-colored, affixes, stats)
+    BossHpBar.ts              Boss HP bar overlay (screen-space, Y=60)
+    TutorialScreen.ts         Tutorial step overlay
 ```
 
 ## Completed Phases
@@ -320,6 +334,7 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Orb drop rate: ~5% (× itemQuantityMult), item drop rate: ~40% (× itemQuantityMult)
 - Portal scroll drop rate: ~8% (× itemQuantityMult)
 - Enemy types: Grunt (40 HP, 2.2 spd, 10 XP, size 36, sprite 1.3x), Archer (25 HP, 2.5 spd, 12 XP, size 34, sprite 1.2x), Juggernaut (120 HP, 1.2 spd, 25 XP, size 55, sprite 1.7x), Cultist (35 HP, 2.0 spd, 15 XP, size 32, sprite 1.15x)
+- Ranger projectile: base speed 10, arrow sprite 7×3, hitbox 7×3
 - Enemy speed variance: ±15% (0.85-1.15 of base)
 - Wave size: 3-6 enemies, 2s delay between waves
 - Unique skill effect sources: Titan's Reach (sword), Blood Amulet (amulet), Herald of Ruin (ring)
@@ -328,12 +343,35 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Magic Find affixes: prefix only, 3 tiers (8-15%, 16-25%, 26-40%)
 - Item Quantity affixes: suffix only, 3 tiers (8-12%, 13-20%, 21-30%)
 
+## Current Development — Monster Rarity + Game Balance (in progress, 2026-06-05)
+
+Design spec written: `docs/superpowers/specs/2026-06-05-monster-rarity-and-balance-design.md`
+Plan pending. Items:
+
+### Monster Rarity System
+- Normal / Magic (2 mods) / Rare (3-5 mods) enemy variants
+- Mod ideas: Hasted, Goliath, Proximal Tangibility (shield bubble), Vampiric, Volatile, Frost Aura, etc.
+- Higher rarity → more loot drops
+
+### Game Balance
+- Monsters die too easily (1-2 shot in tutorial, should be 3-5)
+- Adjust monster HP scaling across zones
+- May need to adjust player damage formula (currently hardcoded `25 * skill.damageMult` with no stat/gear scaling)
+
+### Completed Mods (in this session)
+- Save/load system + escape menu (Phase 5k)
+- Grunt skeleton sprites (Phase 6)
+- Juggernaut directional orc sprites (Phase 6)
+- Enemy size adjustments (grunt/jugg +30%, archer +20%, cultist +15%)
+- Ranger dodge roll animation (Phase 5l)
+- Hub NPC interactions — vendor buy/sell, stash deposit/withdraw (Phase 5m)
+- Ranger projectile upgrades — speed, range, VFX, Rain of Arrows redesign (Phase 5n)
+
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
 - No max orb stack size (stacks indefinitely, fine for current scope)
 - Level requirements displayed but not enforced (player can equip above level)
-- Hub NPCs/vendor/stash are placeholders only (no interactions yet)
 - Endless Dungeon uses single template (no per-room rotation)
 - No animation for support skills (only main ability triggers attack animation — monk techniques use executeTechnique)
 - Sprites loaded from `public/` using `fetch + blob + createObjectURL` — not Vite-bundled, so no hash-based cache busting
@@ -343,6 +381,8 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Weapon swapping not implemented (monk uses all techniques, no weapon slots for stances)
 - Enemy sprite files must be tracked in git (case-sensitive on Linux deployment)
 - Golem was missing from git (PNGs existed locally but weren't committed)
+- No stat/gear scaling on player damage (hardcoded `25 * skill.damageMult`)
+- Execute passive (3.0x dmg, 20% threshold) defined in SkillDefs but not wired into damage
 
 ### Phase 5j — Room Expansion & Camera System (completed 2026-06-05)
 - Rooms scaled 4x (6400×3584, from 1600×896). Walls 48px (from 32px). Walkable area auto-scales.
@@ -387,11 +427,11 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Game.ts integration**: `loadGame()`, `saveGame()`, `exitToMenu()`, `cleanupGameSession()` methods. Escape key toggles escape menu (blocks gameplay). Auto-save every 3600 frames (~60s). `toggleEscapeMenu()` cleans up settings placeholder when closing. `cleanupGameSession()` destroys all UI/game objects for clean restart.
 - **MainMenu** updated: New Game (replaces "Start Game"), Continue (loads first occupied slot), Load Game (opens slot picker). Code refactored with shared `createButton()`.
 
-### Phase 6 — More Monster Sprites
-- Add animated sprite sheets for remaining enemy types (Grunt, Archer, Juggernaut)
-- Archer completed (2026-06-05): 4 sheets (idle/run/attack/death, 100×100 frames)
-- Grunt completed (2026-06-05): skeleton sprites with per-animation frame sizes (idle 24×32, run 22×33, attack 43×37, death 33×32). Grunt uses `scale.x` flip for facing, triggers attack animation on contact damage via `attackAnimPlayed` flag, plays death animation on kill.
-- Juggernaut completed (2026-06-05): orc directional sprite — 4-row sheets (south/north/east/west), 64×64 frames. Idle: 256×256 (4 cols), Walk/Attack/Death: 512×256 (8 cols), Walk: 384×256 (6 cols). Uses `angleToDirection()` + `direction` field for facing (no rotation/flip). `Scale.set(1.7)` (1.3 base × 1.3 growth). Attack triggered on contact damage, death animation plays on kill.
+### Phase 6 — More Monster Sprites (completed 2026-06-05)
+- Arcner completed: 4 sheets (idle/run/attack/death, 100×100 frames)
+- Grunt completed: skeleton sprites with per-animation frame sizes (idle 24×32, run 22×33, attack 43×37, death 33×32). Uses `scale.x` flip for facing, triggers attack animation on contact damage via `attackAnimPlayed` flag, plays death animation on kill.
+- Juggernaut completed: orc directional sprite — 4-row sheets (south/north/east/west), 64×64 frames. Idle: 256×256 (4 cols), Walk/Attack/Death: 512×256 (8 cols). Walk sheet is 384×256 (6 cols, not 8). Uses `angleToDirection()` + `direction` field for facing (no rotation/flip). Scale 1.7. Attack triggered on contact damage, death animation plays on kill.
+- **Final enemy sizes**: Grunt hitbox 36 (+30%), sprite 1.3x. Archer hitbox 34 (+20%), sprite 1.2x. Juggernaut hitbox 55 (+30%), sprite 1.7x (1.3 base × 1.3 growth). Cultist hitbox 32 (+15%), sprite 1.15x.
 
 ### Phase 5m — Hub NPC Interactions (completed 2026-06-05)
 - **VendorManager** (`src/core/VendorManager.ts`): generates 8–12 random vendor items on hub entry (normal 40%, magic 40%, rare 15%, unique 5%). Pricing: `basePrice × rarityMult + affixTierBonus`. Buy = sell × 3 markup.
@@ -407,8 +447,15 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - `Game.ts`: triggers `playRangerRollAnimation` + `player.triggerRollAnimation()` on dash start; restores idle via `playAnimation()` on dash end (`t >= 1`)
 - Dodge roll range increased 120→144 (+20%) in `SkillDefs.ts`
 
+### Phase 5n — Ranger Projectile Upgrades (completed 2026-06-05)
+- **Projectile speed**: Base 8→10 (+25%).
+- **Ranges**: Quick Shot 500→650, Multi Shot 300→390, Snipe 600→780, Spread Shot 350→455, Barrage 450→585, Poison Arrow 400→520 (+30%).
+- **Arrow sprite**: Body 6×2→7×3, tip 3×2, colors brightened (`0xffee44`/`0xffcc00`). Hitbox matches 7×3.
+- **Trail VFX**: Dual-layer trail — 2px gold line (`0xffee44`) + 1px white glow line (`0xffffff`), 20 frame duration (was 15). Brighter, thicker, longer-lasting.
+- **Arrow impact VFX**: New `vfxArrowImpact()` — 6-ray gold starburst (`0xffcc00`) expanding from 15→25 radius + center yellow glow, 15 frames. Triggers on each enemy/breakable hit.
+- **Rain of Arrows redesign**: Now creates a persistent `RainZone` AoE at target position (radius 120, duration 120 frames / 2s). Each frame: 2-3 green arrow streak VFX fall from above, pulsing ground ring indicator. Damage tick every 15 frames (`25 × 0.6 = 15` damage) + 50% slow (`slowTimer = 20`). Old zone replaced on recast (no stacking).
+
 ### Phase 7 — Polish & Expansion
-- Hub NPC interactions (vendor buy/sell, stash deposit/withdraw)
 - Map modifiers (affixes on map items)
 - More room templates for variety
 - Balance pass on difficulty scaling
