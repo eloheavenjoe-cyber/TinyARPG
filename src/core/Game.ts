@@ -1161,7 +1161,7 @@ export class Game {
     }
 
     // Spawn boss if this is a boss room
-    const isBossRoom = state.roomIndex === zone.roomCount - 1 && zone.bossId;
+    const isBossRoom = state.roomIndex === zone.roomCount - 1 && zone.bossId && zone.id !== 'secret_crypt';
     if (isBossRoom && zone.bossId) {
       this.spawnBoss(zone.bossId as BossId);
     }
@@ -2622,6 +2622,7 @@ export class Game {
     const isProjectileType = result.effectType === 'projectile' || result.effectType === 'projectile_spread';
 
     if (isProjectileType) {
+      this.player.mana -= result.manaCost;
       const angle = Math.atan2(mouseWY - this.player.y, mouseWX - this.player.x);
       const px = this.player.x + Math.cos(angle) * 20;
       const py = this.player.y + Math.sin(angle) * 20;

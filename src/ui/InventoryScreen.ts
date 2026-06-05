@@ -27,7 +27,7 @@ function getRarityColor(rarity: string): number {
 export class InventoryScreen {
   container: Container;
   private gridSlots: { bg: Graphics; item: Text; index: number; icon: Sprite }[] = [];
-  private equipSlots: { bg: Graphics; item: Text; label: Text; slot: Slot }[] = [];
+  private equipSlots: { bg: Graphics; item: Text; label: Text; slot: Slot; icon: Sprite }[] = [];
   private selectedIndex = -1;
   private hoveredSlot: number | Slot | null = null;
   private statTexts: Text[] = [];
@@ -192,7 +192,14 @@ export class InventoryScreen {
       itemTxt.y = sy + 20;
       this.container.addChild(itemTxt);
 
-      this.equipSlots.push({ bg: g, item: itemTxt, label: labelTxt, slot });
+      const equipIcon = new Sprite();
+      equipIcon.anchor.set(0.5);
+      equipIcon.x = equipX + equipSlotSize / 2;
+      equipIcon.y = sy + equipSlotSize / 2;
+      equipIcon.visible = false;
+      this.container.addChild(equipIcon);
+
+      this.equipSlots.push({ bg: g, item: itemTxt, label: labelTxt, slot, icon: equipIcon });
     }
 
     // Stats panel
@@ -537,6 +544,16 @@ export class InventoryScreen {
         fontFamily: 'monospace', fontSize: 10,
         fill: item ? getRarityColor(item.rarity) : COLORS.textDim,
       });
+      if (item && isItemIconsLoaded()) {
+        const key = `${item.base.id}_${item.rarity}`;
+        const tex = getItemTexture(key);
+        if (tex) {
+          s.icon.texture = tex;
+          s.icon.visible = true;
+          continue;
+        }
+      }
+      s.icon.visible = false;
     }
 
     // Update stats

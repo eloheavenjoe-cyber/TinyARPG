@@ -816,7 +816,7 @@ export class Player {
     const extra = this.computedStats?.additionalProjectiles || 0;
     if (extra > 0 && skill.effectType !== 'projectile_spread') {
       for (let i = 0; i < extra; i++) {
-        const spreadAngle = (i - (extra - 1) / 2) * 0.1;
+        const spreadAngle = extra === 1 ? 0.08 : (i - (extra - 1) / 2) * 0.1;
         const p = new Projectile(x, y, angle + spreadAngle, speed, damage, pierce);
         p.lifetime = skill.range / speed;
         created.push(p);

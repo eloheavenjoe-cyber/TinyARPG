@@ -1,9 +1,10 @@
-import { Container, Text, TextStyle, Graphics } from 'pixi.js';
+import { Container, Text, TextStyle, Graphics, Sprite } from 'pixi.js';
 import { VendorStockItem, calculateSellPrice } from '../core/VendorManager';
 import { InventorySlot, OrbInfo } from '../entities/Player';
 import { GeneratedItem } from '../core/ItemGenerator';
 import { Logger } from '../core/Logger';
 import { buildItemTooltip, buildOrbTooltip } from './Tooltip';
+import { getItemTexture, isItemIconsLoaded } from '../rendering/ItemIcons';
 
 const SLOT = 50;
 const GAP = 6;
@@ -208,6 +209,25 @@ export class VendorScreen {
       bg.drawRect(0, 0, SLOT, SLOT);
     }
     c.addChild(bg);
+
+    // Item icon
+    if (slot) {
+      const icon = new Sprite();
+      icon.anchor.set(0.5);
+      icon.x = SLOT / 2;
+      icon.y = SLOT / 2;
+      icon.visible = false;
+      if (isItemIconsLoaded()) {
+        const key = slot.kind === 'equip' ? `${slot.item.base.id}_${slot.item.rarity}` : slot.orbId;
+        const tex = getItemTexture(key);
+        if (tex) {
+          icon.texture = tex;
+          icon.visible = true;
+        }
+      }
+      c.addChild(icon);
+    }
+
     c.x = x;
     c.y = y;
     return c;
