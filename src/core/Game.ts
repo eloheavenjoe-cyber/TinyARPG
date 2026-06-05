@@ -1764,6 +1764,9 @@ export class Game {
                 p.vx = Math.cos(ba) * Math.hypot(p.vx, p.vy);
                 p.vy = Math.sin(ba) * Math.hypot(p.vx, p.vy);
                 bounced = true;
+                Logger.log('combat', `[Ricochet] bounced to target, count remaining: ${p.bounceCount}`);
+              } else {
+                Logger.log('combat', `[Ricochet] no valid bounce target found (${this.enemies.length} enemies)`);
               }
             }
 
