@@ -195,13 +195,12 @@ export class CharacterScreen {
         continue;
       }
 
-      let badgeText = '';
-      if (skill.effectType === 'dash') badgeText = '[Dash]';
-      else if (['buff', 'debuff', 'passive'].includes(skill.effectType)) badgeText = '[Buff]';
-      else if (skill.effectType === 'projectile' || skill.effectType === 'projectile_spread' || skill.effectType === 'projectile_pierce') badgeText = '[Projectile]';
-      else badgeText = '[Melee]';
-
-      const badgeColor = badgeText === '[Buff]' ? '#66cc88' : badgeText === '[Dash]' ? '#88aadd' : badgeText === '[Projectile]' ? '#ddaa44' : '#cc6666';
+      const et = skill.effectType;
+      let badgeText = '[Melee]';
+      let badgeColor = '#cc6666';
+      if (et === 'dash') { badgeText = '[Dash]'; badgeColor = '#88aadd'; }
+      else if (['buff', 'debuff', 'passive'].includes(et)) { badgeText = '[Buff]'; badgeColor = '#66cc88'; }
+      else if (['projectile', 'projectile_spread', 'projectile_pierce', 'aoe_target'].includes(et)) { badgeText = '[Projectile]'; badgeColor = '#ddaa44'; }
 
       const badge = new Text(badgeText, new TextStyle({
         fontFamily: 'monospace', fontSize: 10, fill: badgeColor,
