@@ -965,12 +965,20 @@ export class Game {
         this.bushRevealed = true;
         const t = this.zoneManager.state?.currentTemplate;
         if (!t) return;
+        // Remember player position so we don't teleport them on rebuild
+        const savedX = this.player?.x ?? 0;
+        const savedY = this.player?.y ?? 0;
     t.doors.push({
       rect: { x: 5560, y: 960, width: 160, height: 100 },
       targetZone: 'secret_crypt',
       targetRoom: 0,
     });
         this.buildCurrentZoneRoom();
+        // Restore player position so they stay where they were
+        if (this.player && this.zoneManager.zoneId === 'tutorial') {
+          this.player.x = savedX;
+          this.player.y = savedY;
+        }
       });
       this.gameContainer.addChild(this.secretBush.container);
     }
@@ -1775,8 +1783,8 @@ export class Game {
     // Secret bush update (wobble/glow animation, proximity revert)
     this.secretBush?.update(dt, this.player.x, this.player.y);
 
-    // Vendor proximity
-    const nearVendor = Math.hypot(this.player.x - 2900, this.player.y - 1380) < 150;
+    // Vendor proximity (hub only)
+    const nearVendor = this.zoneManager.zoneId === 'hub' && Math.hypot(this.player.x - 2900, this.player.y - 1380) < 150;
     if (nearVendor && !this.vendorOpen && !this.stashOpen && !this.inventoryOpen && !this.treeOpen) {
       if (!this.interactPrompt) {
         this.interactPrompt = new Text('Press E to trade', new TextStyle({
@@ -1796,8 +1804,8 @@ export class Game {
       }
     }
 
-    // Stash proximity
-    const nearStash = Math.hypot(this.player.x - 3500, this.player.y - 1380) < 150;
+    // Stash proximity (hub only)
+    const nearStash = this.zoneManager.zoneId === 'hub' && Math.hypot(this.player.x - 3500, this.player.y - 1380) < 150;
     if (nearStash && !this.stashOpen && !this.vendorOpen && !this.inventoryOpen && !this.treeOpen) {
       if (!this.interactPrompt) {
         this.interactPrompt = new Text('Press E to access stash', new TextStyle({
@@ -2262,8 +2270,8 @@ export class Game {
 
     // Door overlap check
     for (const door of this.room?.doors ?? []) {
-      // Tutorial door is locked until tutorial is complete
-      if (zone?.id === 'tutorial' && this.tutorialStage !== 'complete') {
+      // Tutorial hub exit is locked until tutorial is complete
+      if (zone?.id === 'tutorial' && this.tutorialStage !== 'complete' && door.targetZone === 'hub') {
         Logger.log('system', `Tutorial door locked (stage=${this.tutorialStage})`);
         continue;
       }
