@@ -1,8 +1,9 @@
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle, Sprite } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Slot } from '../core/ItemDefs';
 import { GeneratedItem } from '../core/ItemGenerator';
 import { InventorySlot, OrbInfo, EquipSlot } from '../entities/Player';
+import { getItemTexture, isItemIconsLoaded } from '../rendering/ItemIcons';
 
 const COLORS = {
   bg: 0x0c0c1a,
@@ -25,7 +26,7 @@ function getRarityColor(rarity: string): number {
 
 export class InventoryScreen {
   container: Container;
-  private gridSlots: { bg: Graphics; item: Text; index: number }[] = [];
+  private gridSlots: { bg: Graphics; item: Text; index: number; icon: Sprite }[] = [];
   private equipSlots: { bg: Graphics; item: Text; label: Text; slot: Slot }[] = [];
   private selectedIndex = -1;
   private hoveredSlot: number | Slot | null = null;
@@ -126,7 +127,15 @@ export class InventoryScreen {
         txt.y = sy + slotSize / 2;
         this.container.addChild(txt);
 
-        this.gridSlots.push({ bg: g, item: txt, index: idx });
+        const icon = new Sprite();
+        icon.anchor.set(0.5);
+        icon.x = sx + slotSize / 2;
+        icon.y = sy + slotSize / 2 - 6;
+        icon.scale.set(1);
+        icon.visible = false;
+        this.container.addChild(icon);
+
+        this.gridSlots.push({ bg: g, item: txt, index: idx, icon });
       }
     }
 
@@ -494,6 +503,25 @@ export class InventoryScreen {
       slot.item.style = new TextStyle({
         fontFamily: 'monospace', fontSize: 9, fill: displayColor,
       });
+
+      // Set icon
+      if (entry && isItemIconsLoaded()) {
+        let iconKey = '';
+        if (entry.kind === 'equip') iconKey = `${entry.item.base.id}_${entry.item.rarity}`;
+        else if (entry.kind === 'orb') iconKey = entry.orbId;
+        const tex = iconKey ? getItemTexture(iconKey) : undefined;
+        if (tex) {
+          slot.icon.texture = tex;
+          slot.icon.visible = true;
+          slot.item.y = slot.bg.y + 36;
+        } else {
+          slot.icon.visible = false;
+          slot.item.y = slot.bg.y + 25;
+        }
+      } else {
+        slot.icon.visible = false;
+        slot.item.y = slot.bg.y + 25;
+      }
     }
 
     // Update equipment visuals

@@ -28,6 +28,7 @@ import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
 import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation, playRangerRollAnimation, playAnimation } from '../rendering/SpriteAnimator';
+import { loadItemIcons } from '../rendering/ItemIcons';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
 import { Minimap } from '../ui/Minimap';
@@ -194,6 +195,7 @@ export class Game {
       loadJuggernautAnimations(),
       loadVendorAnimations(),
       loadStashAnimations(),
+      loadItemIcons(),
     ]);
 
     barFill.clear();
