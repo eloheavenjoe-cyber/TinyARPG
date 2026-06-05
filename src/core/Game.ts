@@ -215,6 +215,11 @@ export class Game {
   }
 
   private showMainMenu() {
+    if (this.mainMenu) {
+      this.app.stage.removeChild(this.mainMenu.container);
+      this.mainMenu.destroy();
+      this.mainMenu = undefined;
+    }
     this.state = State.Menu;
     this.mainMenu = new MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT);
     this.mainMenu.onStart(() => this.showClassSelect());
@@ -255,6 +260,10 @@ export class Game {
 
   private startGame(classType: ClassType, abilityId: string) {
     Logger.log('game', `Starting ${classType} with ability: ${abilityId}`);
+    if (this.gameContainer) {
+      Logger.log('game', 'Cleaning up stale session before startGame');
+      this.cleanupGameSession();
+    }
     if (this.abilitySelect) {
       this.app.stage.removeChild(this.abilitySelect.container);
       this.abilitySelect.destroy();
@@ -292,6 +301,11 @@ export class Game {
   private loadGame(slotIndex: number) {
     const data = SaveManager.loadFromSlot(slotIndex);
     if (!data) return;
+
+    if (this.gameContainer) {
+      Logger.log('game', 'Cleaning up stale session before loadGame');
+      this.cleanupGameSession();
+    }
 
     this.state = State.Playing;
     this.currentSaveSlot = slotIndex;
@@ -715,7 +729,7 @@ export class Game {
     this.zoneManager = new ZoneManager();
     if (this.gameContainer) {
       this.app.stage.removeChild(this.gameContainer);
-      this.gameContainer.destroy({ children: true });
+      try { this.gameContainer.destroy({ children: true }); } catch (_) {}
       this.gameContainer = undefined;
     }
     this.devConsole.hide();
@@ -798,12 +812,12 @@ export class Game {
     if (!this.gameContainer || !this.room || !this.player) return;
 
     // Clear existing entities
-    for (const e of this.enemies) { this.gameContainer.removeChild(e.sprite); e.destroy(); }
-    for (const p of this.projectiles) { this.gameContainer.removeChild(p.sprite); p.destroy(); }
-    for (const d of this.itemDrops) { this.gameContainer.removeChild(d.container); d.destroy(); }
-    for (const s of this.decorationSprites) { this.gameContainer.removeChild(s); s.destroy(); }
-    for (const c of this.chests) { this.gameContainer.removeChild(c.container); c.destroy(); }
-    for (const b of this.breakables) { this.gameContainer.removeChild(b.container); b.destroy(); }
+    for (const e of this.enemies) { try { this.gameContainer.removeChild(e.sprite); } catch (_) {} try { e.destroy(); } catch (_) {} }
+    for (const p of this.projectiles) { try { this.gameContainer.removeChild(p.sprite); } catch (_) {} try { p.destroy(); } catch (_) {} }
+    for (const d of this.itemDrops) { try { this.gameContainer.removeChild(d.container); } catch (_) {} try { d.destroy(); } catch (_) {} }
+    for (const s of this.decorationSprites) { try { this.gameContainer.removeChild(s); } catch (_) {} try { s.destroy(); } catch (_) {} }
+    for (const c of this.chests) { try { this.gameContainer.removeChild(c.container); } catch (_) {} try { c.destroy(); } catch (_) {} }
+    for (const b of this.breakables) { try { this.gameContainer.removeChild(b.container); } catch (_) {} try { b.destroy(); } catch (_) {} }
     this.enemies = [];
     this.projectiles = [];
     this.itemDrops = [];
@@ -814,14 +828,20 @@ export class Game {
     this.chillZones = [];
     this.dash = null;
     if (this.recallPortal) {
-      if (this.recallPortal.graphic.parent) this.gameContainer.removeChild(this.recallPortal.graphic);
-      this.recallPortal.graphic.destroy();
+      try {
+        if (this.recallPortal.graphic.parent) this.gameContainer.removeChild(this.recallPortal.graphic);
+        this.recallPortal.graphic.destroy();
+      } catch (_) {}
       this.recallPortal = null;
     }
 
     // Remove old room visuals
     this.gameContainer.removeChild(this.room.container);
-    this.room.container.destroy({ children: true });
+    try {
+      this.room.container.destroy({ children: true });
+    } catch (e) {
+      Logger.log('system', `Room destroy error: ${e}`);
+    }
 
     // Build new room from zone state
     const state = this.zoneManager.state;
@@ -3033,26 +3053,26 @@ export class Game {
 
     if (this.gameContainer) {
       this.app.stage.removeChild(this.gameContainer);
-      this.gameContainer.destroy({ children: true });
+      try { this.gameContainer.destroy({ children: true }); } catch (_) {}
       this.gameContainer = undefined;
     }
     this.devConsole.hide();
     if (this.tutorialScreen) {
       this.app.stage.removeChild(this.tutorialScreen.container);
-      this.tutorialScreen.destroy();
+      try { this.tutorialScreen.destroy(); } catch (_) {}
       this.tutorialScreen = undefined;
     }
     this.tutorialStage = null;
     this.tutorialKeys = new Set();
     this.tutorialKeyWasDown = new Set();
     this.enemies = [];
-    for (const p of this.projectiles) { p.destroy(); }
+    for (const p of this.projectiles) { try { p.destroy(); } catch (_) {} }
     this.projectiles = [];
     this.itemDrops = [];
     this.vfx = [];
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();
-    if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
+    if (this.recallPortal) { try { this.recallPortal.graphic.destroy(); } catch (_) {} this.recallPortal = null; }
     this.dash = null;
     this.rainZones = [];
     this.combatText.destroy();

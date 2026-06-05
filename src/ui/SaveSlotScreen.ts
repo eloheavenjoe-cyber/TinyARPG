@@ -241,7 +241,8 @@ export class SaveSlotScreen {
   private refreshSlots() {
     this.slots = SaveManager.getAllSlots();
     while (this.container.children.length > 0) {
-      this.container.removeChildAt(0).destroy({ children: true });
+      const child = this.container.removeChildAt(0);
+      try { child.destroy({ children: true }); } catch (_) {}
     }
     const bg = new Graphics();
     bg.beginFill(0x0a0a1a, 0.95);
