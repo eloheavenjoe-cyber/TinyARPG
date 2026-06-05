@@ -165,14 +165,20 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?
   }
 
   // Chests
-  for (let i = 0; i < 4 + Math.floor(Math.random() * 5); i++) {
+  let chestCount = 4 + Math.floor(Math.random() * 5);
+  let breakableCount = 8 + Math.floor(Math.random() * 8);
+  if (biome === 'crypt') {
+    chestCount = 8 + Math.floor(Math.random() * 4);
+    breakableCount = 15 + Math.floor(Math.random() * 10);
+  }
+  for (let i = 0; i < chestCount; i++) {
     const p = tryPlace(28, 20);
     if (!p) continue;
     result.chests.push({ x: p.x + 14, y: p.y + 10 });
   }
 
   // Breakables
-  for (let i = 0; i < 8 + Math.floor(Math.random() * 8); i++) {
+  for (let i = 0; i < breakableCount; i++) {
     const p = tryPlace(20, 20);
     if (!p) continue;
     result.breakables.push({ x: p.x + 10, y: p.y + 10 });
