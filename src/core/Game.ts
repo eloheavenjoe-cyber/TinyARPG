@@ -120,6 +120,7 @@ export class Game {
   private vendorScreen?: VendorScreen;
   private stashScreen?: StashScreen;
   private vendorStock: VendorStockItem[] = [];
+  private stashTabs: StashTab[] = this.getDefaultStashTabs();
   private interactPrompt?: Text;
   private wasEKeyDown = false;
   private currentSaveData: SaveData | null = null;
@@ -337,6 +338,15 @@ export class Game {
 
     Logger.log('game', `Loaded save slot ${slotIndex}: ${data.playerName} level ${data.level}`);
     this.currentSaveData = data;
+    // Deserialize stash slots from serialized format to live InventorySlot
+    if (data.stashData) {
+      this.stashTabs = data.stashData.tabs.map(t => ({
+        name: t.name,
+        slots: t.slots.map(s => s ? this.deserializeInventory([s])[0] : null),
+      }));
+    } else {
+      this.stashTabs = this.getDefaultStashTabs();
+    }
   }
 
   private saveGame() {
@@ -372,7 +382,12 @@ export class Game {
           allocatedNodeIds: [...p.passiveTree.allocated],
         },
       },
-      stashData: this.currentSaveData?.stashData || { tabs: Array.from({ length: 4 }, (_, i) => ({ name: `Stash ${i + 1}`, slots: new Array(60).fill(null) })) },
+      stashData: {
+        tabs: this.stashTabs.map(t => ({
+          name: t.name,
+          slots: t.slots.map(s => s ? this.serializeInventory([s])[0] : null),
+        })),
+      },
     };
 
     SaveManager.saveToSlot(this.currentSaveSlot, data);
@@ -531,24 +546,24 @@ export class Game {
   private openStash() {
     if (this.stashOpen || !this.player) return;
     this.stashOpen = true;
-    const tabs = this.currentSaveData?.stashData?.tabs || this.getDefaultStashTabs();
-    this.stashScreen = new StashScreen(SCREEN_WIDTH, SCREEN_HEIGHT, tabs, this.player.inventory);
+    this.stashScreen = new StashScreen(SCREEN_WIDTH, SCREEN_HEIGHT, this.stashTabs, this.player.inventory);
     this.stashScreen.onDepositCallback((invIndex: number) => {
       if (!this.player) return;
       const slot = this.player.inventory[invIndex];
       if (!slot) return;
-      const emptyIdx = tabs[0].slots.findIndex(s => s === null);
+      const tab = this.stashTabs[0];
+      const emptyIdx = tab.slots.findIndex(s => s === null);
       if (emptyIdx === -1) {
         this.stashScreen?.showMessage('Stash tab full!');
         return;
       }
-      tabs[0].slots[emptyIdx] = this.serializeInventory([slot])[0];
+      tab.slots[emptyIdx] = slot;
       this.player.inventory[invIndex] = null;
       this.refreshStashAfterAction();
     });
     this.stashScreen.onWithdrawCallback((tabIndex: number, slotIndex: number) => {
       if (!this.player) return;
-      const tab = tabs[tabIndex];
+      const tab = this.stashTabs[tabIndex];
       if (!tab) return;
       const slot = tab.slots[slotIndex];
       if (!slot) return;
@@ -557,13 +572,13 @@ export class Game {
         this.stashScreen?.showMessage('Inventory full!');
         return;
       }
-      this.player.inventory[freeIdx] = this.deserializeInventory([slot])[0];
+      this.player.inventory[freeIdx] = slot;
       tab.slots[slotIndex] = null;
       this.refreshStashAfterAction();
     });
     this.stashScreen.onRenameTabCallback((tabIndex: number, name: string) => {
-      if (this.currentSaveData?.stashData?.tabs[tabIndex]) {
-        this.currentSaveData.stashData.tabs[tabIndex].name = name;
+      if (this.stashTabs[tabIndex]) {
+        this.stashTabs[tabIndex].name = name;
       }
     });
     this.stashScreen.onCloseCallback(() => this.closeStash());

@@ -1,7 +1,8 @@
 import { Container, Text, TextStyle, Graphics } from 'pixi.js';
-import { InventorySlot } from '../entities/Player';
+import { InventorySlot, OrbInfo } from '../entities/Player';
 import { StashTab } from '../core/SaveManager';
 import { Logger } from '../core/Logger';
+import { buildItemTooltip, buildOrbTooltip } from './Tooltip';
 
 const SLOT = 50;
 const GAP = 6;
@@ -22,6 +23,8 @@ export class StashScreen {
   private inventory: InventorySlot[] = [];
   private messageText?: Text;
   private messageTimer = 0;
+  private tooltip?: Container;
+  private screenWidth: number;
 
   constructor(
     screenWidth: number, screenHeight: number,
@@ -30,6 +33,7 @@ export class StashScreen {
   ) {
     this.tabs = tabs;
     this.inventory = inventory;
+    this.screenWidth = screenWidth;
     this.container = new Container();
 
     const bg = new Graphics();
@@ -165,11 +169,14 @@ export class StashScreen {
       const row = Math.floor(i / STASH_COLS);
       const x = startX + col * (SLOT + GAP);
       const y = startY + row * (SLOT + GAP);
-      const slot = this.createSlot(x, y, (slots[i] || null) as InventorySlot);
+      const entry = (slots[i] || null) as InventorySlot;
+      const slot = this.createSlot(x, y, entry);
       const idx = i;
       slot.eventMode = 'static';
       slot.cursor = 'pointer';
       slot.on('pointerdown', () => this.onWithdraw?.(this.activeTab, idx));
+      slot.on('pointerover', () => this.showTooltipFor(entry, x, y));
+      slot.on('pointerout', () => this.hideTooltip());
       this.container.addChild(slot);
       this.stashSlotContainers.push(slot);
     }
@@ -183,11 +190,14 @@ export class StashScreen {
       const row = Math.floor(i / INV_COLS);
       const x = startX + col * (SLOT + GAP);
       const y = startY + row * (SLOT + GAP);
-      const slot = this.createSlot(x, y, this.inventory[i]);
+      const entry = this.inventory[i];
+      const slot = this.createSlot(x, y, entry);
       const idx = i;
       slot.eventMode = 'static';
       slot.cursor = 'pointer';
       slot.on('pointerdown', () => this.onDeposit?.(idx));
+      slot.on('pointerover', () => this.showTooltipFor(entry, x, y));
+      slot.on('pointerout', () => this.hideTooltip());
       this.container.addChild(slot);
     }
   }
@@ -229,6 +239,29 @@ export class StashScreen {
   onWithdrawCallback(cb: (tabIndex: number, slotIndex: number) => void) { this.onWithdraw = cb; }
   onRenameTabCallback(cb: (tabIndex: number, name: string) => void) { this.onRenameTab = cb; }
   onCloseCallback(cb: () => void) { this.onClose = cb; }
+
+  private showTooltipFor(slot: InventorySlot, sx: number, sy: number) {
+    if (!slot) return;
+    this.hideTooltip();
+    if (slot.kind === 'orb') {
+      this.tooltip = buildOrbTooltip(slot);
+    } else {
+      this.tooltip = buildItemTooltip(slot.item);
+    }
+    if (this.tooltip) {
+      this.tooltip.x = Math.min(sx + SLOT + 10, this.screenWidth - this.tooltip.width - 10);
+      this.tooltip.y = Math.min(sy, 1080 - this.tooltip.height - 10);
+      this.container.addChild(this.tooltip);
+    }
+  }
+
+  private hideTooltip() {
+    if (this.tooltip) {
+      this.container.removeChild(this.tooltip);
+      this.tooltip.destroy({ children: true });
+      this.tooltip = undefined;
+    }
+  }
 
   update() {
     if (this.messageTimer > 0) {

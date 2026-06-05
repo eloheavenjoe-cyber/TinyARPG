@@ -32,6 +32,11 @@ export type SerializedInventorySlot =
 
 export interface StashTab {
   name: string;
+  slots: (import('../entities/Player').InventorySlot | null)[];
+}
+
+export interface SerializedStashTab {
+  name: string;
   slots: (SerializedInventorySlot | null)[];
 }
 
@@ -68,7 +73,7 @@ export interface SaveData {
     };
   };
   stashData?: {
-    tabs: StashTab[];
+    tabs: SerializedStashTab[];
   };
 }
 

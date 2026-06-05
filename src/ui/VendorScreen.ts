@@ -1,7 +1,9 @@
 import { Container, Text, TextStyle, Graphics } from 'pixi.js';
 import { VendorStockItem, calculateSellPrice } from '../core/VendorManager';
-import { InventorySlot } from '../entities/Player';
+import { InventorySlot, OrbInfo } from '../entities/Player';
+import { GeneratedItem } from '../core/ItemGenerator';
 import { Logger } from '../core/Logger';
+import { buildItemTooltip, buildOrbTooltip } from './Tooltip';
 
 const SLOT = 50;
 const GAP = 6;
@@ -17,6 +19,9 @@ export class VendorScreen {
   private messageTimer = 0;
   private stockSlots: Container[] = [];
   private invSlots: Container[] = [];
+  private tooltip?: Container;
+  private screenWidth: number;
+  private screenHeight: number;
 
   constructor(
     screenWidth: number, screenHeight: number,
@@ -25,6 +30,8 @@ export class VendorScreen {
     gold: number,
   ) {
     this.playerGold = gold;
+    this.screenWidth = screenWidth;
+    this.screenHeight = screenHeight;
     this.container = new Container();
 
     const bg = new Graphics();
@@ -110,6 +117,8 @@ export class VendorScreen {
       slot.eventMode = 'static';
       slot.cursor = 'pointer';
       slot.on('pointerdown', () => this.onSell?.(idx));
+      slot.on('pointerover', () => this.showSlotTooltip(inventory[idx], x, y));
+      slot.on('pointerout', () => this.hideTooltip());
       this.container.addChild(slot);
       this.invSlots.push(slot);
     }
@@ -137,8 +146,43 @@ export class VendorScreen {
       slot.eventMode = 'static';
       slot.cursor = 'pointer';
       slot.on('pointerdown', () => this.onBuy?.(stock[idx]));
+      slot.on('pointerover', () => this.showStockTooltip(stock[idx], x, y));
+      slot.on('pointerout', () => this.hideTooltip());
       this.container.addChild(slot);
       this.stockSlots.push(slot);
+    }
+  }
+
+  private showSlotTooltip(slot: InventorySlot, sx: number, sy: number) {
+    if (!slot) return;
+    this.hideTooltip();
+    if (slot.kind === 'orb') {
+      this.tooltip = buildOrbTooltip(slot);
+    } else {
+      this.tooltip = buildItemTooltip(slot.item);
+    }
+    if (this.tooltip) {
+      this.tooltip.x = Math.min(sx + SLOT + 10, this.screenWidth - this.tooltip.width - 10);
+      this.tooltip.y = Math.min(sy, this.screenHeight - this.tooltip.height - 10);
+      this.container.addChild(this.tooltip);
+    }
+  }
+
+  private showStockTooltip(item: VendorStockItem, sx: number, sy: number) {
+    this.hideTooltip();
+    this.tooltip = buildItemTooltip(item.item);
+    if (this.tooltip) {
+      this.tooltip.x = Math.min(sx + SLOT + 10, this.screenWidth - this.tooltip.width - 10);
+      this.tooltip.y = Math.min(sy, this.screenHeight - this.tooltip.height - 10);
+      this.container.addChild(this.tooltip);
+    }
+  }
+
+  private hideTooltip() {
+    if (this.tooltip) {
+      this.container.removeChild(this.tooltip);
+      this.tooltip.destroy({ children: true });
+      this.tooltip = undefined;
     }
   }
 
