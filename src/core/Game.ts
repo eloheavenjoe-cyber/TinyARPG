@@ -566,6 +566,7 @@ export class Game {
   }
 
   private exitToMenu() {
+    this.state = State.Menu;
     try {
       this.saveGame();
     } catch (e) {

@@ -106,6 +106,7 @@ export class Room {
           const accentTx = tileTextures[tileName];
           if (!accentTx) continue;
           const s = new Sprite(accentTx);
+          s.tint = 0x999999;
           s.x = Math.random() * ROOM_WIDTH;
           s.y = Math.random() * ROOM_HEIGHT;
           s.alpha = 0.3 + Math.random() * 0.4;

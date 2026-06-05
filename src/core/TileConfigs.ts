@@ -45,7 +45,7 @@ export const TILE_CONFIGS: Partial<Record<BiomeId, TileConfig>> = {
       treeTiles: ['tree', 'tree_d', 'tree_e'],
       bushTiles: ['stump'],
       rockTiles: [],
-      treeCount: [12, 18],
+      treeCount: [60, 90],
       bushCount: [3, 6],
       rockCount: [0, 2],
     },
