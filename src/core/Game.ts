@@ -69,6 +69,14 @@ interface RainZone {
   life: number;
   maxLife: number;
   damageTimer: number;
+  isPoison?: boolean;
+}
+
+interface ChillZone {
+  x: number;
+  y: number;
+  life: number;
+  radius: number;
 }
 
 export class Game {
@@ -97,6 +105,7 @@ export class Game {
   private modGfx: Graphics[] = [];
   private dash: DashState | null = null;
   private rainZones: RainZone[] = [];
+  private chillZones: ChillZone[] = [];
   private zoneManager: ZoneManager = new ZoneManager();
   private camera?: Camera;
   private portalAngle = 0;
@@ -705,6 +714,7 @@ export class Game {
     if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
     this.dash = null;
     this.rainZones = [];
+    this.chillZones = [];
     this.combatText.destroy();
     this.combatText = new CombatTextManager();
     this.player = undefined;
@@ -797,6 +807,7 @@ export class Game {
     this.chests = [];
     this.breakables = [];
     this.vfx = [];
+    this.chillZones = [];
     this.dash = null;
     if (this.recallPortal) {
       if (this.recallPortal.graphic.parent) this.gameContainer.removeChild(this.recallPortal.graphic);
@@ -1471,44 +1482,101 @@ export class Game {
       }
       const t = 1 - rz.life / rz.maxLife;
 
-      // Draw ground indicator (pulsing green ring)
+      const isPoison = rz.isPoison || false;
+      const indicatorColor = isPoison ? 0x88ff44 : 0x44ff44;
+      const indicatorColor2 = isPoison ? 0xbbff88 : 0x88ff88;
+
+      // Draw ground indicator (pulsing ring)
       const pulseRadius = rz.radius * (0.95 + 0.05 * Math.sin(t * Math.PI * 4));
       this.addVfx((g, _ft) => {
-        g.lineStyle(2, 0x44ff44, 0.3 - 0.2 * t);
+        g.lineStyle(2, indicatorColor, 0.3 - 0.2 * t);
         g.drawCircle(0, 0, pulseRadius);
-        g.lineStyle(1, 0x88ff88, 0.15 - 0.1 * t);
+        g.lineStyle(1, indicatorColor2, 0.15 - 0.1 * t);
         g.drawCircle(0, 0, pulseRadius * 0.8);
       }, 2).position.set(rz.x, rz.y);
 
-      // Falling arrow streaks (2-3 per frame)
-      const arrowCount = 2 + Math.floor(Math.random() * 2);
+      // Arrow Storm: more arrows
+      const baseArrowCount = isPoison ? 0 : 2 + Math.floor(Math.random() * 2);
+      const arrowCount = this.player?.hasSubKeystone('ra_3') ? 4 + Math.floor(Math.random() * 3) : baseArrowCount;
+
+      // Arrow Storm: +20% radius for arrow placement
+      const arrowRadiusMult = this.player?.hasSubKeystone('ra_3') ? 1.2 : 1;
+
+      // Falling arrow streaks
       for (let a = 0; a < arrowCount; a++) {
-        const endX = rz.x + (Math.random() - 0.5) * rz.radius * 2;
-        const endY = rz.y + (Math.random() - 0.5) * rz.radius * 2;
+        const endX = rz.x + (Math.random() - 0.5) * rz.radius * 2 * arrowRadiusMult;
+        const endY = rz.y + (Math.random() - 0.5) * rz.radius * 2 * arrowRadiusMult;
         const startX = endX + (Math.random() - 0.5) * 40;
         const startY = rz.y - rz.radius - 60 - Math.random() * 40;
         this.addVfx((g, ft) => {
           const alpha = Math.max(0, 1 - ft * 2);
-          g.lineStyle(1, 0x44ff44, alpha);
+          g.lineStyle(1, indicatorColor, alpha);
           g.moveTo(0, 0);
           g.lineTo(startX - endX, startY - endY);
         }, 8).position.set(endX, endY);
+
+        // Frost Volley: create chilling ground patch on each arrow
+        if (!isPoison && this.player?.hasSubKeystone('ra_6')) {
+          this.chillZones.push({
+            x: endX, y: endY,
+            life: 30,
+            radius: 60,
+          });
+        }
+
+        // Bombardment: AoE damage on each arrow VFX
+        if (!isPoison && this.player?.hasSubKeystone('ra_12')) {
+          const bombardDmg = Math.round(25 * 0.3);
+          for (const enemy of this.enemies) {
+            if (!enemy.alive) continue;
+            if (Math.hypot(enemy.x - endX, enemy.y - endY) < 60) {
+              enemy.takeDamage(bombardDmg);
+              this.combatText.showDamage(enemy.x, enemy.y - 20, bombardDmg, 0xff8844);
+            }
+          }
+        }
       }
 
-      // Damage tick every 15 frames
+      // Damage tick
+      const tickInterval = isPoison ? 15 : (this.player?.hasSubKeystone('ra_9') ? 5 : 15);
       rz.damageTimer += dt;
-      if (rz.damageTimer >= 15) {
+      if (rz.damageTimer >= tickInterval) {
         rz.damageTimer = 0;
-        const dmg = Math.round(25 * 0.6);
+        const baseDmg = Math.round(25 * 0.6);
+        const dmg = isPoison ? Math.round(baseDmg * 0.5) : (this.player?.hasSubKeystone('ra_9') ? Math.round(baseDmg * 3) : baseDmg);
         for (const enemy of this.enemies) {
           if (!enemy.alive) continue;
           const edx = enemy.x - rz.x;
           const edy = enemy.y - rz.y;
           if (Math.hypot(edx, edy) < rz.radius) {
             enemy.takeDamage(dmg);
-            enemy.slowTimer = 20;
-            this.combatText.showDamage(enemy.x, enemy.y - 20, dmg, 0x44ff44);
+            if (!isPoison) enemy.slowTimer = 20;
+            this.combatText.showDamage(enemy.x, enemy.y - 20, dmg, isPoison ? 0x88ff44 : 0x44ff44);
           }
+        }
+      }
+    }
+
+    // Chill zones update
+    for (let i = this.chillZones.length - 1; i >= 0; i--) {
+      const cz = this.chillZones[i];
+      cz.life -= dt;
+      if (cz.life <= 0) {
+        this.chillZones.splice(i, 1);
+        continue;
+      }
+      this.addVfx((g, _ft) => {
+        g.clear();
+        g.beginFill(0x4488ff, 0.12);
+        g.drawCircle(0, 0, cz.radius);
+        g.endFill();
+        g.lineStyle(2, 0x88ccff, 0.25);
+        g.drawCircle(0, 0, cz.radius);
+      }, 2).position.set(cz.x, cz.y);
+      for (const enemy of this.enemies) {
+        if (!enemy.alive) continue;
+        if (Math.hypot(enemy.x - cz.x, enemy.y - cz.y) < cz.radius) {
+          enemy.slowTimer = Math.max(enemy.slowTimer, 5);
         }
       }
     }
@@ -1597,11 +1665,97 @@ export class Game {
         for (const enemy of this.enemies) {
           if (!enemy.alive || p.hitTargets.has(enemy)) continue;
           if (rectsOverlap(p.getBounds(), enemy.getBounds())) {
-            enemy.takeDamage(p.damage);
-            this.combatText.showDamage(enemy.x, enemy.y - 20, p.damage, 0xffaa00);
+            let dmg = p.damage;
+
+            // Executioner: +50% damage to enemies below 50% HP (Snipe)
+            if (this.player?.hasSubKeystone('sn_3') && p.skillId === 'snipe' && enemy.health < enemy.maxHealth * 0.5) {
+              dmg = Math.round(dmg * 1.5);
+            }
+
+            // Marked for Death: set mark timer on Snipe hit
+            if (this.player?.hasSubKeystone('sn_12') && p.skillId === 'snipe') {
+              enemy.markedTimer = 240;
+            }
+
+            const killed = enemy.takeDamage(dmg);
+            this.combatText.showDamage(enemy.x, enemy.y - 20, dmg, 0xffaa00);
             if (!p.hostile) this.vfxArrowImpact(enemy.x, enemy.y);
             p.hitTargets.add(enemy);
-            if (!p.pierce) {
+
+            // Split Shot: on kill by Snipe, spawn 3 projectiles
+            if (killed && this.player?.hasSubKeystone('sn_9') && p.skillId === 'snipe') {
+              for (let i = 0; i < 3; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const proj = new Projectile(enemy.x, enemy.y, angle, 8, Math.round(dmg * 0.3), false);
+                proj.lifetime = 40;
+                proj.skillId = 'split_shot';
+                this.projectiles.push(proj);
+                this.gameContainer!.addChild(proj.sprite);
+              }
+            }
+
+            // Static Arrow chain lightning
+            if (this.player?.hasSubKeystone('qs_9') && !p.hostile && !p.chained) {
+              p.chained = true;
+              const chainTargets = this.enemies
+                .filter(o => o !== enemy && o.alive && Math.hypot(o.x - enemy.x, o.y - enemy.y) < 200)
+                .slice(0, 2);
+              for (const ct of chainTargets) {
+                ct.takeDamage(Math.round(dmg * 0.5));
+                this.combatText.showDamage(ct.x, ct.y - 20, Math.round(dmg * 0.5), 0x88ccff);
+                this.addVfx((g, t) => {
+                  g.clear();
+                  g.lineStyle(1 + t * 2, 0x88ccff, Math.max(0, 0.6 - t * 0.5));
+                  g.moveTo(enemy.x, enemy.y);
+                  g.lineTo(ct.x, ct.y);
+                }, 15);
+              }
+            }
+
+            // Poison Nova: create poison cloud on multi_shot hit
+            if (this.player?.hasSubKeystone('ms_6') && p.skillId === 'multi_shot') {
+              this.rainZones.push({
+                x: enemy.x, y: enemy.y,
+                radius: 80,
+                life: 180, maxLife: 180,
+                damageTimer: 0,
+                isPoison: true,
+              });
+            }
+
+            // Point Blank: consecutive hits tracking
+            if (this.player?.hasSubKeystone('ms_9') && !p.hostile) {
+              if (!p.consecutiveHits) p.consecutiveHits = new Map();
+              const hits = (p.consecutiveHits.get(enemy) || 0) + 1;
+              p.consecutiveHits.set(enemy, hits);
+              if (hits > 1) {
+                const bonus = 1 + (hits - 1) * 0.2;
+                enemy.takeDamage(Math.round(dmg * (bonus - 1)));
+              }
+            }
+
+            // Ricochet bounce
+            const canBounce = p.bounceCount > 0 && p.bounceRange > 0 && !p.hostile;
+            let bounced = false;
+            if (canBounce) {
+              let nearest: Enemy | null = null;
+              let nearestDist = p.bounceRange;
+              for (const other of this.enemies) {
+                if (!other.alive || p.hitTargets.has(other)) continue;
+                const d = Math.hypot(other.x - enemy.x, other.y - enemy.y);
+                if (d < nearestDist) { nearestDist = d; nearest = other; }
+              }
+              if (nearest) {
+                p.bounceCount--;
+                const ba = Math.atan2(nearest.y - p.y, nearest.x - p.x);
+                p.vx = Math.cos(ba) * Math.hypot(p.vx, p.vy);
+                p.vy = Math.sin(ba) * Math.hypot(p.vx, p.vy);
+                p.hitTargets.add(nearest);
+                bounced = true;
+              }
+            }
+
+            if (!bounced && !p.pierce) {
               hit = true;
               break;
             }
@@ -1610,8 +1764,12 @@ export class Game {
         // Check boss hit
         if (!p.hostile && this.boss?.alive && !p.hitTargets.has(this.boss)) {
           if (rectsOverlap(p.getBounds(), this.boss.getBounds())) {
-            this.boss.takeDamage(p.damage);
-            this.combatText.showDamage(this.boss.x, this.boss.y - 20, p.damage, 0xffaa00);
+            let bossDmg = p.damage;
+            if (this.player?.hasSubKeystone('sn_3') && p.skillId === 'snipe' && this.boss.health < this.boss.maxHealth * 0.5) {
+              bossDmg = Math.round(bossDmg * 1.5);
+            }
+            this.boss.takeDamage(bossDmg);
+            this.combatText.showDamage(this.boss.x, this.boss.y - 20, bossDmg, 0xffaa00);
             p.hitTargets.add(this.boss);
             if (!p.pierce) {
               hit = true;
@@ -2132,11 +2290,17 @@ export class Game {
           mouseWY = local.y;
         }
 
+        let rzRadius = 120;
+        let rzLife = 120;
+        if (this.player?.hasSubKeystone('ra_9')) {
+          rzRadius = 60;
+          rzLife = 360;
+        }
         const rainZone: RainZone = {
           x: mouseWX, y: mouseWY,
-          radius: 120,
-          life: 120,
-          maxLife: 120,
+          radius: rzRadius,
+          life: rzLife,
+          maxLife: rzLife,
           damageTimer: 0,
         };
         this.rainZones = [];

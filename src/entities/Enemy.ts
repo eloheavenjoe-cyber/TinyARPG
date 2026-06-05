@@ -55,6 +55,7 @@ export class Enemy {
   frostAuraActive = false;
   frostAuraRadius = 150;
   volatileActive = false;
+  markedTimer = 0;
   nameplate: Text | null = null;
 
   sprite: Sprite;
@@ -231,6 +232,7 @@ export class Enemy {
     if (this.fireTimer > 0) this.fireTimer -= dt;
     if (this.blinkCooldown > 0) this.blinkCooldown -= dt;
     if (this.slowTimer > 0) this.slowTimer -= dt;
+    if (this.markedTimer > 0) this.markedTimer -= dt;
 
     this.updateSprite();
   }
@@ -376,6 +378,10 @@ export class Enemy {
 
   takeDamage(amount: number): boolean {
     if (!this.alive) return false;
+
+    if (this.markedTimer > 0) {
+      amount = Math.round(amount * 1.3);
+    }
 
     if (this.cullThreshold > 0 && this.health > 0 && this.health <= this.cullThreshold) {
       this.health = 0;

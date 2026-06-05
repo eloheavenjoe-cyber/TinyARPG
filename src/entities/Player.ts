@@ -125,6 +125,13 @@ export class Player {
     this.speed = 6 * s.moveSpeedMult;
   }
 
+  hasSubKeystone(keystoneId: string): boolean {
+    for (const tree of this.skillSubTrees.values()) {
+      if (tree.hasKeystone(keystoneId)) return true;
+    }
+    return false;
+  }
+
   pickupItem(item: GeneratedItem): boolean {
     const idx = this.inventory.findIndex(s => s === null);
     if (idx === -1) return false;
@@ -708,10 +715,26 @@ export class Player {
   }
 
   fireProjectile(x: number, y: number, angle: number, skill: SkillDef, projectiles: Projectile[]): Projectile[] {
-    const speed = 10 * this.skills.projectileSpeedBonus();
-    const damage = this.calcDamage(skill);
-    const pierce = skill.effectType === 'projectile_pierce';
+    let speed = 10 * this.skills.projectileSpeedBonus();
+    let damage = this.calcDamage(skill);
+    let pierce = skill.effectType === 'projectile_pierce';
     const created: Projectile[] = [];
+
+    // Apply sub skill tree small node effects
+    const subEffects = skill.subTreeId ? this.skillSubTrees.get(skill.subTreeId)?.getAllEffects() : undefined;
+    if (subEffects?.damagePct) {
+      damage = Math.round(damage * (1 + subEffects.damagePct / 100));
+    }
+
+    // Apply Piercing Shot keystone
+    if (skill.effectType === 'projectile' && this.hasSubKeystone('qs_6')) {
+      pierce = true;
+    }
+
+    // Apply Railgun keystone
+    if (this.hasSubKeystone('sn_6') && skill.id === 'snipe') {
+      speed = 30;
+    }
 
     switch (skill.effectType) {
       case 'projectile': {
@@ -719,11 +742,38 @@ export class Player {
         for (let i = 0; i < count; i++) {
           const p = new Projectile(x, y, angle, speed, damage, pierce);
           p.lifetime = skill.range / speed;
+          if (subEffects?.rangePct) {
+            p.lifetime = (skill.range * (1 + subEffects.rangePct / 100)) / speed;
+          }
           created.push(p);
+        }
+        // Triple Fire keystone
+        if (skill.id === 'quick_shot' && this.hasSubKeystone('qs_12')) {
+          for (let i = -1; i <= 1; i += 2) {
+            const p = new Projectile(x, y, angle + i * 0.14, speed, damage, pierce);
+            p.lifetime = skill.range / speed;
+            created.push(p);
+          }
         }
         break;
       }
       case 'projectile_spread': {
+        // Shotgun keystone for multi_shot
+        if (this.hasSubKeystone('ms_3') && skill.id === 'multi_shot') {
+          const coneAngle = (120 * Math.PI / 180);
+          const halfCone = coneAngle / 2;
+          const count = (skill.value || 8) * 2;
+          for (let i = 0; i < count; i++) {
+            const a = angle - halfCone + (i / (count - 1 || 1)) * coneAngle;
+            const p = new Projectile(x, y, a, speed, damage, pierce);
+            p.lifetime = skill.range / speed;
+            created.push(p);
+          }
+          for (const p of created) {
+            p.skillId = skill.id;
+          }
+          return created;
+        }
         const count = skill.value || 8;
         const coneAngle = skill.angle !== undefined ? skill.angle * (Math.PI / 180) : Math.PI * 2;
         if (skill.angle !== undefined) {
@@ -752,6 +802,17 @@ export class Player {
       }
     }
 
+    // Apply small node extra projectiles
+    const extraProj = subEffects?.extraProjectiles || 0;
+    if (extraProj > 0) {
+      for (let i = 0; i < extraProj; i++) {
+        const spreadAngle = (i - (extraProj - 1) / 2) * 0.1;
+        const p = new Projectile(x, y, angle + spreadAngle, speed, damage, pierce);
+        p.lifetime = skill.range / speed;
+        created.push(p);
+      }
+    }
+
     const extra = this.computedStats?.additionalProjectiles || 0;
     if (extra > 0 && skill.effectType !== 'projectile_spread') {
       for (let i = 0; i < extra; i++) {
@@ -759,6 +820,17 @@ export class Player {
         const p = new Projectile(x, y, angle + spreadAngle, speed, damage, pierce);
         p.lifetime = skill.range / speed;
         created.push(p);
+      }
+    }
+
+    // Set per-projectile fields
+    for (const p of created) {
+      p.skillId = skill.id;
+      if (this.hasSubKeystone('sn_6') && skill.id === 'snipe') {
+        p.pierceWall = true;
+      }
+      if (this.hasSubKeystone('qs_3') && skill.id === 'quick_shot') {
+        p.bounceCount = 2;
       }
     }
 
