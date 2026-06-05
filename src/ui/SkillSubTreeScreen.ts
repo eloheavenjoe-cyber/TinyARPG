@@ -15,6 +15,8 @@ export class SkillSubTreeScreen {
   private pointsText: Text;
   private headerText: Text;
   private hoveredNode: string | null = null;
+  private messageTimer = 0;
+  private messageText = '';
 
   constructor(screenWidth: number, screenHeight: number, tree: SkillSubTree, points: number) {
     this.container = new Container();
@@ -102,6 +104,7 @@ export class SkillSubTreeScreen {
   update(input: InputManager, tree: SkillSubTree, points: number) {
     this.tree = tree;
     this.points = points;
+    if (this.messageTimer > 0) this.messageTimer--;
     this.redraw();
     this.handleHover(input);
     this.handleClick(input);
@@ -109,21 +112,27 @@ export class SkillSubTreeScreen {
 
   private handleHover(input: InputManager) {
     this.hoveredNode = null;
-    for (const [id, gfx] of this.nodeGfx) {
-      const node = this.tree.getNode(id);
-      if (!node) continue;
-      const r = this.getNodeRadius(node);
-      const dx = input.mouseX - gfx.bg.x;
-      const dy = input.mouseY - gfx.bg.y;
-      if (dx * dx + dy * dy < (r + 5) * (r + 5)) {
-        this.hoveredNode = id;
-        const effectsStr = Object.entries(node.effects)
-          .map(([k, v]) => `${k}: ${v > 0 ? '+' : ''}${v}`).join(', ');
-        this.infoText.text = `${node.name} (${node.type})\n${node.desc}${effectsStr ? `\nEffects: ${effectsStr}` : ''}`;
-        return;
+    if (this.messageTimer <= 0) {
+      for (const [id, gfx] of this.nodeGfx) {
+        const node = this.tree.getNode(id);
+        if (!node) continue;
+        const r = this.getNodeRadius(node);
+        const dx = input.mouseX - gfx.bg.x;
+        const dy = input.mouseY - gfx.bg.y;
+        if (dx * dx + dy * dy < (r + 5) * (r + 5)) {
+          this.hoveredNode = id;
+          const effectsStr = Object.entries(node.effects)
+            .map(([k, v]) => `${k}: ${v > 0 ? '+' : ''}${v}`).join(', ');
+          this.infoText.text = `${node.name} (${node.type})\n${node.desc}${effectsStr ? `\nEffects: ${effectsStr}` : ''}`;
+          return;
+        }
       }
     }
-    this.infoText.text = 'Click a node to allocate';
+    if (this.messageTimer > 0) {
+      this.infoText.text = this.messageText;
+    } else {
+      this.infoText.text = 'Click a node to allocate';
+    }
   }
 
   private handleClick(input: InputManager) {
@@ -137,14 +146,18 @@ export class SkillSubTreeScreen {
       const dx = input.mouseX - gfx.bg.x;
       const dy = input.mouseY - gfx.bg.y;
       if (dx * dx + dy * dy < r * r) {
-        if (this.tree.available.has(id) && !this.tree.allocated.has(id)) {
-          if (node.type === 'keystone' && this.tree.keystoneCount >= 2) {
-            this.infoText.text = 'Max 2 keystones';
-            return;
-          }
-          if (this.points > 0) {
+        if (this.tree.canAllocate(id)) {
+          if (this.points > 0 || node.type !== 'keystone') {
             this.onAllocate(id);
           }
+        } else if (node.type === 'keystone' && this.tree.keystoneCount >= 2) {
+          this.messageText = 'Max 2 keystones';
+          this.messageTimer = 60;
+          this.infoText.text = this.messageText;
+        } else if (this.points <= 0) {
+          this.messageText = 'No sub skill points remaining';
+          this.messageTimer = 60;
+          this.infoText.text = this.messageText;
         }
         return;
       }
