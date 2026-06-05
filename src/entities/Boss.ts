@@ -5,7 +5,7 @@ import { Rect, resolveCollision } from '../world/Room';
 import { Logger } from '../core/Logger';
 import { createReaperSprite, playReaperAnimation, createGolemSprite, playGolemAnimation, ReaperAnimName, GolemAnimName } from '../rendering/SpriteAnimator';
 
-export type BossId = 'golem' | 'reaper';
+export type BossId = 'golem' | 'reaper' | 'cthulhu';
 
 interface BossConfig {
   bossId: BossId;
@@ -51,6 +51,7 @@ export class Boss {
   chosenAttack: TelegraphShape | null = null;
   attacking = false;
   pendingAttackDamage: (TelegraphShape & { damageAmt: number }) | null = null;
+  pendingPull: { distance: number; angle: number } | null = null;
 
   private phase = 0;
   private attackCooldown = 0;
@@ -84,6 +85,8 @@ export class Boss {
     this.sprite.anchor.set(0.5);
     if (bossId === 'reaper') {
       this.sprite.scale.set(1.44);
+    } else if (bossId === 'cthulhu') {
+      this.sprite.scale.set(1.5);
     } else {
       this.sprite.scale.set(1.25);
     }
@@ -128,6 +131,7 @@ export class Boss {
     switch (this.bossId) {
       case 'golem': this.updateGolem(dx, dy, dist, dt, playerX, playerY); break;
       case 'reaper': this.updateReaper(dx, dy, dist, dt, playerX, playerY); break;
+      case 'cthulhu': this.updateCthulhu(dx, dy, dist, dt, playerX, playerY); break;
     }
 
     // Telegraph phase: count down windup, draw telegraph
@@ -262,6 +266,61 @@ export class Boss {
     }
   }
 
+  private updateCthulhu(dx: number, dy: number, dist: number, dt: number, px: number, py: number) {
+    const speedMult = 1 + this.phase * 0.15;
+
+    if (!this.attacking && dist > 120) {
+      const moveX = (dx / dist) * this.speed * speedMult * dt;
+      const moveY = (dy / dist) * this.speed * speedMult * dt;
+      this.x += moveX;
+      this.y += moveY;
+    }
+
+    if (this.aiTimer <= 0 && !this.attacking) {
+      this.attackCooldown = 35;
+
+      const available: (() => void)[] = [];
+
+      // Tentacle Swipe (phase 1+)
+      available.push(() => {
+        this.prepareTelegraph({
+          type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
+          radius: 100 + this.phase * 20, duration: 40, maxDuration: 40, color: 0x66ffaa,
+        });
+      });
+
+      // Grasping Reach (phase 2+)
+      if (this.phase >= 1) {
+        available.push(() => {
+          const graspDist = Math.min(dist, 400 + this.phase * 50);
+          const graspAngle = Math.atan2(dy, dx);
+          this.prepareTelegraph({
+            type: 'line', x: this.x, y: this.y,
+            targetX: this.x + Math.cos(graspAngle) * graspDist,
+            targetY: this.y + Math.sin(graspAngle) * graspDist,
+            duration: 50, maxDuration: 50, color: 0x44ff88,
+          });
+        });
+      }
+
+      this.aiTimer = this.phase >= 3 ? 20 + Math.random() * 20 : 50 + Math.random() * 30;
+      const idx = Math.floor(Math.random() * available.length);
+      available[idx]();
+    }
+
+    // Phase 4: double swipe chance
+    if (this.phase >= 3 && !this.attacking && Math.random() < 0.015) {
+      if (this.aiTimer <= 0) {
+        this.prepareTelegraph({
+          type: 'cone', x: this.x, y: this.y, angle: Math.atan2(dy, dx),
+          radius: 120, duration: 25, maxDuration: 25, color: 0x66ffaa,
+        });
+        this.attackCooldown = 30;
+        this.aiTimer = 20;
+      }
+    }
+  }
+
   private prepareTelegraph(shape: TelegraphShape) {
     this.chosenAttack = shape;
     this.attackWindup = shape.duration;
@@ -331,18 +390,23 @@ export class Boss {
         this.pendingAttackDamage = { ...t, damageAmt: this.damage };
         break;
       case 'line': {
-        const angle = Math.atan2(py - this.y, px - this.x);
-        const p = new Projectile(this.x, this.y, angle, 8, this.damage, false, true, 0xcc8844, 0, 14);
-        p.lifetime = 60;
-        p.sprite.clear();
-        p.sprite.beginFill(0x887766);
-        p.sprite.drawCircle(0, 0, 14);
-        p.sprite.beginFill(0x665544);
-        p.sprite.drawCircle(-4, -3, 10);
-        p.sprite.beginFill(0x554433);
-        p.sprite.drawCircle(2, -1, 6);
-        p.sprite.endFill();
-        this.projectiles.push(p);
+        if (this.bossId === 'cthulhu') {
+          // Grasping Reach: use hitbox zone in Game.ts instead of projectile
+          this.pendingAttackDamage = { ...t, damageAmt: this.damage };
+        } else {
+          const angle = Math.atan2(py - this.y, px - this.x);
+          const p = new Projectile(this.x, this.y, angle, 8, this.damage, false, true, 0xcc8844, 0, 14);
+          p.lifetime = 60;
+          p.sprite.clear();
+          p.sprite.beginFill(0x887766);
+          p.sprite.drawCircle(0, 0, 14);
+          p.sprite.beginFill(0x665544);
+          p.sprite.drawCircle(-4, -3, 10);
+          p.sprite.beginFill(0x554433);
+          p.sprite.drawCircle(2, -1, 6);
+          p.sprite.endFill();
+          this.projectiles.push(p);
+        }
         break;
       }
       case 'circle':
@@ -364,6 +428,7 @@ export class Boss {
     Logger.log('combat', `[${this.name}] took ${amount} dmg (hp: ${Math.max(0, this.health)}/${this.maxHealth})`);
     if (this.health <= 0) {
       this.alive = false;
+      this.pendingPull = null;
       this.playAnim('death', false);
       Logger.log('entity', `${this.name} defeated`);
       return true;
@@ -394,5 +459,16 @@ function getBossConfig(bossId: BossId): BossConfig {
       return { bossId: 'golem', name: 'Stone Golem', hp: 500, size: 96, speed: 1.5, damage: 15, sprite: Sprites.golem, xpReward: 100 };
     case 'reaper':
       return { bossId: 'reaper', name: 'Death Reaper', hp: 800, size: 110, speed: 2.0, damage: 30, sprite: Sprites.reaper, xpReward: 200 };
+    case 'cthulhu':
+      return {
+        bossId: 'cthulhu',
+        name: 'The Deep One',
+        hp: 600,
+        size: 100,
+        speed: 1.3,
+        damage: 22,
+        sprite: Texture.WHITE,
+        xpReward: 150,
+      };
   }
 }
