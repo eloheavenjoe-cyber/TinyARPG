@@ -113,6 +113,74 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
   return item;
 }
 
+export function generateVendorItem(playerLevel: number, weighting: { normal: number; magic: number; rare: number; unique: number }): GeneratedItem {
+  const rarityRoll = Math.random() * 100;
+  let rarity: Rarity = 'normal';
+  if (rarityRoll > 100 - weighting.unique) rarity = 'unique';
+  else if (rarityRoll > 100 - weighting.unique - weighting.rare) rarity = 'rare';
+  else if (rarityRoll > 100 - weighting.unique - weighting.rare - weighting.magic) rarity = 'magic';
+
+  const base = ITEM_BASES[Math.floor(Math.random() * ITEM_BASES.length)];
+  const ilvl = playerLevel;
+  const maxTier = Math.min(3, Math.ceil(playerLevel / 4));
+  const damageRoll = base.damageRange ? base.damageRange.min + Math.floor(Math.random() * (base.damageRange.max - base.damageRange.min + 1)) : 0;
+
+  if (rarity === 'unique') {
+    const unique = UNIQUE_ITEMS[Math.floor(Math.random() * UNIQUE_ITEMS.length)];
+    if (unique.baseId !== base.id) return generateVendorItem(playerLevel, weighting);
+    const stats: Record<string, number> = { ...unique.innateStats, ...unique.fixedAffixes };
+    if (damageRoll > 0) stats.damage = damageRoll;
+    const mappedAffixes = Object.entries(unique.fixedAffixes).map(([stat, value]) => {
+      const affix = AFFIXES.find(af => af.stat === stat);
+      return { affix: affix || { id: stat, name: '', type: 'prefix' as const, stat, min: value, max: value, tier: 1 }, roll: value };
+    });
+    return {
+      id: `vendor_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      base, rarity: 'unique', affixes: mappedAffixes,
+      uniqueId: unique.id, damageRoll, computedName: unique.name,
+      computedStats: stats, ilvl, levelReq: 1,
+    };
+  }
+
+  const maxAffixes = rarity === 'rare' ? 4 + Math.floor(Math.random() * 3) : rarity === 'magic' ? 2 : 0;
+  const prefixes = AFFIXES.filter(a => a.type === 'prefix' && a.tier <= maxTier);
+  const suffixes = AFFIXES.filter(a => a.type === 'suffix' && a.tier <= maxTier);
+  const usedStats = new Set<string>();
+  const affixes: { affix: ItemAffix; roll: number }[] = [];
+  const stats: Record<string, number> = { ...base.innateStats };
+  if (damageRoll > 0) stats.damage = damageRoll;
+
+  let prefixCount = 0, suffixCount = 0;
+  const targetPrefix = Math.ceil(maxAffixes / 2);
+  const targetSuffix = Math.floor(maxAffixes / 2);
+  for (let i = 0; i < 50 && (prefixCount < targetPrefix || suffixCount < targetSuffix); i++) {
+    const isPrefix = prefixCount < targetPrefix && (suffixCount >= targetSuffix || Math.random() < 0.5);
+    const pool = isPrefix ? prefixes : suffixes;
+    const shuffled = pool.sort(() => Math.random() - 0.5);
+    const pick = shuffled.find(a => !usedStats.has(a.stat));
+    if (!pick) continue;
+    usedStats.add(pick.stat);
+    const roll = pick.min + Math.floor(Math.random() * (pick.max - pick.min + 1));
+    affixes.push({ affix: pick, roll });
+    stats[pick.stat] = (stats[pick.stat] || 0) + roll;
+    if (isPrefix) prefixCount++; else suffixCount++;
+  }
+
+  const tierCounts: Record<number, number> = {};
+  for (const a of affixes) tierCounts[a.affix.tier] = (tierCounts[a.affix.tier] || 0) + 1;
+  const highestTier = Math.max(...Object.keys(tierCounts).map(Number), 1);
+  const levelReq = highestTier * 4;
+  const prefixNames = affixes.filter(a => a.affix.type === 'prefix').map(a => a.affix.name);
+  const suffixNames = affixes.filter(a => a.affix.type === 'suffix').map(a => a.affix.name);
+  const computedName = rarity === 'normal' ? base.name : `${prefixNames.join(' ')} ${base.name}${suffixNames.length ? ' ' + suffixNames.join(' ') : ''}`;
+
+  return {
+    id: `vendor_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    base, rarity, affixes, damageRoll, computedName, computedStats: stats,
+    ilvl, levelReq,
+  };
+}
+
 export function generateOrbDrop(): { orbId: string; name: string } {
   const r = Math.random();
   if (r < 0.25) return { orbId: 'mutation', name: 'Orb of Mutation' };
