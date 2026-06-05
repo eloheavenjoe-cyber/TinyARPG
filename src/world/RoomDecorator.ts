@@ -48,7 +48,6 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?
     ...template.walls,
     ...template.doors.map(d => d.rect),
     ...template.portals.map(p => p.rect),
-    ...template.spawnZones,
     ...template.buildings.map(b => ({ x: b.x, y: b.y, width: b.width, height: b.height })),
   ];
 
