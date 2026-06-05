@@ -933,10 +933,16 @@ export class Game {
       const cy = door.rect.y + door.rect.height / 2;
       const sx = template.playerStart.x;
       const sy = template.playerStart.y;
-      const minX = Math.min(sx, cx) - 32;
-      const maxX = Math.max(sx, cx) + 32;
-      const minY = Math.min(sy, cy) - 32;
-      const maxY = Math.max(sy, cy) + 32;
+      let minX = Math.min(sx, cx) - 32;
+      let maxX = Math.max(sx, cx) + 32;
+      let minY = Math.min(sy, cy) - 32;
+      let maxY = Math.max(sy, cy) + 32;
+      if (zone.id === 'tutorial') {
+        minX = Math.min(minX, 5580);
+        maxX = Math.max(maxX, 5620);
+        minY = Math.min(minY, 980);
+        maxY = Math.max(maxY, 1020);
+      }
       return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
     })() : undefined;
     const decor = decorateRoom(template, zone.biome, tileConfig, roadBlock);
@@ -955,15 +961,15 @@ export class Game {
 
     // Secret bush for hidden crypt door (tutorial zone only)
     if (zone.id === 'tutorial' && !this.bushRevealed) {
-      this.secretBush = new SecretBush(5300, 400, () => {
+      this.secretBush = new SecretBush(5600, 1000, () => {
         this.bushRevealed = true;
         const t = this.zoneManager.state?.currentTemplate;
         if (!t) return;
-        t.doors.push({
-          rect: { x: 5240, y: 360, width: 160, height: 100 },
-          targetZone: 'secret_crypt',
-          targetRoom: 0,
-        });
+    t.doors.push({
+      rect: { x: 5560, y: 960, width: 160, height: 100 },
+      targetZone: 'secret_crypt',
+      targetRoom: 0,
+    });
         this.buildCurrentZoneRoom();
       });
       this.gameContainer.addChild(this.secretBush.container);

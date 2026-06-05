@@ -11,6 +11,7 @@ export class SecretBush {
   state: BushState = 'hidden';
   private sprite: Sprite;
   private glowOverlay: Graphics;
+  private distantGlow: Graphics;
   private sparkleText: Text;
   private wobbleTimer = 0;
   private glowTimer = 0;
@@ -28,6 +29,10 @@ export class SecretBush {
     this.sprite.y = 0;
     this.sprite.tint = 0x559944;
     this.container.addChild(this.sprite);
+
+    this.distantGlow = new Graphics();
+    this.distantGlow.visible = false;
+    this.container.addChild(this.distantGlow);
 
     this.glowOverlay = new Graphics();
     this.glowOverlay.visible = false;
@@ -53,6 +58,7 @@ export class SecretBush {
         this.state = 'rustling';
         this.sparkleText.visible = true;
         this.glowOverlay.visible = true;
+        this.distantGlow.visible = false;
         this.wobbleTimer = 0;
         this.glowTimer = 0;
         Logger.log('system', 'Bush rustling! Click again to destroy');
@@ -64,6 +70,7 @@ export class SecretBush {
         this.sparkleText.visible = false;
         this.sprite.visible = false;
         this.glowOverlay.visible = false;
+        this.distantGlow.visible = false;
         this.onDestroyed();
         Logger.log('system', 'Bush destroyed! Hidden door revealed');
         return true;
@@ -73,6 +80,23 @@ export class SecretBush {
   }
 
   update(dt: number, playerX: number, playerY: number) {
+    const dist = Math.hypot(playerX - this.x, playerY - this.y);
+
+    if (this.state === 'hidden') {
+      // Subtle distant glow when player is within 300px — hints at something special
+      if (dist < 300) {
+        this.glowTimer += dt * 0.003;
+        this.distantGlow.visible = true;
+        this.distantGlow.clear();
+        const alpha = 0.08 + Math.sin(this.glowTimer * 3) * 0.04;
+        this.distantGlow.beginFill(0xffffaa, alpha);
+        this.distantGlow.drawCircle(0, -12, 18);
+        this.distantGlow.endFill();
+      } else {
+        this.distantGlow.visible = false;
+      }
+    }
+
     if (this.state === 'rustling') {
       this.wobbleTimer += dt * 0.003;
       this.sprite.x = Math.sin(this.wobbleTimer * 3) * 2;
@@ -84,7 +108,6 @@ export class SecretBush {
       this.glowOverlay.drawCircle(0, -12, 14);
       this.glowOverlay.endFill();
 
-      const dist = Math.hypot(playerX - this.x, playerY - this.y);
       if (dist > 200) {
         this.state = 'hidden';
         this.sparkleText.visible = false;
