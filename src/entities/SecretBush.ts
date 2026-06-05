@@ -12,7 +12,7 @@ export class SecretBush {
   private sprite: Sprite;
   private glowOverlay: Graphics;
   private distantGlow: Graphics;
-  private sparkleText: Text;
+  private interactLabel: Text;
   private wobbleTimer = 0;
   private glowTimer = 0;
   private onDestroyed: () => void;
@@ -38,43 +38,47 @@ export class SecretBush {
     this.glowOverlay.visible = false;
     this.container.addChild(this.glowOverlay);
 
-    this.sparkleText = new Text('☆', new TextStyle({
-      fontFamily: 'monospace', fontSize: 16, fill: '#ffff88',
+    this.interactLabel = new Text('', new TextStyle({
+      fontFamily: 'monospace', fontSize: 11, fill: '#ffff88',
     }));
-    this.sparkleText.anchor.set(0.5, 1);
-    this.sparkleText.y = -24;
-    this.sparkleText.visible = false;
-    this.container.addChild(this.sparkleText);
+    this.interactLabel.anchor.set(0.5, 0);
+    this.interactLabel.y = -24;
+    this.interactLabel.visible = false;
+    this.container.addChild(this.interactLabel);
 
     this.container.x = x;
     this.container.y = y;
   }
 
-  checkClick(mouseWX: number, mouseWY: number, clicked: boolean): boolean {
-    const dist = Math.hypot(mouseWX - this.x, mouseWY - this.y);
-    const inRange = dist < 24;
+  showPrompt(visible: boolean) {
+    if (this.state === 'destroyed') {
+      this.interactLabel.visible = false;
+      return;
+    }
+    this.interactLabel.visible = visible;
+    this.interactLabel.text = this.state === 'hidden' ? '??? [E]' : 'Open [E]';
+  }
+
+  interact(): boolean {
     if (this.state === 'hidden') {
-      if (inRange && clicked) {
-        this.state = 'rustling';
-        this.sparkleText.visible = true;
-        this.glowOverlay.visible = true;
-        this.distantGlow.visible = false;
-        this.wobbleTimer = 0;
-        this.glowTimer = 0;
-        Logger.log('system', 'Bush rustling! Click again to destroy');
-        return true;
-      }
-    } else if (this.state === 'rustling') {
-      if (clicked) {
-        this.state = 'destroyed';
-        this.sparkleText.visible = false;
-        this.sprite.visible = false;
-        this.glowOverlay.visible = false;
-        this.distantGlow.visible = false;
-        this.onDestroyed();
-        Logger.log('system', 'Bush destroyed! Hidden door revealed');
-        return true;
-      }
+      this.state = 'rustling';
+      this.interactLabel.text = 'Open [E]';
+      this.distantGlow.visible = false;
+      this.glowOverlay.visible = true;
+      this.wobbleTimer = 0;
+      this.glowTimer = 0;
+      Logger.log('system', 'Bush rustling! Press E again to destroy');
+      return true;
+    }
+    if (this.state === 'rustling') {
+      this.state = 'destroyed';
+      this.interactLabel.visible = false;
+      this.sprite.visible = false;
+      this.glowOverlay.visible = false;
+      this.distantGlow.visible = false;
+      this.onDestroyed();
+      Logger.log('system', 'Bush destroyed! Hidden door revealed');
+      return true;
     }
     return false;
   }
@@ -83,7 +87,6 @@ export class SecretBush {
     const dist = Math.hypot(playerX - this.x, playerY - this.y);
 
     if (this.state === 'hidden') {
-      // Subtle distant glow when player is within 300px — hints at something special
       if (dist < 300) {
         this.glowTimer += dt * 0.003;
         this.distantGlow.visible = true;
@@ -110,7 +113,7 @@ export class SecretBush {
 
       if (dist > 200) {
         this.state = 'hidden';
-        this.sparkleText.visible = false;
+        this.interactLabel.text = '??? [E]';
         this.glowOverlay.visible = false;
         this.sprite.x = 0;
       }

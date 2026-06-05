@@ -1763,6 +1763,15 @@ export class Game {
       }
     }
 
+    // Secret bush E-key interaction
+    if (this.secretBush && this.secretBush.state !== 'destroyed') {
+      const bushDist = Math.hypot(this.player.x - this.secretBush.x, this.player.y - this.secretBush.y);
+      this.secretBush.showPrompt(bushDist < 48);
+      if (bushDist < 48 && interactKey) {
+        this.secretBush.interact();
+      }
+    }
+
     // Secret bush update (wobble/glow animation, proximity revert)
     this.secretBush?.update(dt, this.player.x, this.player.y);
 
