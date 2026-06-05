@@ -699,7 +699,7 @@ export class Player {
   }
 
   fireProjectile(x: number, y: number, angle: number, skill: SkillDef, projectiles: Projectile[]): Projectile[] {
-    const speed = 8 * this.skills.projectileSpeedBonus();
+    const speed = 10 * this.skills.projectileSpeedBonus();
     const damage = Math.round(25 * skill.damageMult);
     const pierce = skill.effectType === 'projectile_pierce';
     const created: Projectile[] = [];
