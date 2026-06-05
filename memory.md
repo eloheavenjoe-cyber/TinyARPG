@@ -558,3 +558,88 @@ without explicit approval. See AGENTS.md for full coordination rules.
 - **Projectile spawn offset:** Projectiles spawn 20px forward of player center (`player.x + cos(angle)*20`) so they emerge from in front of the character visually.
 - **InventoryScreen destroy guard:** Click handlers in `InventoryScreen.update()` can trigger `toggleInventory()` which destroys the container. After each click handler, `if (!this.container.parent) return;` prevents processing on destroyed objects.
 - **Recall portal null guard:** Walking into a recall portal sets `this.recallPortal = null` in the collision handler BEFORE `buildCurrentZoneRoom()` runs, preventing double-destroy.
+
+
+## Visual Polish Catalog (TinyARPG Tutorial Zone)
+
+Ideas for visual polish and aesthetic improvement, ordered by effort tier. Most use the existing ddVfx() system, Graphics primitives, or small state additions.
+
+### Tier 1 — Quick Wins (~1-5 lines each)
+
+| # | Idea | Implementation |
+|---|------|---------------|
+| 1 | **Deepen grass tint** | Darken TilingSprite.tint from  x999999 →  x667755 |
+| 2 | **Warm door glow** | Pulse a soft golden circle behind the exit arch using VFX system with maxLife: 99999, 	int: 0xffdd88, lpha: 0.15 |
+| 3 | **Player hit flash** | On player.takeDamage(), tint entire screen red for 6 frames — one Graphics rect at pp.stage level, lpha: 0.15→0 |
+| 4 | **Health bar low-pulse** | If healthPct < 0.3, oscillate bar color between red/dark-red using Math.sin(portalAngle * 2) |
+| 5 | **Death screen fade-in** | Lerp deathAlpha from 0→0.7 over 60 frames instead of snapping instant |
+| 6 | **Health bar smooth lerp** | displayedHp += (actualHp - displayedHp) * 0.1 per frame instead of snapping |
+| 7 | **Mana bar smooth lerp** | Same as above |
+| 8 | **Skill cooldown sweep** | Replace static black overlay with animated pie-slice using Graphics.arc() shrinking from 360°→0° |
+| 9 | **Item drop bounce** | On creation, start y at -8 and lerp to   over 15 frames |
+| 10 | **Chest open sparkle** | Spawn 5 gold drawCircle dots that burst outward and fade over 15 frames |
+| 11 | **Gold pickup burst** | 3 tiny gold circles spread with random angles, lifetime 10 |
+| 12 | **Player invuln flash refinement** | sprite.alpha = 0.5 + Math.sin(invulnTimer * 0.5) * 0.3 instead of toggle |
+| 13 | **Door label shimmer** | Oscillate door label ill between #ffff88 and #ffdd44 using Math.sin(portalAngle * 1.5) |
+| 14 | **Minimap fade-in** | Lerp minimap lpha from 0→0.5 over 30 frames on zone entry |
+
+### Tier 2 — Noticeable (~30-80 lines each)
+
+| # | Idea | Implementation |
+|---|------|---------------|
+| 15 | **Fireflies** | 12-16 yellow-green dots ( xccff88) drifting with independent sin/cos paths. Each has own phase, speed, wander radius |
+| 16 | **Falling leaves** | 8-12 small brown/green circles spawned at top of screen with random drift + rotation, respawn at top on exit |
+| 17 | **Grass sway near player** | Apply Math.sin(portalAngle) x-offset to grass/flower decorations within ~150px of player, amplitude falls with distance |
+| 18 | **Light rays** | 3-4 semi-transparent trapezoids (alpha 0.03-0.06) at pp.stage level, panning slowly using portalAngle |
+| 19 | **Water puddle** | Fixed ellipse at scenic spot, illColor cycles  x446688↔ x6688aa, white dot reflection drifts across |
+| 20 | **Rustic signpost** | Graphics: brown post + wooden board + " TOWN" text beside exit arch, subtle sway rotation |
+| 21 | **Footprint trail** | 6-8 small  x555544 ovals every ~24px of movement, circle buffer with oldest-fade |
+| 22 | **Enemy death particles** | 4-6 colored circles burst outward matching enemy tint, fade over 12 frames |
+| 23 | **Breakable destruction chips** | 6-8 tiny brown shards ( x8a6a3a) arc outward and fade over 15 frames |
+| 24 | **Buff active auras** | Permanent VFX rings on player while buffs active: blue for fortify, red for battle rage, green for bloodlust |
+| 25 | **Level-up celebration** | Golden expanding ring (0→120, 40f) + 6 orbiting gold sparkles + "LEVEL UP!" combat text |
+| 26 | **Screen shake on boss attacks** | Offset gameContainer by ±3px on boss hit, lerp back over 8 frames |
+| 27 | **Portal transition VFX** | Expanding ring at door + screen fade to black for 15f before uildCurrentZoneRoom(), fade back in |
+| 28 | **Skill bar ready pulse** | Flash slot border gold for 6 frames when cooldown finishes via Math.sin blink |
+
+### Tier 3 — Ambitious (~100-200 lines each)
+
+| # | Idea | Implementation |
+|---|------|---------------|
+| 29 | **Day/night cycle** | dayTimer (0-3600), lerp BIOME_DATA colors toward night palette, tint sprites with lerp(0xffffff, 0x334466, nightAmount) |
+| 30 | **Dynamic ground fog** | 4-6 large semi-transparent white circles drifting at floor level, each with random phase/speed/alpha |
+| 31 | **Ambient wildlife** | 2-3 birds (flit tree→tree on bezier), 1-2 rabbits (hop path edges, flee on player proximity). State machine: idle→walk→flee→idle |
+| 32 | **Parallax background layer** | Static Container behind gameContainer with mountain/tree silhouettes, moves at  .2 * camera.offsetX |
+| 33 | **Weather system** | WeatherManager: per-biome chance table. Tutorial: clear 70%, drizzle 20%, fog 10%. Drizzle=falling streaks, fog=dim distant sprites |
+| 34 | **Object pooling for VFX** | Pre-allocate 30 Graphics, track free/used, ddVfx() claims from pool, destroy returns to pool |
+| 35 | **Full biome tile configs** | Create TILE_CONFIGS entries for all 6 non-tutorial biomes. Source/generate tile PNGs per biome |
+| 36 | **Animated terrain features** | Ice waterfalls (falling blue-white rects), desert lava cracks (pulsing orange lines), crypt crystals (faint purple pulsing dots) |
+| 37 | **Dynamic shadow drops** | Semi-transparent black ellipse below every entity at y + height/2 + 4, lpha: 0.2, scaled to entity size |
+| 38 | **Tooltip fade transition** | Lerp tooltip lpha in over 6 frames, out over 4 frames instead of instant toggle |
+| 39 | **NPC idle animations** | Vendor blinks (hide sprite 2f every ~4s), Stash foot shuffle (small y-bob). Driven by portalAngle + random timers |
+| 40 | **Combat hit pause** | On boss kill/large death, pause game objects for 4-6 frames. Single hitPauseTimer field |
+| 41 | **Dust motes** | 30-40 tiny (2-3px) semi-transparent dots scattered at pp.stage level, each with random position/speed/alpha |
+| 42 | **Camera idle bob** | Subtle sinusoidal offset: offsetY += Math.sin(portalAngle * 0.3) * 1 — camera breathes |
+
+### Tier 4 — Aspirational (~300+ lines each)
+
+| # | Idea | Implementation |
+|---|------|---------------|
+| 43 | **Sprite-replaced biomes** | Commission/generate full tile-sets for every biome. Replace all programmatic sprites with actual pixel art |
+| 44 | **Animated water tiles** | Cycle through 4-6 water ripple frames using sprite-sheet loader for fountain/pond areas |
+| 45 | **WebGL color filters** | ColorMatrixFilter for biome grading (warm forest, cool ice, desaturate crypt). BlurFilter for background DoF |
+| 46 | **Procedural tree sway** | Multi-frame sprite sheets or programmatic skew via Math.sin(portalAngle) for wind effect |
+| 47 | **Screen-space reflections** | For water/ice: duplicate floor texture, flip vertically, alpha 0.2 + blue tint, below entities |
+| 48 | **Dynamic fog of war** | Dark overlay with circular cutout around player, fades as player explores — Graphics mask approach |
+| 49 | **Boss intro cutscene** | Pause gameplay, show boss name in large text with dramatic camera zoom toward boss, zoom back. 90f sequence |
+| 50 | **Damage number juice** | Start numbers large and shrink, random horizontal drift, crits larger/orange, boss damage red with shake |
+
+### Recommended Implementation Order
+
+\\\
+Tier 1: #1, #3, #6, #7, #4, #2, #12, #9, #10, #14  → immediate visual lift
+Tier 2: #22, #27, #15, #17, #18, #25  → transforms feel
+Tier 3: #29, #42, #37, #30  → deep atmosphere
+Tier 4: #35, #43  → professional quality
+\\\
+
