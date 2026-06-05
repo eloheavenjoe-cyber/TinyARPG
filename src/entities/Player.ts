@@ -834,7 +834,7 @@ export class Player {
     return created;
   }
 
-  private calcDamage(skill: SkillDef): number {
+  calcDamage(skill: SkillDef): number {
     let mult = skill.damageMult;
 
     let primaryStat = 0;
@@ -867,6 +867,12 @@ export class Player {
   getAttackCooldown(): number {
     const skill = this.skills.mainAbility;
     if (!skill) return this.fallbackAttackCooldown;
+    const mult = this.skills.attackSpeedMult() * this._computedStats.attackSpeedMult;
+    const cdr = (this._computedStats.cooldownReductionPct || 0) / 100;
+    return Math.max(5, Math.round((skill.cooldown * (1 - cdr)) / mult));
+  }
+
+  getSkillCooldown(skill: SkillDef): number {
     const mult = this.skills.attackSpeedMult() * this._computedStats.attackSpeedMult;
     const cdr = (this._computedStats.cooldownReductionPct || 0) / 100;
     return Math.max(5, Math.round((skill.cooldown * (1 - cdr)) / mult));
