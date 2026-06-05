@@ -9,9 +9,6 @@ export class MainMenu {
   private startCallback: Callback = () => {};
   private continueCallback: Callback = () => {};
   private loadGameCallback: Callback = () => {};
-  private startButton!: Container;
-  private continueButton!: Container;
-  private loadGameButton!: Container;
   private bgSprites: Sprite[] = [];
   private screenWidth: number;
   private screenHeight: number;
@@ -81,7 +78,7 @@ export class MainMenu {
     Logger.log('ui', 'Main menu created');
   }
 
-  private createButton(x: number, y: number, label: string): Container {
+  private createButton(x: number, y: number, label: string, cb: Callback): Container {
     const btn = new Container();
 
     const btnBg = new Graphics();
@@ -106,20 +103,26 @@ export class MainMenu {
     btn.addChild(btnBg, btnBorder, btnText);
     btn.x = x;
     btn.y = y;
+    btn.eventMode = 'static';
+    btn.cursor = 'pointer';
+    btn.on('pointerdown', () => {
+      Logger.log('ui', `${label} button clicked`);
+      cb();
+    });
     this.container.addChild(btn);
     return btn;
   }
 
   private createStartButton(x: number, y: number) {
-    this.startButton = this.createButton(x, y, 'New Game');
+    this.createButton(x, y, 'New Game', () => this.startCallback());
   }
 
   private createContinueButton(x: number, y: number) {
-    this.continueButton = this.createButton(x, y, 'Continue');
+    this.createButton(x, y, 'Continue', () => this.continueCallback());
   }
 
   private createLoadGameButton(x: number, y: number) {
-    this.loadGameButton = this.createButton(x, y, 'Load Game');
+    this.createButton(x, y, 'Load Game', () => this.loadGameCallback());
   }
 
   onStart(callback: Callback) {
@@ -139,31 +142,6 @@ export class MainMenu {
     for (const s of this.bgSprites) {
       s.x -= speed * dt;
       if (s.x + this.screenWidth <= 0) s.x += this.screenWidth * 2;
-    }
-
-    if (!input.consumeClick()) return;
-
-    const sb = this.startButton.getBounds();
-    if (input.mouseX >= sb.x && input.mouseX <= sb.x + sb.width &&
-        input.mouseY >= sb.y && input.mouseY <= sb.y + sb.height) {
-      Logger.log('ui', 'Start button clicked');
-      this.startCallback();
-      return;
-    }
-
-    const cb = this.continueButton.getBounds();
-    if (input.mouseX >= cb.x && input.mouseX <= cb.x + cb.width &&
-        input.mouseY >= cb.y && input.mouseY <= cb.y + cb.height) {
-      Logger.log('ui', 'Continue button clicked');
-      this.continueCallback();
-      return;
-    }
-
-    const lb = this.loadGameButton.getBounds();
-    if (input.mouseX >= lb.x && input.mouseX <= lb.x + lb.width &&
-        input.mouseY >= lb.y && input.mouseY <= lb.y + lb.height) {
-      Logger.log('ui', 'Load Game button clicked');
-      this.loadGameCallback();
     }
   }
 
