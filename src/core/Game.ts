@@ -61,6 +61,15 @@ interface DashState {
   length: number;
 }
 
+interface RainZone {
+  x: number;
+  y: number;
+  radius: number;
+  life: number;
+  maxLife: number;
+  damageTimer: number;
+}
+
 export class Game {
   private app: Application;
   private input: InputManager;
@@ -85,6 +94,7 @@ export class Game {
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
   private dash: DashState | null = null;
+  private rainZones: RainZone[] = [];
   private zoneManager: ZoneManager = new ZoneManager();
   private camera?: Camera;
   private portalAngle = 0;
@@ -664,6 +674,7 @@ export class Game {
     this.zoneManager = new ZoneManager();
     if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
     this.dash = null;
+    this.rainZones = [];
     this.combatText.destroy();
     this.combatText = new CombatTextManager();
     this.player = undefined;
@@ -1330,6 +1341,58 @@ export class Game {
       }
     }
 
+    // Rain of Arrows zone update
+    for (let i = this.rainZones.length - 1; i >= 0; i--) {
+      const rz = this.rainZones[i];
+      rz.life -= dt;
+      if (rz.life <= 0) {
+        this.rainZones.splice(i, 1);
+        continue;
+      }
+      const t = 1 - rz.life / rz.maxLife;
+
+      // Draw ground indicator (pulsing green ring)
+      const pulseRadius = rz.radius * (0.95 + 0.05 * Math.sin(t * Math.PI * 4));
+      this.addVfx((g, _ft) => {
+        g.lineStyle(2, 0x44ff44, 0.3 - 0.2 * t);
+        g.drawCircle(0, 0, pulseRadius);
+        g.lineStyle(1, 0x88ff88, 0.15 - 0.1 * t);
+        g.drawCircle(0, 0, pulseRadius * 0.8);
+      }, 2).position.set(rz.x, rz.y);
+
+      // Falling arrow streaks (2-3 per frame)
+      const arrowCount = 2 + Math.floor(Math.random() * 2);
+      for (let a = 0; a < arrowCount; a++) {
+        const endX = rz.x + (Math.random() - 0.5) * rz.radius * 2;
+        const endY = rz.y + (Math.random() - 0.5) * rz.radius * 2;
+        const startX = endX + (Math.random() - 0.5) * 40;
+        const startY = rz.y - rz.radius - 60 - Math.random() * 40;
+        this.addVfx((g, ft) => {
+          const alpha = Math.max(0, 1 - ft * 2);
+          g.lineStyle(1, 0x44ff44, alpha);
+          g.moveTo(0, 0);
+          g.lineTo(startX - endX, startY - endY);
+        }, 8).position.set(endX, endY);
+      }
+
+      // Damage tick every 15 frames
+      rz.damageTimer += dt;
+      if (rz.damageTimer >= 15) {
+        rz.damageTimer = 0;
+        const dmg = Math.round(25 * 0.6);
+        for (const enemy of this.enemies) {
+          if (!enemy.alive) continue;
+          const edx = enemy.x - rz.x;
+          const edy = enemy.y - rz.y;
+          if (Math.hypot(edx, edy) < rz.radius) {
+            enemy.takeDamage(dmg);
+            enemy.slowTimer = 20;
+            this.combatText.showDamage(enemy.x, enemy.y - 20, dmg, 0x44ff44);
+          }
+        }
+      }
+    }
+
     // Chest interaction
     const interactKey = this.input.isKeyDown('KeyE');
     for (const chest of this.chests) {
@@ -1913,6 +1976,7 @@ export class Game {
           this.vfxProjectileTrail(p);
         }
       } else if (isAoeTarget) {
+        // Rain of Arrows — persistent AoE zone
         let mouseWX = this.input.mouseX;
         let mouseWY = this.input.mouseY;
         if (this.gameContainer) {
@@ -1921,16 +1985,16 @@ export class Game {
           mouseWY = local.y;
         }
 
-        for (const enemy of this.enemies) {
-          if (!enemy.alive) continue;
-          const dist = Math.hypot(enemy.x - mouseWX, enemy.y - mouseWY);
-          if (dist < (result.radius || 100)) {
-            const dmg = Math.round(25 * result.damageMult);
-            enemy.takeDamage(dmg);
-            this.combatText.showDamage(enemy.x, enemy.y - 20, dmg, 0x44ff44);
-          }
-        }
-        this.vfxRing(mouseWX, mouseWY, 0x44ff44, result.radius || 100);
+        const rainZone: RainZone = {
+          x: mouseWX, y: mouseWY,
+          radius: 120,
+          life: 120,
+          maxLife: 120,
+          damageTimer: 0,
+        };
+        this.rainZones = [];
+        this.rainZones.push(rainZone);
+        this.vfxRing(rainZone.x, rainZone.y, 0x44ff44, rainZone.radius);
       }
       return;
     }
@@ -2601,6 +2665,7 @@ export class Game {
     this.zoneManager = new ZoneManager();
     if (this.recallPortal) { this.recallPortal.graphic.destroy(); this.recallPortal = null; }
     this.dash = null;
+    this.rainZones = [];
     this.combatText.destroy();
     this.combatText = new CombatTextManager();
     this.player = undefined;

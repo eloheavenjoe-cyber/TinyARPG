@@ -42,6 +42,7 @@ export class Enemy {
   speed: number;
   readonly baseSpeed: number;
   alive = true;
+  slowTimer = 0;
   xpReward: number;
   damage: number;
   detectRange: number;
@@ -100,6 +101,9 @@ export class Enemy {
     if (!this.aggroed && dist < this.detectRange) this.aggroed = true;
     if (this.aggroed && dist > this.deaggroRange) this.aggroed = false;
     if (!this.aggroed) return;
+
+    const slowScale = this.slowTimer > 0 ? 0.5 : 1;
+    if (slowScale < 1) this.speed *= slowScale;
 
     switch (this.type) {
       case 'grunt':
@@ -213,9 +217,12 @@ export class Enemy {
       this.sprite.tint = this.hitFlashTimer > 0 ? 0xff6666 : 0xffffff;
     }
 
+    if (slowScale < 1) this.speed /= slowScale;
+
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
     if (this.fireTimer > 0) this.fireTimer -= dt;
     if (this.blinkCooldown > 0) this.blinkCooldown -= dt;
+    if (this.slowTimer > 0) this.slowTimer -= dt;
 
     this.updateSprite();
   }
