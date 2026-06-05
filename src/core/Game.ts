@@ -303,6 +303,8 @@ export class Game {
     this.hud = new HUD();
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
+    this.skillBar.container.x = 960;
+    this.skillBar.container.y = 1002;
     this.app.stage.addChild(this.skillBar.container);
     this.minimap = new Minimap();
     this.app.stage.addChild(this.minimap.container);
@@ -403,6 +405,8 @@ export class Game {
     this.hud = new HUD();
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
+    this.skillBar.container.x = 960;
+    this.skillBar.container.y = 1002;
     this.app.stage.addChild(this.skillBar.container);
     this.minimap = new Minimap();
     this.app.stage.addChild(this.minimap.container);
