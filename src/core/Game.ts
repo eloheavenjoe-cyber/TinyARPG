@@ -25,6 +25,7 @@ import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
+import { CharacterScreen } from '../ui/CharacterScreen';
 import { generateItemDrop, generateOrbDrop, GeneratedItem } from './ItemGenerator';
 import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
@@ -124,6 +125,9 @@ export class Game {
   private inventoryOpen = false;
   private passiveTreeScreen?: PassiveTreeScreen;
   private inventoryScreen?: InventoryScreen;
+  private characterScreenOpen = false;
+  private characterScreen?: CharacterScreen;
+  private wasCKeyDown = false;
   private devConsole: DeveloperConsole;
   private tutorialStage: TutorialStage | null = null;
   private tutorialKeys: Set<string> = new Set();
@@ -1293,6 +1297,8 @@ export class Game {
             this.closeVendor();
           } else if (this.stashOpen) {
             this.closeStash();
+          } else if (this.characterScreenOpen) {
+            this.toggleCharacterScreen();
           } else if (this.subTreeScreen) {
             this.toggleSubTree();
           } else if (!this.inventoryOpen && !this.treeOpen && !this.subTreeScreen) {
@@ -1309,6 +1315,17 @@ export class Game {
       }
       if (!this.input.isKeyDown('KeyE')) {
         this.wasEKeyDown = false;
+      }
+      if (this.characterScreenOpen) {
+        const cDown = this.input.isKeyDown('KeyC');
+        if (cDown && !this.wasCKeyDown) {
+          this.wasCKeyDown = true;
+          this.toggleCharacterScreen();
+          return;
+        }
+        this.wasCKeyDown = cDown;
+        this.characterScreen?.update();
+        return;
       }
       if (this.escapeMenuOpen || this.vendorOpen || this.stashOpen) {
         this.escapeMenu?.update();
@@ -1366,6 +1383,7 @@ export class Game {
         const iDown = this.input.isKeyDown('KeyI');
         if (iDown && !this.wasIKeyDown) this.toggleInventory();
         this.wasIKeyDown = iDown;
+        this.wasCKeyDown = false;
       } else {
         const pDown = this.input.isKeyDown('KeyP');
         if (pDown && !this.wasPKeyDown) this.toggleTree();
@@ -1382,6 +1400,14 @@ export class Game {
         const iDown = this.input.isKeyDown('KeyI');
         if (iDown && !this.wasIKeyDown) this.toggleInventory();
         this.wasIKeyDown = iDown;
+
+        const cDown = this.input.isKeyDown('KeyC');
+        if (cDown && !this.wasCKeyDown) {
+          if (!this.treeOpen && !this.inventoryOpen && !this.escapeMenuOpen && !this.vendorOpen && !this.stashOpen && !this.subTreeScreen) {
+            this.toggleCharacterScreen();
+          }
+        }
+        this.wasCKeyDown = cDown;
       }
     }
     switch (this.state) {
@@ -2984,6 +3010,21 @@ export class Game {
     }
   }
 
+  private toggleCharacterScreen() {
+    if (!this.player) return;
+    this.characterScreenOpen = !this.characterScreenOpen;
+    if (this.characterScreenOpen) {
+      this.characterScreen = new CharacterScreen(SCREEN_WIDTH, SCREEN_HEIGHT, this.player);
+      this.app.stage.addChild(this.characterScreen.container);
+    } else {
+      if (this.characterScreen) {
+        this.app.stage.removeChild(this.characterScreen.container);
+        this.characterScreen.destroy();
+        this.characterScreen = undefined;
+      }
+    }
+  }
+
   private updateInventory() {
     if (!this.inventoryScreen || !this.player) return;
     this.inventoryScreen.update(
@@ -3217,6 +3258,12 @@ export class Game {
       this.app.stage.removeChild(this.inventoryScreen.container);
       this.inventoryScreen.destroy();
       this.inventoryScreen = undefined;
+    }
+    if (this.characterScreenOpen) this.toggleCharacterScreen();
+    if (this.characterScreen) {
+      this.app.stage.removeChild(this.characterScreen.container);
+      this.characterScreen.destroy();
+      this.characterScreen = undefined;
     }
     if (this.treeOpen) this.toggleTree();
     if (this.passiveTreeScreen) {
