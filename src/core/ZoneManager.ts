@@ -5,6 +5,7 @@ import { ZoneConfig, RoomTemplate } from './ZoneConfig';
 import { ZONE_REGISTRY } from './ZoneRegistry';
 import { cloneTemplate } from '../world/RoomTemplates';
 import * as Templates from '../world/RoomTemplates';
+import { rollRarity, getRandomMods } from './MonsterMods';
 
 export interface ZoneState {
   zoneId: string;
@@ -42,7 +43,7 @@ export class ZoneManager {
 
   spawnEnemies(zone: ZoneConfig, template: RoomTemplate, roomIndex: number): Enemy[] {
     const enemies: Enemy[] = [];
-    const count = this.countEnemies(zone, roomIndex);
+    const count = Math.round(this.countEnemies(zone, roomIndex) * 1.1);
 
     for (let i = 0; i < count; i++) {
       const pool = zone.enemyPool;
@@ -91,6 +92,10 @@ export class ZoneManager {
       e.damage = Math.round(e.damage * dmgMult);
       e.xpReward = Math.round(e.xpReward * xpMult);
       enemies.push(e);
+      const rarity = rollRarity();
+      const modCount = rarity === 'rare' ? 3 : rarity === 'magic' ? 2 : 0;
+      const mods = modCount > 0 ? getRandomMods(modCount) : [];
+      if (mods.length > 0 || rarity !== 'normal') e.applyRarity(rarity, mods);
     }
 
     return enemies;
