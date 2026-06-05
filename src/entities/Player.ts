@@ -826,9 +826,6 @@ export class Player {
     // Set per-projectile fields
     for (const p of created) {
       p.skillId = skill.id;
-      if (this.hasSubKeystone('sn_6') && skill.id === 'snipe') {
-        p.pierceWall = true;
-      }
       if (this.hasSubKeystone('qs_3') && skill.id === 'quick_shot') {
         p.bounceCount = 2;
       }

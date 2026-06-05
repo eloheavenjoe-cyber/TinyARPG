@@ -1750,7 +1750,6 @@ export class Game {
                 const ba = Math.atan2(nearest.y - p.y, nearest.x - p.x);
                 p.vx = Math.cos(ba) * Math.hypot(p.vx, p.vy);
                 p.vy = Math.sin(ba) * Math.hypot(p.vx, p.vy);
-                p.hitTargets.add(nearest);
                 bounced = true;
               }
             }

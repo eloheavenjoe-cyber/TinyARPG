@@ -20,7 +20,6 @@ export class Projectile {
   chained = false;
   skillId = '';
   consecutiveHits: Map<any, number> | null = null;
-  pierceWall = false;
 
   constructor(x: number, y: number, angle: number, speed: number, damage: number, pierce = false, hostile = false, color = 0xffdd44, slowDuration = 0, size = 4) {
     this.x = x;
