@@ -35,6 +35,10 @@ import { EscapeMenu } from '../ui/EscapeMenu';
 import { SaveSlotScreen } from '../ui/SaveSlotScreen';
 import { SettingsPlaceholder } from '../ui/SettingsPlaceholder';
 import { ALL_SKILLS } from './SkillDefs';
+import { VendorScreen } from '../ui/VendorScreen';
+import { StashScreen } from '../ui/StashScreen';
+import { generateVendorStock, VendorStockItem, calculateSellPrice } from '../core/VendorManager';
+import { StashTab } from '../core/SaveManager';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -111,6 +115,14 @@ export class Game {
   private saveSlotScreen?: SaveSlotScreen;
   private settingsPlaceholder?: SettingsPlaceholder;
   private wasEscapeKeyDown = false;
+  private vendorOpen = false;
+  private stashOpen = false;
+  private vendorScreen?: VendorScreen;
+  private stashScreen?: StashScreen;
+  private vendorStock: VendorStockItem[] = [];
+  private interactPrompt?: Text;
+  private wasEKeyDown = false;
+  private currentSaveData: SaveData | null = null;
 
   constructor(app: Application) {
     this.app = app;
@@ -324,6 +336,7 @@ export class Game {
     this.buildCurrentZoneRoom();
 
     Logger.log('game', `Loaded save slot ${slotIndex}: ${data.playerName} level ${data.level}`);
+    this.currentSaveData = data;
   }
 
   private saveGame() {
@@ -359,6 +372,7 @@ export class Game {
           allocatedNodeIds: [...p.passiveTree.allocated],
         },
       },
+      stashData: this.currentSaveData?.stashData || { tabs: Array.from({ length: 4 }, (_, i) => ({ name: `Stash ${i + 1}`, slots: new Array(60).fill(null) })) },
     };
 
     SaveManager.saveToSlot(this.currentSaveSlot, data);
@@ -464,6 +478,125 @@ export class Game {
     this.showMainMenu();
   }
 
+  private openVendor() {
+    if (this.vendorOpen || !this.player) return;
+    this.vendorOpen = true;
+    const stock = this.vendorStock.length > 0 ? this.vendorStock : generateVendorStock(this.player.level);
+    this.vendorScreen = new VendorScreen(SCREEN_WIDTH, SCREEN_HEIGHT, stock, this.player.inventory, this.player.gold);
+    this.vendorScreen.onBuyCallback((stockItem: VendorStockItem) => {
+      if (!this.player) return;
+      if (this.player.gold < stockItem.buyPrice) {
+        this.vendorScreen?.showMessage('Not enough gold!');
+        return;
+      }
+      const freeSlot = this.player.inventory.findIndex(s => s === null);
+      if (freeSlot === -1) {
+        this.vendorScreen?.showMessage('Inventory full!');
+        return;
+      }
+      this.player.gold -= stockItem.buyPrice;
+      this.player.inventory[freeSlot] = { kind: 'equip', item: { ...stockItem.item, id: `owned_${crypto.randomUUID()}` } };
+      this.vendorStock = this.vendorStock.filter(s => s.id !== stockItem.id);
+      this.closeVendor();
+      this.openVendor();
+    });
+    this.vendorScreen.onSellCallback((gridIndex: number) => {
+      if (!this.player) return;
+      const slot = this.player.inventory[gridIndex];
+      if (!slot || slot.kind !== 'equip') return;
+      const gold = calculateSellPrice(slot.item);
+      this.player.gold += gold;
+      this.player.inventory[gridIndex] = null;
+      this.closeVendor();
+      this.openVendor();
+    });
+    this.vendorScreen.onCloseCallback(() => this.closeVendor());
+    this.app.stage.addChild(this.vendorScreen.container);
+  }
+
+  private closeVendor() {
+    this.vendorOpen = false;
+    if (this.vendorScreen) {
+      this.app.stage.removeChild(this.vendorScreen.container);
+      this.vendorScreen.destroy();
+      this.vendorScreen = undefined;
+    }
+    if (this.interactPrompt) {
+      this.gameContainer?.removeChild(this.interactPrompt);
+      this.interactPrompt.destroy();
+      this.interactPrompt = undefined;
+    }
+  }
+
+  private openStash() {
+    if (this.stashOpen || !this.player) return;
+    this.stashOpen = true;
+    const tabs = this.currentSaveData?.stashData?.tabs || this.getDefaultStashTabs();
+    this.stashScreen = new StashScreen(SCREEN_WIDTH, SCREEN_HEIGHT, tabs, this.player.inventory);
+    this.stashScreen.onDepositCallback((invIndex: number) => {
+      if (!this.player) return;
+      const slot = this.player.inventory[invIndex];
+      if (!slot) return;
+      const emptyIdx = tabs[0].slots.findIndex(s => s === null);
+      if (emptyIdx === -1) {
+        this.stashScreen?.showMessage('Stash tab full!');
+        return;
+      }
+      tabs[0].slots[emptyIdx] = this.serializeInventory([slot])[0];
+      this.player.inventory[invIndex] = null;
+      this.refreshStashAfterAction();
+    });
+    this.stashScreen.onWithdrawCallback((tabIndex: number, slotIndex: number) => {
+      if (!this.player) return;
+      const tab = tabs[tabIndex];
+      if (!tab) return;
+      const slot = tab.slots[slotIndex];
+      if (!slot) return;
+      const freeIdx = this.player.inventory.findIndex(s => s === null);
+      if (freeIdx === -1) {
+        this.stashScreen?.showMessage('Inventory full!');
+        return;
+      }
+      this.player.inventory[freeIdx] = this.deserializeInventory([slot])[0];
+      tab.slots[slotIndex] = null;
+      this.refreshStashAfterAction();
+    });
+    this.stashScreen.onRenameTabCallback((tabIndex: number, name: string) => {
+      if (this.currentSaveData?.stashData?.tabs[tabIndex]) {
+        this.currentSaveData.stashData.tabs[tabIndex].name = name;
+      }
+    });
+    this.stashScreen.onCloseCallback(() => this.closeStash());
+    this.app.stage.addChild(this.stashScreen.container);
+  }
+
+  private closeStash() {
+    this.stashOpen = false;
+    if (this.stashScreen) {
+      this.app.stage.removeChild(this.stashScreen.container);
+      this.stashScreen.destroy();
+      this.stashScreen = undefined;
+    }
+    if (this.interactPrompt) {
+      this.gameContainer?.removeChild(this.interactPrompt);
+      this.interactPrompt.destroy();
+      this.interactPrompt = undefined;
+    }
+  }
+
+  private refreshStashAfterAction() {
+    if (!this.player) return;
+    this.closeStash();
+    this.openStash();
+  }
+
+  private getDefaultStashTabs(): StashTab[] {
+    return Array.from({ length: 4 }, (_, i) => ({
+      name: `Stash ${i + 1}`,
+      slots: new Array(60).fill(null),
+    }));
+  }
+
   private cleanupGameSession() {
     if (this.escapeMenuOpen) this.toggleEscapeMenu();
     if (this.inventoryOpen) this.toggleInventory();
@@ -479,6 +612,8 @@ export class Game {
     if (this.escapeMenu) { this.app.stage.removeChild(this.escapeMenu.container); this.escapeMenu.destroy(); this.escapeMenu = undefined; }
     if (this.saveSlotScreen) { this.app.stage.removeChild(this.saveSlotScreen.container); this.saveSlotScreen.destroy(); this.saveSlotScreen = undefined; }
     if (this.settingsPlaceholder) { this.app.stage.removeChild(this.settingsPlaceholder.container); this.settingsPlaceholder.destroy(); this.settingsPlaceholder = undefined; }
+    if (this.vendorScreen) { this.app.stage.removeChild(this.vendorScreen.container); this.vendorScreen.destroy(); this.vendorScreen = undefined; }
+    if (this.stashScreen) { this.app.stage.removeChild(this.stashScreen.container); this.stashScreen.destroy(); this.stashScreen = undefined; }
     if (this.tutorialScreen) {
       this.app.stage.removeChild(this.tutorialScreen.container);
       this.tutorialScreen.destroy();
@@ -520,6 +655,9 @@ export class Game {
     this.room = undefined;
     this.input.reset();
     this.lastKeys.clear();
+    this.vendorOpen = false;
+    this.stashOpen = false;
+    this.vendorStock = [];
   }
  
   private toggleEscapeMenu() {
@@ -784,6 +922,9 @@ export class Game {
       stashNpc.y = 1380;
       this.gameContainer.addChild(stashNpc);
       this.decorationSprites.push(stashNpc);
+
+      // Generate vendor stock on hub entry
+      this.vendorStock = generateVendorStock(this.player.level);
     }
 
     // Re-add player and combat text above the new room (room floor tiles would cover them)
@@ -946,7 +1087,11 @@ export class Game {
       // Escape key handling
       if (this.input.isKeyDown('Escape')) {
         if (!this.wasEscapeKeyDown) {
-          if (!this.inventoryOpen && !this.treeOpen) {
+          if (this.vendorOpen) {
+            this.closeVendor();
+          } else if (this.stashOpen) {
+            this.closeStash();
+          } else if (!this.inventoryOpen && !this.treeOpen) {
             this.toggleEscapeMenu();
           } else if (this.inventoryOpen) {
             this.toggleInventory();
@@ -958,8 +1103,13 @@ export class Game {
       } else {
         this.wasEscapeKeyDown = false;
       }
-      if (this.escapeMenuOpen) {
+      if (!this.input.isKeyDown('KeyE')) {
+        this.wasEKeyDown = false;
+      }
+      if (this.escapeMenuOpen || this.vendorOpen || this.stashOpen) {
         this.escapeMenu?.update();
+        this.vendorScreen?.update();
+        this.stashScreen?.update();
         return;
       }
 
@@ -1175,6 +1325,55 @@ export class Game {
         chest.open();
         this.spawnChestLoot(chest.x, chest.y);
       }
+    }
+
+    // Vendor proximity
+    const nearVendor = Math.hypot(this.player.x - 2900, this.player.y - 1380) < 150;
+    if (nearVendor && !this.vendorOpen && !this.stashOpen && !this.inventoryOpen && !this.treeOpen) {
+      if (!this.interactPrompt) {
+        this.interactPrompt = new Text('Press E to trade', new TextStyle({
+          fontFamily: 'monospace', fontSize: 14, fill: '#ffff88',
+          stroke: '#000', strokeThickness: 2,
+        }));
+        this.interactPrompt.anchor.set(0.5);
+        this.interactPrompt.x = this.player.x;
+        this.interactPrompt.y = this.player.y - 40;
+        this.gameContainer!.addChild(this.interactPrompt);
+      }
+      this.interactPrompt.x = this.player.x;
+      this.interactPrompt.y = this.player.y - 40;
+      if (this.input.isKeyDown('KeyE') && !this.wasEKeyDown) {
+        this.wasEKeyDown = true;
+        this.openVendor();
+      }
+    }
+
+    // Stash proximity
+    const nearStash = Math.hypot(this.player.x - 3500, this.player.y - 1380) < 150;
+    if (nearStash && !this.stashOpen && !this.vendorOpen && !this.inventoryOpen && !this.treeOpen) {
+      if (!this.interactPrompt) {
+        this.interactPrompt = new Text('Press E to access stash', new TextStyle({
+          fontFamily: 'monospace', fontSize: 14, fill: '#ffff88',
+          stroke: '#000', strokeThickness: 2,
+        }));
+        this.interactPrompt.anchor.set(0.5);
+        this.interactPrompt.x = this.player.x;
+        this.interactPrompt.y = this.player.y - 40;
+        this.gameContainer!.addChild(this.interactPrompt);
+      }
+      this.interactPrompt.x = this.player.x;
+      this.interactPrompt.y = this.player.y - 40;
+      if (this.input.isKeyDown('KeyE') && !this.wasEKeyDown) {
+        this.wasEKeyDown = true;
+        this.openStash();
+      }
+    }
+
+    // Hide interact prompt if not near any NPC
+    if (!nearVendor && !nearStash && this.interactPrompt && !this.vendorOpen && !this.stashOpen) {
+      this.gameContainer!.removeChild(this.interactPrompt);
+      this.interactPrompt.destroy();
+      this.interactPrompt = undefined;
     }
 
     // Update projectiles

@@ -20,6 +20,8 @@ export class StashScreen {
   private tabButtons: Container[] = [];
   private stashSlotContainers: Container[] = [];
   private inventory: InventorySlot[] = [];
+  private messageText?: Text;
+  private messageTimer = 0;
 
   constructor(
     screenWidth: number, screenHeight: number,
@@ -78,6 +80,17 @@ export class StashScreen {
     closeHint.x = screenWidth / 2;
     closeHint.y = screenHeight - 20;
     this.container.addChild(closeHint);
+
+    // Message text
+    this.messageText = new Text('', new TextStyle({
+      fontFamily: 'monospace', fontSize: 14, fill: '#ffcc44',
+      stroke: '#000', strokeThickness: 2,
+    }));
+    this.messageText.anchor.set(0.5);
+    this.messageText.x = screenWidth / 2;
+    this.messageText.y = screenHeight - 40;
+    this.messageText.visible = false;
+    this.container.addChild(this.messageText);
 
     Logger.log('ui', 'Stash screen opened');
   }
@@ -217,7 +230,22 @@ export class StashScreen {
   onRenameTabCallback(cb: (tabIndex: number, name: string) => void) { this.onRenameTab = cb; }
   onCloseCallback(cb: () => void) { this.onClose = cb; }
 
-  update() {}
+  update() {
+    if (this.messageTimer > 0) {
+      this.messageTimer--;
+      if (this.messageTimer <= 0 && this.messageText) {
+        this.messageText.visible = false;
+      }
+    }
+  }
+
+  showMessage(msg: string) {
+    if (this.messageText) {
+      this.messageText.text = msg;
+      this.messageText.visible = true;
+      this.messageTimer = 120;
+    }
+  }
 
   destroy() {
     this.container.destroy({ children: true });
