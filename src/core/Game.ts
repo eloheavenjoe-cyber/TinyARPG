@@ -25,7 +25,7 @@ import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
 import { generateItemDrop, generateOrbDrop, GeneratedItem } from './ItemGenerator';
-import { Slot, ITEM_BASES, AFFIXES } from './ItemDefs';
+import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
@@ -353,10 +353,20 @@ export class Game {
     }
 
     // Restore inventory
-    this.player.inventory = this.deserializeInventory(data.player.inventory);
+    try {
+      this.player.inventory = this.deserializeInventory(data.player.inventory);
+    } catch (e) {
+      Logger.log('game', `Failed to deserialize inventory: ${e}`);
+      this.player.inventory = new Array(30).fill(null);
+    }
 
     // Restore equipment
-    this.player.equipment = this.deserializeEquipment(data.player.equipment);
+    try {
+      this.player.equipment = this.deserializeEquipment(data.player.equipment);
+    } catch (e) {
+      Logger.log('game', `Failed to deserialize equipment: ${e}`);
+      this.player.equipment = { weapon: null, body: null, helmet: null, boots: null, ring: null, ring2: null, amulet: null };
+    }
 
     // Restore skill slots
     for (let i = 0; i < data.player.skills.slotIds.length && i < 6; i++) {
@@ -394,12 +404,17 @@ export class Game {
     Logger.log('game', `Loaded save slot ${slotIndex}: ${data.playerName} level ${data.level}`);
     this.currentSaveData = data;
     // Deserialize stash slots from serialized format to live InventorySlot
-    if (data.stashData) {
-      this.stashTabs = data.stashData.tabs.map(t => ({
-        name: t.name,
-        slots: t.slots.map(s => s ? this.deserializeInventory([s])[0] : null),
-      }));
-    } else {
+    try {
+      if (data.stashData) {
+        this.stashTabs = data.stashData.tabs.map(t => ({
+          name: t.name,
+          slots: t.slots.map(s => s ? this.deserializeInventory([s])[0] : null),
+        }));
+      } else {
+        this.stashTabs = this.getDefaultStashTabs();
+      }
+    } catch (e) {
+      Logger.log('game', `Failed to deserialize stash: ${e}`);
       this.stashTabs = this.getDefaultStashTabs();
     }
   }
@@ -526,8 +541,10 @@ export class Game {
     if (!base) throw new Error(`Unknown base: ${data.baseId}`);
     const affixes = data.affixes.map(a => {
       const affix = AFFIXES.find(af => af.id === a.affixId);
-      if (!affix) throw new Error(`Unknown affix: ${a.affixId}`);
-      return { affix, roll: a.roll };
+      if (affix) return { affix, roll: a.roll };
+      const uniqueItem = UNIQUE_ITEMS.find(u => Object.keys(u.fixedAffixes).includes(a.affixId));
+      const val = uniqueItem?.fixedAffixes[a.affixId] ?? a.roll;
+      return { affix: { id: a.affixId, name: '', type: 'prefix' as const, stat: a.affixId, min: val, max: val, tier: 1 }, roll: val };
     });
     const stats: Record<string, number> = { ...base.innateStats };
     if (data.damageRoll > 0) stats.damage = data.damageRoll;
@@ -549,7 +566,11 @@ export class Game {
   }
 
   private exitToMenu() {
-    this.saveGame();
+    try {
+      this.saveGame();
+    } catch (e) {
+      Logger.log('game', `Save error during exit: ${e}`);
+    }
     try {
       this.cleanupGameSession();
     } catch (e) {
