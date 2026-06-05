@@ -114,34 +114,35 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
 }
 
 export function generateVendorItem(playerLevel: number, weighting: { normal: number; magic: number; rare: number; unique: number }): GeneratedItem {
-  const rarityRoll = Math.random() * 100;
+  const total = weighting.normal + weighting.magic + weighting.rare + weighting.unique;
+  const roll = Math.random() * total;
   let rarity: Rarity = 'normal';
-  if (rarityRoll > 100 - weighting.unique) rarity = 'unique';
-  else if (rarityRoll > 100 - weighting.unique - weighting.rare) rarity = 'rare';
-  else if (rarityRoll > 100 - weighting.unique - weighting.rare - weighting.magic) rarity = 'magic';
-
-  const base = ITEM_BASES[Math.floor(Math.random() * ITEM_BASES.length)];
-  const ilvl = playerLevel;
-  const maxTier = Math.min(3, Math.ceil(playerLevel / 4));
-  const damageRoll = base.damageRange ? base.damageRange.min + Math.floor(Math.random() * (base.damageRange.max - base.damageRange.min + 1)) : 0;
+  if (roll < weighting.unique) rarity = 'unique';
+  else if (roll < weighting.unique + weighting.rare) rarity = 'rare';
+  else if (roll < weighting.unique + weighting.rare + weighting.magic) rarity = 'magic';
 
   if (rarity === 'unique') {
     const unique = UNIQUE_ITEMS[Math.floor(Math.random() * UNIQUE_ITEMS.length)];
-    if (unique.baseId !== base.id) return generateVendorItem(playerLevel, weighting);
+    const base = ITEM_BASES.find(b => b.id === unique.baseId)!;
+    const dr = base.damageRange ? base.damageRange.min + Math.floor(Math.random() * (base.damageRange.max - base.damageRange.min + 1)) : 0;
     const stats: Record<string, number> = { ...unique.innateStats, ...unique.fixedAffixes };
-    if (damageRoll > 0) stats.damage = damageRoll;
+    if (dr > 0) stats.damage = dr;
     const mappedAffixes = Object.entries(unique.fixedAffixes).map(([stat, value]) => {
       const affix = AFFIXES.find(af => af.stat === stat);
       return { affix: affix || { id: stat, name: '', type: 'prefix' as const, stat, min: value, max: value, tier: 1 }, roll: value };
     });
     return {
-      id: `vendor_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: crypto.randomUUID(),
       base, rarity: 'unique', affixes: mappedAffixes,
-      uniqueId: unique.id, damageRoll, computedName: unique.name,
-      computedStats: stats, ilvl, levelReq: 1,
+      uniqueId: unique.id, damageRoll: dr, computedName: unique.name,
+      computedStats: stats, ilvl: playerLevel, levelReq: 1,
     };
   }
 
+  const base = pickWeighted(ITEM_BASES);
+  const ilvl = playerLevel;
+  const maxTier = Math.min(3, Math.ceil(playerLevel / 4));
+  const damageRoll = base.damageRange ? base.damageRange.min + Math.floor(Math.random() * (base.damageRange.max - base.damageRange.min + 1)) : 0;
   const maxAffixes = rarity === 'rare' ? 4 + Math.floor(Math.random() * 3) : rarity === 'magic' ? 2 : 0;
   const prefixes = AFFIXES.filter(a => a.type === 'prefix' && a.tier <= maxTier);
   const suffixes = AFFIXES.filter(a => a.type === 'suffix' && a.tier <= maxTier);
@@ -160,9 +161,9 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
     const pick = shuffled.find(a => !usedStats.has(a.stat));
     if (!pick) continue;
     usedStats.add(pick.stat);
-    const roll = pick.min + Math.floor(Math.random() * (pick.max - pick.min + 1));
-    affixes.push({ affix: pick, roll });
-    stats[pick.stat] = (stats[pick.stat] || 0) + roll;
+    const r = pick.min + Math.floor(Math.random() * (pick.max - pick.min + 1));
+    affixes.push({ affix: pick, roll: r });
+    stats[pick.stat] = (stats[pick.stat] || 0) + r;
     if (isPrefix) prefixCount++; else suffixCount++;
   }
 
@@ -170,13 +171,10 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
   for (const a of affixes) tierCounts[a.affix.tier] = (tierCounts[a.affix.tier] || 0) + 1;
   const highestTier = Math.max(...Object.keys(tierCounts).map(Number), 1);
   const levelReq = highestTier * 4;
-  const prefixNames = affixes.filter(a => a.affix.type === 'prefix').map(a => a.affix.name);
-  const suffixNames = affixes.filter(a => a.affix.type === 'suffix').map(a => a.affix.name);
-  const computedName = rarity === 'normal' ? base.name : `${prefixNames.join(' ')} ${base.name}${suffixNames.length ? ' ' + suffixNames.join(' ') : ''}`;
 
   return {
-    id: `vendor_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    base, rarity, affixes, damageRoll, computedName, computedStats: stats,
+    id: crypto.randomUUID(),
+    base, rarity, affixes, damageRoll, computedName: generateName(affixes, base.name), computedStats: stats,
     ilvl, levelReq,
   };
 }
