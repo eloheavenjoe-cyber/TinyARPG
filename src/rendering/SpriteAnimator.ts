@@ -675,8 +675,8 @@ export async function loadJuggernautAnimations(): Promise<void> {
         dirs: {
           south: allFrames.slice(0, fpc),
           north: allFrames.slice(fpc, fpc * 2),
-          east: allFrames.slice(fpc * 2, fpc * 3),
-          west: allFrames.slice(fpc * 3, fpc * 4),
+          west: allFrames.slice(fpc * 2, fpc * 3),
+          east: allFrames.slice(fpc * 3, fpc * 4),
         } as Record<Direction, Texture[]>,
       };
     } catch {
