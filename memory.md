@@ -393,6 +393,13 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Grunt completed (2026-06-05): skeleton sprites with per-animation frame sizes (idle 24×32, run 22×33, attack 43×37, death 33×32). Grunt uses `scale.x` flip for facing, triggers attack animation on contact damage via `attackAnimPlayed` flag, plays death animation on kill.
 - Juggernaut completed (2026-06-05): orc directional sprite — 4-row sheets (south/north/east/west), 64×64 frames. Idle: 256×256 (4 cols), Walk/Attack/Death: 512×256 (8 cols), Walk: 384×256 (6 cols). Uses `angleToDirection()` + `direction` field for facing (no rotation/flip). `Scale.set(1.7)` (1.3 base × 1.3 growth). Attack triggered on contact damage, death animation plays on kill.
 
+### Phase 5m — Hub NPC Interactions (completed 2026-06-05)
+- **VendorManager** (`src/core/VendorManager.ts`): generates 8–12 random vendor items on hub entry (normal 40%, magic 40%, rare 15%, unique 5%). Pricing: `basePrice × rarityMult + affixTierBonus`. Buy = sell × 3 markup.
+- **VendorScreen** (`src/ui/VendorScreen.ts`): full-screen overlay with player inventory (left, 5×6 grid) + vendor stock (right, 4-col grid). Click vendor item to buy (gold check, inventory space check). Click player item to sell. Toast messages for errors ("Not enough gold", "Inventory full"). Closes with Escape.
+- **StashScreen** (`src/ui/StashScreen.ts`): full-screen overlay with player inventory (left) + tabbed stash (right). 4 tabs (Stash 1–4), 60 slots each (6×10 grid). Tab buttons switch active tab. Double-click tab name to rename via prompt. Deposit to active tab, withdraw to inventory. Toast messages.
+- **Proximity interaction**: Walking within 150px of Vendor or Stash NPC shows "Press E to [trade/access stash]" prompt. E key opens respective screen. Movement blocked while open (return guard same as inventory/escape menu).
+- **Stash persistence**: Stash tabs stored in `SaveData.stashData` (optional, backward-compatible). Serialized with save/load. Default 4 empty tabs created on first load.
+
 ### Phase 5l — Dodge Roll Animation (completed 2026-06-05)
 - Ranger dodge roll animation: 8 individual PNGs (`roll_1.png`–`roll_8.png`) loaded via `loadRangerFrames` pattern
 - `rangerRollFrames` stored separately from main ranger frame cache; `playRangerRollAnimation()` sets textures and plays once
