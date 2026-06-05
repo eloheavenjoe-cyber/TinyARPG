@@ -50,6 +50,7 @@ export interface SaveData {
     currentZoneId: string;
     currentRoomIndex: number;
     completedZoneIds: string[];
+    cryptJackpotClaimed?: boolean;
   };
   player: {
     x: number;
