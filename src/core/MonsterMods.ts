@@ -1,4 +1,4 @@
-import { Enemy } from '../entities/Enemy';
+import type { Enemy } from '../entities/Enemy';
 
 export type MonsterRarity = 'normal' | 'magic' | 'rare';
 
