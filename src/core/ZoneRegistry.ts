@@ -25,7 +25,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     templates: [TEMPLATE_HUB],
   },
   tutorial: {
-    id: 'tutorial', name: 'Tutorial Glen', biome: 'tutorial',
+    id: 'tutorial', name: 'Tutorial Glen', biome: 'tutorial', tileConfig: 'tutorial',
     roomCount: 1, enemyPool: ['grunt'],
     enemyHpMult: 1.0, enemyDmgMult: 0.5, enemyXpMult: 0,
     isEndless: false, nextZone: 'hub', availableFromHub: true,

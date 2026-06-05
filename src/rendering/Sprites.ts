@@ -1,4 +1,4 @@
-import { Texture } from 'pixi.js';
+import { Texture, BaseTexture, Rectangle } from 'pixi.js';
 import { loadTileSheet } from './TileLoader';
 import { TILE_CONFIGS, tileTextures, setTileTextures } from '../core/TileConfigs';
 import { BiomeId } from '../core/ZoneConfig';
@@ -626,6 +626,32 @@ Sprites.pathTile = Sprites.createTexture(32, 32, (ctx) => {
 export async function loadTileSet(biomeId: string): Promise<void> {
   const config = TILE_CONFIGS[biomeId as BiomeId];
   if (!config) return;
-  const textures = await loadTileSheet(config.sheetUrl, config.jsonUrl);
-  setTileTextures({ ...tileTextures, ...textures });
+
+  if (config.files) {
+    const textures: Record<string, Texture> = {};
+    const entries = Object.entries(config.files);
+    await Promise.all(entries.map(async ([name, fileDef]) => {
+      const res = await fetch(fileDef.path).then(r => r.blob());
+      const blobUrl = URL.createObjectURL(res);
+      const img = new Image();
+      img.src = blobUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+      });
+      const base = new BaseTexture(img);
+      if (fileDef.x !== undefined && fileDef.w !== undefined && fileDef.h !== undefined) {
+        textures[name] = new Texture(base, new Rectangle(
+          fileDef.x, fileDef.y ?? 0, fileDef.w, fileDef.h
+        ));
+      } else {
+        textures[name] = new Texture(base);
+      }
+      URL.revokeObjectURL(blobUrl);
+    }));
+    setTileTextures({ ...tileTextures, ...textures });
+  } else if (config.sheetUrl && config.jsonUrl) {
+    const textures = await loadTileSheet(config.sheetUrl, config.jsonUrl);
+    setTileTextures({ ...tileTextures, ...textures });
+  }
 }

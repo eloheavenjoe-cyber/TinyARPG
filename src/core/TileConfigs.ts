@@ -2,8 +2,9 @@ import { Texture } from 'pixi.js';
 import { BiomeId } from './ZoneConfig';
 
 export interface TileConfig {
-  sheetUrl: string;
-  jsonUrl: string;
+  sheetUrl?: string;
+  jsonUrl?: string;
+  files?: Record<string, { path: string; x?: number; y?: number; w?: number; h?: number }>;
   floorTile: string;
   wallTile: string;
   accentTiles: {
@@ -22,7 +23,35 @@ export interface TileConfig {
   wallTrimAlpha?: number;
 }
 
-export const TILE_CONFIGS: Partial<Record<BiomeId, TileConfig>> = {};
+export const TILE_CONFIGS: Partial<Record<BiomeId, TileConfig>> = {
+  tutorial: {
+    files: {
+      grass: { path: 'sprites/tiles/tutorial/Grass0 - 4.png' },
+      road: { path: 'sprites/tiles/tutorial/Road4.png' },
+      wall: { path: 'sprites/tiles/tutorial/Wall1.png' },
+      accent: { path: 'sprites/tiles/tutorial/Grass0 - 1.png' },
+      tree: { path: 'sprites/tiles/tutorial/Trees.png', x: 0, y: 0, w: 96, h: 416 },
+      stump_a: { path: 'sprites/tiles/tutorial/Trees.png', x: 192, y: 363, w: 32, h: 21 },
+      stump_b: { path: 'sprites/tiles/tutorial/Trees.png', x: 224, y: 395, w: 32, h: 21 },
+    },
+    floorTile: 'grass',
+    wallTile: 'wall',
+    accentTiles: {
+      tiles: ['accent', 'road'],
+      chance: 0.12,
+    },
+    props: {
+      treeTiles: ['tree'],
+      bushTiles: ['stump_a', 'stump_b'],
+      rockTiles: [],
+      treeCount: [6, 10],
+      bushCount: [3, 6],
+      rockCount: [0, 2],
+    },
+    wallTrimColor: 0x886644,
+    wallTrimAlpha: 0.5,
+  },
+};
 
 export let tileTextures: Record<string, Texture> = {};
 
