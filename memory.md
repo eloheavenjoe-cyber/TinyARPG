@@ -419,6 +419,48 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Label**: "Enter Town" for hub-bound doors, "▶ Exit [zone]" otherwise, positioned above the arch
 - **Per-door variation**: Moss/vine positions use deterministic offsets based on door position
 
+### Phase 11 — Hidden Crypt Secret Zone (completed 2026-06-05)
+
+**Zone & Entry:**
+- **SecretBush** (`src/entities/SecretBush.ts`): Two-stage E-key interaction in tutorial zone at (5600,1000). First E: bush rustles with wobble + glow animation. Second E: bush destroyed, hidden door to crypt appears. Faint distant glow (300px range) aids discovery.
+- **Crypt zone** (`src/core/ZoneRegistry.ts`): `secret_crypt` — 1 room, crypt biome (dark purples `0x1a1028`), grunts + juggernauts, 3 waves before boss.
+- **Room template** (`TEMPLATE_CRYPT`): ~3200×1888 playable area constrained by walls, 4 spawn zones, exit door back to tutorial.
+- **Door reveal**: Bush callback pushes `DoorMarker` to template and calls `buildCurrentZoneRoom()`. Player position preserved (no teleport). Tutorial door lock only blocks hub exit (`door.targetZone === 'hub'`), not crypt door.
+
+**Combat:**
+- **Wave system**: 3 escalating waves (3→4→5 enemies, +10% HP/damage per wave). Manual wave management in Game.ts game loop (not endless arena system).
+- **Cthulhu boss** (`BossId: 'cthulhu'`): 600 HP, 100px size, 1.3 speed.
+  - Phase 1 (100-75%): Tentacle Swipe (120° cone, 80px range, phase-scaling +20px)
+  - Phase 2 (75-50%): + Grasping Reach (400-500px line, pulls player 180px + 0.5s stun)
+  - Phase 3 (50-25%): +20% swipe range, +25% grasp range
+  - Phase 4 (25-0%): Double swipe, speed boost, cooldown reduction
+  - Pull resolved via `resolveCollision()` so player doesn't clip walls
+  - Auto-boss-spawn excluded for crypt (wave system handles it)
+
+**Jackpot Chest:**
+- `Chest.ts` updated with `isJackpot` and `locked` flags
+- Locked until Cthulhu dies (`chest.unlock()` on boss death)
+- Single chest at (3200, 2000), purple tint (`0xddaaff`), lock overlay with cross-circle icon
+- Opens to 1000 gold + normal chest loot
+- One-time per character: `SaveData.zone.cryptJackpotClaimed: boolean`
+
+**Sprites:**
+- **Cthulhu** (`public/sprites/cthulu/`): 54 individual PNGs — idle(15), walk(12), 1atk(7), 2atk(9), death(11). Loaded via `loadCthulhuAnimations()` in SpriteAnimator. `playCthulhuAnimation()` dispatches per animation name. Boss wrapper `playAnim()` updated for `CthulhuAnimName`.
+- **Chest sprite sheet** (`public/sprites/chest/Chests.png`): 240×256, 5×8 grid (48×32 each), 4 variants, 2 rows per variant (mostly closed + opening). Loaded via `loadChestAnimations()`. `Chest.ts` now uses `AnimatedSprite` with idle loop and open-once animation.
+
+**Fixes applied in session:**
+- **Bush E-key interaction**: Changed from click (`checkClick()` was never wired) to E-key with `??? [E]` / `Open [E]` prompt
+- **Vendor/stash zone guard**: Added `this.zoneManager.zoneId === 'hub'` to proximity checks (prevents phantom prompts in tutorial)
+- **Player position on bush reveal**: Save/restore `player.x/y` around `buildCurrentZoneRoom()` (was teleporting to playerStart)
+- **Tutorial door lock**: Only blocks hub exit, not secret crypt door
+- **Cthulhu auto-spawn**: Added `zone.id !== 'secret_crypt'` guard in auto-boss-spawn check
+- **Item icons**: Added `Sprite` + `getItemTexture` rendering to InventoryScreen equipment slots, VendorScreen, StashScreen
+- **Extra projectile visibility**: Changed spread formula — `extra === 1` now uses fixed `0.08` spread instead of 0 (was invisible overlapping base projectile)
+- **Support skill mana cost**: Added `this.player.mana -= result.manaCost` for Ranger projectile support skills (was missing — only monk techniques deducted mana)
+- **AdditionalProjectiles from items**: IS working correctly — the stat is computed by StatSystem, read by `fireProjectile()`, and applied to all non-spread projectile skills
+
+**Files changed:** 15 files across 8 commits (+185 lines, added 54 sprite assets).
+
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
@@ -432,10 +474,9 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Class select icons are programmatic PixiJS Graphics (no SVG files)
 - Weapon swapping not implemented (monk uses all techniques, no weapon slots for stances)
 - Enemy sprite files must be tracked in git (case-sensitive on Linux deployment)
-- Golem was missing from git (PNGs existed locally but weren't committed)
 - Execute passive (3.0x dmg, 20% threshold) defined in SkillDefs but not wired into damage
-- Item icons only shown in inventory grid — vendor/stash/ground loot still text-only
 - Ring of Blades keystone (multi_shot orbit) not implemented
+- **Fixed:** Item icons now show in inventory grid, equipment slots, vendor, and stash (was grid-only, now all slots)
 
 ### Phase 5j — Room Expansion & Camera System (completed 2026-06-05)
 - Rooms scaled 4x (6400×3584, from 1600×896). Walls 48px (from 32px). Walkable area auto-scales.
@@ -558,6 +599,15 @@ without explicit approval. See AGENTS.md for full coordination rules.
 - **Projectile spawn offset:** Projectiles spawn 20px forward of player center (`player.x + cos(angle)*20`) so they emerge from in front of the character visually.
 - **InventoryScreen destroy guard:** Click handlers in `InventoryScreen.update()` can trigger `toggleInventory()` which destroys the container. After each click handler, `if (!this.container.parent) return;` prevents processing on destroyed objects.
 - **Recall portal null guard:** Walking into a recall portal sets `this.recallPortal = null` in the collision handler BEFORE `buildCurrentZoneRoom()` runs, preventing double-destroy.
+- **Vendor/stash proximity zone guard:** `nearVendor` and `nearStash` proximity checks use hardcoded hub coordinates — must gate behind `this.zoneManager.zoneId === 'hub'` to prevent phantom prompts in other zones.
+- **buildCurrentZoneRoom player position reset:** Always sets `player.x = template.playerStart.x`. If calling from a bush reveal or similar in-zone callback, save and restore player position or they get teleported.
+- **Tutorial door lock scope:** The old check `if (zone?.id === 'tutorial' && this.tutorialStage !== 'complete')` locks ALL doors in the tutorial zone. Change to `door.targetZone === 'hub'` so secret/crypt doors aren't blocked.
+- **Auto-boss-spawn + wave conflict:** `buildCurrentZoneRoom()` spawns boss when `roomIndex === roomCount - 1 && zone.bossId`. If the zone uses a custom wave system (like crypt), exclude it with `zone.id !== 'secret_crypt'`.
+- **Additional projectiles visual overlap:** `extra = 1` produces `spreadAngle = 0` causing the extra projectile to overlap the base projectile invisibly. Fix: `extra === 1 ? 0.08 : (i - (extra - 1) / 2) * 0.1`.
+- **Support skill mana cost:** `useSupportSkill()` for projectile types (barrage, spread_shot) was missing `this.player.mana -= result.manaCost`. Only monk techniques had it.
+- **ItemIcons loading failure:** `img.onerror` resolves silently without setting `loaded = true`, so `isItemIconsLoaded()` returns `false` forever. Add `loaded = true` in catch or check `textures.size > 0` instead.
+- **createSlot icon rendering:** VendorScreen and StashScreen `createSlot()` methods render only colored Graphics borders — no Sprite icons. Must add `Sprite` + `getItemTexture` similar to InventoryScreen grid slots.
+- **Equipment slots lack icons:** `InventoryScreen.equipSlots` array had no `icon: Sprite` field. Must add it and render in update loop.
 
 
 ## Visual Polish Catalog (TinyARPG Tutorial Zone)
