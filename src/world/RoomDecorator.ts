@@ -25,6 +25,7 @@ const BIOME_DECOR: Record<BiomeId, { treeChance: number; rockChance: number; bus
   tutorial: { treeChance: 0.4, rockChance: 0.3, bushChance: 0.3 },
   endless:  { treeChance: 0.3, rockChance: 0.4, bushChance: 0.3 },
   dev:      { treeChance: 0, rockChance: 0, bushChance: 0 },
+  crypt:    { treeChance: 0, rockChance: 0.3, bushChance: 0.2 },
 };
 
 function getBiomeTint(biome: BiomeId): number {
@@ -35,6 +36,7 @@ function getBiomeTint(biome: BiomeId): number {
     case 'hub': return 0x44aa66;
     case 'tutorial': return 0x559944;
     case 'endless': return 0x664488;
+    case 'crypt': return 0x553366;
     default: return 0x888888;
   }
 }

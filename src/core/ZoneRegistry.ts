@@ -4,6 +4,7 @@ import {
   TEMPLATE_DESERT_1, TEMPLATE_DESERT_2, TEMPLATE_DESERT_3, TEMPLATE_DESERT_4,
   TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5,
   TEMPLATE_FOREST_BOSS, TEMPLATE_DESERT_BOSS, TEMPLATE_ICE_BOSS,
+  TEMPLATE_CRYPT,
 } from '../world/RoomTemplates';
 import { ZoneConfig } from './ZoneConfig';
 
@@ -31,6 +32,22 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     isEndless: false, nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 3, max: 4 },
     templates: [TEMPLATE_TUTORIAL],
+  },
+  secret_crypt: {
+    id: 'secret_crypt',
+    name: 'Hidden Crypt',
+    biome: 'crypt',
+    roomCount: 1,
+    bossId: 'cthulhu',
+    enemyPool: ['grunt', 'juggernaut'],
+    enemyHpMult: 2.0,
+    enemyDmgMult: 1.2,
+    enemyXpMult: 1.5,
+    isEndless: false,
+    nextZone: 'tutorial',
+    availableFromHub: false,
+    enemyCount: { min: 3, max: 5 },
+    templates: [TEMPLATE_CRYPT],
   },
   forest: {
     id: 'forest', name: 'Verdant Forest', biome: 'forest',

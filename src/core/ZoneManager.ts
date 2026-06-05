@@ -154,7 +154,7 @@ export class ZoneManager {
   }
 
   isZoneUnlocked(zoneId: string): boolean {
-    if (zoneId === 'tutorial' || zoneId === 'endless_arena' || zoneId === 'endless_dungeon' || zoneId === 'hub') return true;
+    if (zoneId === 'tutorial' || zoneId === 'endless_arena' || zoneId === 'endless_dungeon' || zoneId === 'hub' || zoneId === 'secret_crypt') return true;
     if (zoneId === 'forest') return this.completedZoneIds.has('tutorial');
     if (zoneId === 'desert') return this.completedZoneIds.has('forest');
     if (zoneId === 'ice') return this.completedZoneIds.has('desert');

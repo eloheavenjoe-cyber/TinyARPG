@@ -592,3 +592,30 @@ export const TEMPLATE_ICE_BOSS: RoomTemplate = {
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
+
+export const TEMPLATE_CRYPT: RoomTemplate = {
+  walls: [
+    { x: 1560, y: 144, width: 3280, height: 48 },
+    { x: 1560, y: 3392, width: 3280, height: 48 },
+    { x: 1560, y: 144, width: 48, height: 3248 },
+    { x: 4792, y: 144, width: 48, height: 3248 },
+  ],
+  doors: [
+    {
+      rect: { x: 3000, y: 3312, width: 400, height: 144 },
+      targetZone: 'tutorial',
+      targetRoom: 0,
+    },
+  ],
+  portals: [],
+  spawnZones: [
+    { x: 1650, y: 200, width: 600, height: 600 },
+    { x: 4150, y: 200, width: 600, height: 600 },
+    { x: 1650, y: 2784, width: 600, height: 600 },
+    { x: 4150, y: 2784, width: 600, height: 600 },
+  ],
+  decorationRects: [],
+  buildings: [],
+  npcs: [],
+  playerStart: { x: 3200, y: 1792 },
+};
