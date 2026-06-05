@@ -356,6 +356,27 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Monster density**: +10% across all zones.
 - **Enemy size changes**: Grunt hitbox 36→47 (+30%), sprite 1.3→1.7. Juggernaut hitbox 55→72 (+30%), sprite 1.7→2.2. Cultist hitbox 32→27 (-15%), sprite 1.15→1.0.
 
+### Phase 8 — Ranger Sub Skill Trees (completed 2026-06-05)
+- **SkillSubTree.ts**: Core module with SkillSubTreeNode interface + SkillSubTree class (allocate/canAllocate/hasKeystone/refund). All 4 tree data (Quick Shot, Multi Shot, Rain of Arrows, Snipe) with wheel layout (12 nodes + 1 start per tree, 52 total).
+- **SkillSubTreeScreen.ts**: Full-screen wheel UI (K key), radial node layout, click-to-allocate, right-click refund, hover tooltip, max 2 keystone enforce, message timer for feedback.
+- **SkillDefs.ts**: Added `subTreeId?: string` field, wired to all 4 Ranger main abilities.
+- **Player.ts**: `skillSubTrees: Map<string, SkillSubTree>`, `skillSubPoints` (1 per 4 levels), `hasSubKeystone()` helper, level-up hook, only ranger gets points.
+- **SaveManager.ts**: `skillSubTrees` and `skillSubPoints` in SaveData interface.
+- **Game.ts**: K key toggle with overlay guard, per-frame screen update, save/load serialization, right-click refund callback wiring.
+- **15 of 16 keystones wired**: Ricochet (enemy bounce), Piercing Shot (pierce), Static Arrow (chain lightning), Triple Fire (3 arrows), Shotgun (narrow 120° cone, double proj), Poison Nova (poison cloud zones), Point Blank (consecutive hit stacking), Arrow Storm (4-7 arrows, +20% radius), Precision Strike (3× dmg, -50% radius), Frost Volley (chilling ground), Bombardment (60px AoE), Executioner (+50% dmg to <50% HP), Railgun (3× speed), Split Shot (3 burst on kill), Marked for Death (+30% dmg mark). Ring of Blades deferred.
+- **Dev console**: `/subpoints` / `/sp` command to add sub skill points.
+
+### Phase 8b — Main Menu Scrolling Background (completed 2026-06-05)
+- Menu background replaced solid dark fill with 576×324 pixel-art image scaled 3.33× with nearest-neighbor filtering.
+- Two sprites loop left-to-right at 0.25px/frame (dt-based), wrapping seamlessly.
+- 50% dark overlay keeps text readable.
+- Repolished UI: larger title (80px), thicker strokes, semi-transparent buttons with rounded corners, muted gold accents.
+
+### Phase 8c — Item Icons (completed 2026-06-05)
+- **ItemIcons.ts**: Loads `sprites/items.png` (384×384, 16×16 grid of 24×24 cells), slices by baseId+rarity and orbId mappings.
+- 28 item base icons (7 bases × 4 rarities), 6 orb icons, portal scroll icon mapped via user-provided (row,col) coordinates.
+- InventoryScreen: each grid slot shows 24×24 icon with item name below. Icons loaded during startup loading screen.
+
 ## Known Issues / TODOs
 - Drag-to-equip not implemented (click-only equip/unequip)
 - `ItemGenerator.ts` uses biased `sort(() => Math.random() - 0.5)` shuffle (minor, acceptable for small pools)
@@ -371,6 +392,8 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Enemy sprite files must be tracked in git (case-sensitive on Linux deployment)
 - Golem was missing from git (PNGs existed locally but weren't committed)
 - Execute passive (3.0x dmg, 20% threshold) defined in SkillDefs but not wired into damage
+- Item icons only shown in inventory grid — vendor/stash/ground loot still text-only
+- Ring of Blades keystone (multi_shot orbit) not implemented
 
 ### Phase 5j — Room Expansion & Camera System (completed 2026-06-05)
 - Rooms scaled 4x (6400×3584, from 1600×896). Walls 48px (from 32px). Walkable area auto-scales.
