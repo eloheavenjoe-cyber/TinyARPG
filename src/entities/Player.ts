@@ -401,7 +401,7 @@ export class Player {
       this.level++;
       this.passivePoints++;
       this.unspentAttrPoints += 3;
-      if (this.level % 4 === 0) this.skillSubPoints++;
+      if (this.level % 4 === 0 && this.classType === 'ranger') this.skillSubPoints++;
       leveled = true;
       this.recalcStats();
       Logger.log('combat', `Level up! Now level ${this.level} (${this.passivePoints} passive, ${this.unspentAttrPoints} attr points)`);
