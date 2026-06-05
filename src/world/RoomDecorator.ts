@@ -1,4 +1,5 @@
 import { RoomTemplate, BiomeId } from '../core/ZoneConfig';
+import { TileConfig, tileTextures } from '../core/TileConfigs';
 import { ROOM_WIDTH, ROOM_HEIGHT, WALL_THICKNESS, Rect, rectsOverlap } from './Room';
 import { Sprites } from '../rendering/Sprites';
 import { Sprite } from 'pixi.js';
@@ -38,7 +39,7 @@ function getBiomeTint(biome: BiomeId): number {
   }
 }
 
-export function decorateRoom(template: RoomTemplate, biome: BiomeId): DecoratorResult {
+export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?: TileConfig): DecoratorResult {
   const result: DecoratorResult = { decorations: [], obstacles: [], chests: [], breakables: [] };
   const config = BIOME_DECOR[biome];
   if (!config || config.treeChance === 0) return result;
@@ -75,40 +76,76 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId): DecoratorR
   }
 
   // Trees (collision obstacles)
-  for (let i = 0; i < 10 + Math.floor(Math.random() * 8); i++) {
+  const treeCount = tileConfig?.props.treeCount
+    ? tileConfig.props.treeCount[0] + Math.floor(Math.random() * (tileConfig.props.treeCount[1] - tileConfig.props.treeCount[0] + 1))
+    : 10 + Math.floor(Math.random() * 8);
+  for (let i = 0; i < treeCount; i++) {
     const p = tryPlace(32, 32);
     if (!p) continue;
-    const sprite = new Sprite(Sprites.tree);
-    sprite.anchor.set(0.5, 1);
+    let sprite: Sprite;
+    if (tileConfig && tileConfig.props.treeTiles.length > 0) {
+      const tileName = tileConfig.props.treeTiles[Math.floor(Math.random() * tileConfig.props.treeTiles.length)];
+      const tx = tileTextures[tileName];
+      if (!tx) continue;
+      sprite = new Sprite(tx);
+      sprite.anchor.set(0.5, 1);
+    } else {
+      sprite = new Sprite(Sprites.tree);
+      sprite.anchor.set(0.5, 1);
+      sprite.tint = getBiomeTint(biome);
+    }
     sprite.x = p.x + 16;
     sprite.y = p.y + 32;
-    sprite.tint = getBiomeTint(biome);
     result.decorations.push({ sprite, x: p.x + 16, y: p.y + 32 });
     result.obstacles.push({ x: p.x + 4, y: p.y + 4, width: 24, height: 24 });
   }
 
   // Rocks (collision obstacles)
-  for (let i = 0; i < 6 + Math.floor(Math.random() * 6); i++) {
+  const rockCount = tileConfig?.props.rockCount
+    ? tileConfig.props.rockCount[0] + Math.floor(Math.random() * (tileConfig.props.rockCount[1] - tileConfig.props.rockCount[0] + 1))
+    : 6 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < rockCount; i++) {
     const p = tryPlace(24, 20);
     if (!p) continue;
-    const sprite = new Sprite(Sprites.rock);
-    sprite.anchor.set(0.5, 1);
+    let sprite: Sprite;
+    if (tileConfig && tileConfig.props.rockTiles.length > 0) {
+      const tileName = tileConfig.props.rockTiles[Math.floor(Math.random() * tileConfig.props.rockTiles.length)];
+      const tx = tileTextures[tileName];
+      if (!tx) continue;
+      sprite = new Sprite(tx);
+      sprite.anchor.set(0.5, 1);
+    } else {
+      sprite = new Sprite(Sprites.rock);
+      sprite.anchor.set(0.5, 1);
+      sprite.tint = getBiomeTint(biome);
+    }
     sprite.x = p.x + 12;
     sprite.y = p.y + 20;
-    sprite.tint = getBiomeTint(biome);
     result.decorations.push({ sprite, x: p.x + 12, y: p.y + 20 });
     result.obstacles.push({ x: p.x + 2, y: p.y + 2, width: 20, height: 16 });
   }
 
   // Bushes (decorative only)
-  for (let i = 0; i < 8 + Math.floor(Math.random() * 8); i++) {
+  const bushCount = tileConfig?.props.bushCount
+    ? tileConfig.props.bushCount[0] + Math.floor(Math.random() * (tileConfig.props.bushCount[1] - tileConfig.props.bushCount[0] + 1))
+    : 8 + Math.floor(Math.random() * 8);
+  for (let i = 0; i < bushCount; i++) {
     const p = tryPlace(24, 18);
     if (!p) continue;
-    const sprite = new Sprite(Sprites.bush);
-    sprite.anchor.set(0.5, 1);
+    let sprite: Sprite;
+    if (tileConfig && tileConfig.props.bushTiles.length > 0) {
+      const tileName = tileConfig.props.bushTiles[Math.floor(Math.random() * tileConfig.props.bushTiles.length)];
+      const tx = tileTextures[tileName];
+      if (!tx) continue;
+      sprite = new Sprite(tx);
+      sprite.anchor.set(0.5, 1);
+    } else {
+      sprite = new Sprite(Sprites.bush);
+      sprite.anchor.set(0.5, 1);
+      sprite.tint = getBiomeTint(biome);
+    }
     sprite.x = p.x + 12;
     sprite.y = p.y + 18;
-    sprite.tint = getBiomeTint(biome);
     result.decorations.push({ sprite, x: p.x + 12, y: p.y + 18 });
   }
 

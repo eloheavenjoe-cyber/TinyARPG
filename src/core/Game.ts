@@ -16,6 +16,8 @@ import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, isOrbDrop, createOrbDrop, isPortalScrollDrop } from '../entities/ItemDrop';
 import { decorateRoom } from '../world/RoomDecorator';
+import { TILE_CONFIGS } from '../core/TileConfigs';
+import { BiomeId } from './ZoneConfig';
 import { Chest } from '../entities/Chest';
 import { Breakable } from '../entities/Breakable';
 import { ClassType } from './SkillDefs';
@@ -873,7 +875,8 @@ export class Game {
     this.gameContainer.addChild(this.room.container);
 
     // Procedural decoration
-    const decor = decorateRoom(template, zone.biome);
+    const tileConfig = zone.tileConfig ? TILE_CONFIGS[zone.tileConfig as BiomeId] : undefined;
+    const decor = decorateRoom(template, zone.biome, tileConfig);
     for (const d of decor.decorations) { this.gameContainer.addChild(d.sprite); this.decorationSprites.push(d.sprite); }
     for (const ob of decor.obstacles) this.room.walls.push(ob);
     for (const cp of decor.chests) {
