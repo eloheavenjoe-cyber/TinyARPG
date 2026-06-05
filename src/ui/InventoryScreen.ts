@@ -30,7 +30,6 @@ export class InventoryScreen {
   private equipSlots: { bg: Graphics; item: Text; label: Text; slot: Slot; icon: Sprite }[] = [];
   private selectedIndex = -1;
   private hoveredSlot: number | Slot | null = null;
-  private statTexts: Text[] = [];
   private onEquip: (gridIndex: number) => void = () => {};
   private onUnequip: (slot: Slot) => void = () => {};
   private tooltip?: Container;
@@ -202,20 +201,6 @@ export class InventoryScreen {
       this.equipSlots.push({ bg: g, item: itemTxt, label: labelTxt, slot, icon: equipIcon });
     }
 
-    // Stats panel
-    const statsX = screenW / 2 + 200;
-    const statsY = equipStartY + slotLabels.length * (equipSlotSize + equipGap) + 30;
-
-    const header = new Text('Character Stats', new TextStyle({
-      fontFamily: 'monospace', fontSize: 14, fill: COLORS.textStat,
-      stroke: '#000', strokeThickness: 2,
-    }));
-    header.x = statsX;
-    header.y = statsY;
-    this.container.addChild(header);
-
-    this.refreshStats(computedStats, statsX, statsY);
-
     this.craftMessageText = new Text('', new TextStyle({
       fontFamily: 'monospace', fontSize: 14, fill: '#ffdd88',
       stroke: '#000', strokeThickness: 3,
@@ -224,30 +209,6 @@ export class InventoryScreen {
     this.craftMessageText.x = screenW / 2;
     this.craftMessageText.y = screenH - 40;
     this.container.addChild(this.craftMessageText);
-  }
-
-  private refreshStats(computedStats: any, x: number, y: number) {
-    for (const t of this.statTexts) this.container.removeChild(t);
-    this.statTexts = [];
-
-    const lines = [
-      `Life: ${computedStats?.maxHp || 0}`,
-      `Mana: ${computedStats?.maxMana || 0}`,
-      `Armor DR: ${computedStats?.damageReduction || 0}%`,
-      `Attack Speed: ${((computedStats?.attackSpeedMult || 1) * 100).toFixed(0)}%`,
-      `Move Speed: ${((computedStats?.moveSpeedMult || 1) * 100).toFixed(0)}%`,
-      `Dodge: ${computedStats?.dodgePct || 0}%`,
-    ];
-
-    for (let i = 0; i < lines.length; i++) {
-      const t = new Text(lines[i], new TextStyle({
-        fontFamily: 'monospace', fontSize: 12, fill: COLORS.text,
-      }));
-      t.x = x;
-      t.y = y + 24 + i * 20;
-      this.container.addChild(t);
-      this.statTexts.push(t);
-    }
   }
 
   private statLabel(stat: string): string {
@@ -555,11 +516,6 @@ export class InventoryScreen {
       }
       s.icon.visible = false;
     }
-
-    // Update stats
-    const statsX = 1920 / 2 + 200;
-    const statsY = 80 + 7 * (60 + 10) + 30;
-    this.refreshStats(computedStats, statsX, statsY);
 
     // Craft message
     if (this.craftMessageTimer > 0) {
