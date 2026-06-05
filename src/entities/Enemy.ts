@@ -1,4 +1,5 @@
-import { Sprite, Texture, AnimatedSprite } from 'pixi.js';
+import { Sprite, Texture, AnimatedSprite, Text, TextStyle } from 'pixi.js';
+import { MonsterRarity, MonsterMod, RARITY_COLORS } from '../core/MonsterMods';
 import { Sprites } from '../rendering/Sprites';
 import { createCultistSprite, playCultistAnimation, CultistAnimName, createArcherSprite, playArcherAnimation, ArcherAnimName, createGruntSprite, playGruntAnimation, GruntAnimName, createJuggernautSprite, playJuggernautAnimation, JuggernautAnimName, Direction, angleToDirection } from '../rendering/SpriteAnimator';
 import { Logger } from '../core/Logger';
@@ -21,13 +22,13 @@ interface EnemyConfig {
 function getConfig(type: EnemyType): EnemyConfig {
   switch (type) {
     case 'grunt':
-      return { hp: 40, speed: 2.2, size: 36, xp: 10, sprite: Sprites.enemy, damage: 8, detectRange: 400, deaggroRange: 600 };
+      return { hp: 40, speed: 2.2, size: 47, xp: 10, sprite: Sprites.enemy, damage: 8, detectRange: 400, deaggroRange: 600 };
     case 'archer':
       return { hp: 25, speed: 2.5, size: 34, xp: 12, sprite: Sprites.archer, damage: 6, detectRange: 500, deaggroRange: 750 };
     case 'juggernaut':
-      return { hp: 120, speed: 1.2, size: 55, xp: 25, sprite: Sprites.juggernaut, damage: 16, detectRange: 350, deaggroRange: 525 };
+      return { hp: 120, speed: 1.2, size: 72, xp: 25, sprite: Sprites.juggernaut, damage: 16, detectRange: 350, deaggroRange: 525 };
     case 'cultist':
-      return { hp: 35, speed: 2.0, size: 32, xp: 15, sprite: Sprites.cultist, damage: 5, detectRange: 450, deaggroRange: 675 };
+      return { hp: 35, speed: 2.0, size: 27, xp: 15, sprite: Sprites.cultist, damage: 5, detectRange: 450, deaggroRange: 675 };
   }
 }
 
@@ -35,8 +36,8 @@ export class Enemy {
   x: number;
   y: number;
   readonly type: EnemyType;
-  readonly width: number;
-  readonly height: number;
+  width: number;
+  height: number;
   health: number;
   maxHealth: number;
   speed: number;
@@ -48,6 +49,13 @@ export class Enemy {
   detectRange: number;
   deaggroRange: number;
   aggroed = false;
+  rarity: MonsterRarity = 'normal';
+  mods: MonsterMod[] = [];
+  hastedMultiplier = 1;
+  frostAuraActive = false;
+  frostAuraRadius = 150;
+  volatileActive = false;
+  nameplate: Text | null = null;
 
   sprite: Sprite;
   private hitFlashTimer = 0;
@@ -406,13 +414,46 @@ export class Enemy {
     };
   }
 
+  applyRarity(rarity: MonsterRarity, mods: MonsterMod[]) {
+    this.rarity = rarity;
+    this.mods = mods;
+    for (const mod of mods) {
+      mod.apply(this);
+    }
+    if (rarity !== 'normal') {
+      const scaleBonus = rarity === 'magic' ? 1.1 : 1.2;
+      this.sprite.scale.set(
+        (this.sprite.scale.x > 0 ? 1 : -1) * Math.abs(this.sprite.scale.x) * scaleBonus
+      );
+      this.createNameplate(rarity, mods);
+    }
+  }
+
+  private createNameplate(rarity: MonsterRarity, mods: MonsterMod[]) {
+    const modNames = mods.map(m => m.name).join(' ');
+    this.nameplate = new Text(`[${rarity.toUpperCase()}] ${modNames}`, new TextStyle({
+      fontFamily: 'monospace',
+      fontSize: 11,
+      fill: RARITY_COLORS[rarity],
+      stroke: 0x000000,
+      strokeThickness: 3,
+      fontWeight: 'bold',
+    }));
+    this.nameplate.anchor.set(0.5, 0);
+  }
+
   private updateSprite() {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    if (this.nameplate) {
+      this.nameplate.x = this.x;
+      this.nameplate.y = this.y - this.height / 2 - 18;
+    }
   }
 
   destroy() {
     this.sprite.destroy();
+    if (this.nameplate) this.nameplate.destroy();
     for (const p of this.projectiles) p.destroy();
     this.projectiles = [];
   }

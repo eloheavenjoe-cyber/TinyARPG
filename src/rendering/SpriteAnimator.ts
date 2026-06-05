@@ -427,7 +427,7 @@ export function createCultistSprite(): AnimatedSprite {
     const sprite = new AnimatedSprite(cultistFrames.idle);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.12;
-    sprite.scale.set(1.15);
+    sprite.scale.set(1.0);
     sprite.play();
     return sprite;
   }
@@ -435,7 +435,7 @@ export function createCultistSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x8844aa;
-  sprite.scale.set(1.15);
+  sprite.scale.set(1.0);
   pendingCultistSprites.push(sprite);
   return sprite;
 }
@@ -615,7 +615,7 @@ export function createGruntSprite(): AnimatedSprite {
     const sprite = new AnimatedSprite(gruntFrames.idle);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.12;
-    sprite.scale.set(1.3);
+    sprite.scale.set(1.7);
     sprite.play();
     return sprite;
   }
@@ -623,7 +623,7 @@ export function createGruntSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x884422;
-  sprite.scale.set(1.3);
+  sprite.scale.set(1.7);
   pendingGruntSprites.push(sprite);
   return sprite;
 }
@@ -711,7 +711,7 @@ export function createJuggernautSprite(): AnimatedSprite {
     const sprite = new AnimatedSprite(juggernautFrames.idle.south);
     sprite.anchor.set(0.5, 0.5);
     sprite.animationSpeed = 0.1;
-    sprite.scale.set(1.7);
+    sprite.scale.set(2.2);
     sprite.play();
     return sprite;
   }
@@ -719,7 +719,7 @@ export function createJuggernautSprite(): AnimatedSprite {
   const sprite = new AnimatedSprite([Texture.WHITE]);
   sprite.anchor.set(0.5, 0.5);
   sprite.tint = 0x664422;
-  sprite.scale.set(1.7);
+  sprite.scale.set(2.2);
   pendingJuggernautSprites.push(sprite);
   return sprite;
 }
