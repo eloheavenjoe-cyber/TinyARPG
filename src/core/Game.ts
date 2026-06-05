@@ -3259,12 +3259,12 @@ export class Game {
       this.inventoryScreen.destroy();
       this.inventoryScreen = undefined;
     }
-    if (this.characterScreenOpen) this.toggleCharacterScreen();
     if (this.characterScreen) {
       this.app.stage.removeChild(this.characterScreen.container);
       this.characterScreen.destroy();
       this.characterScreen = undefined;
     }
+    this.characterScreenOpen = false;
     if (this.treeOpen) this.toggleTree();
     if (this.passiveTreeScreen) {
       this.app.stage.removeChild(this.passiveTreeScreen.container);
