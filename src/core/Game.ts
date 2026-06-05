@@ -2939,6 +2939,18 @@ export class Game {
       },
     });
 
+    c.registerCommand({
+      name: 'subpoints', aliases: ['sp'],
+      description: 'Add sub skill points',
+      usage: '<count>',
+      run: (args) => {
+        if (!this.player) return 'No player';
+        const count = parseInt(args[0]) || 1;
+        this.player.skillSubPoints += count;
+        return `Added ${count} sub skill point(s) (total: ${this.player.skillSubPoints})`;
+      },
+    });
+
     c.onCommandCallback((cmd, args) => {
       return `Unknown command: /${cmd}. Type /help for commands.`;
     });
