@@ -93,6 +93,7 @@ export class Game {
   private breakables: Breakable[] = [];
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
+  private modGfx: Graphics[] = [];
   private dash: DashState | null = null;
   private rainZones: RainZone[] = [];
   private zoneManager: ZoneManager = new ZoneManager();
@@ -969,6 +970,7 @@ export class Game {
       for (const e of enemies) {
         this.enemies.push(e);
         this.gameContainer!.addChild(e.sprite);
+        if (e.nameplate) this.gameContainer!.addChild(e.nameplate);
       }
     }
 
@@ -1025,6 +1027,7 @@ export class Game {
     for (const e of enemies) {
       this.enemies.push(e);
       this.gameContainer!.addChild(e.sprite);
+      if (e.nameplate) this.gameContainer!.addChild(e.nameplate);
     }
   }
 
@@ -1041,6 +1044,7 @@ export class Game {
         const e = new Enemy(x, y, type as any);
         this.enemies.push(e);
         this.gameContainer!.addChild(e.sprite);
+        if (e.nameplate) this.gameContainer!.addChild(e.nameplate);
       }
     });
 
@@ -1204,6 +1208,13 @@ export class Game {
   private updateGameplay(dt: number) {
     if (!this.player?.alive || !this.room) return;
 
+    // Clean up per-frame mod VFX
+    for (const g of this.modGfx) {
+      this.gameContainer!.removeChild(g);
+      g.destroy();
+    }
+    this.modGfx = [];
+
     // Auto-save every 3600 frames (60s)
     this.autoSaveTimer += dt;
     if (this.autoSaveTimer >= 3600 && this.currentSaveSlot !== null) {
@@ -1268,6 +1279,73 @@ export class Game {
           this.gameContainer!.addChild(p.sprite);
         }
         enemy.projectiles = [];
+      }
+    }
+
+    // Frost aura slow
+    let frostAuraSlow = false;
+    for (const enemy of this.enemies) {
+      if (!enemy.alive || !enemy.frostAuraActive) continue;
+      if (Math.hypot(this.player.x - enemy.x, this.player.y - enemy.y) < enemy.frostAuraRadius) {
+        frostAuraSlow = true;
+        break;
+      }
+    }
+    if (frostAuraSlow) {
+      this.player.slowTimer = Math.max(this.player.slowTimer, 1);
+    }
+
+    // Per-frame monster mod VFX
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+
+      // Frost aura ring
+      if (enemy.frostAuraActive) {
+        const ring = new Graphics();
+        ring.lineStyle(2, 0x4488ff, 0.35);
+        ring.drawCircle(0, 0, enemy.frostAuraRadius);
+        ring.beginFill(0x4488ff, 0.06);
+        ring.drawCircle(0, 0, enemy.frostAuraRadius);
+        ring.endFill();
+        ring.x = enemy.x;
+        ring.y = enemy.y;
+        this.gameContainer!.addChild(ring);
+        this.modGfx.push(ring);
+
+        const glow = new Graphics();
+        glow.beginFill(0x4488ff, 0.04);
+        glow.drawCircle(0, 0, enemy.frostAuraRadius * 0.6);
+        glow.endFill();
+        glow.x = enemy.x;
+        glow.y = enemy.y;
+        this.gameContainer!.addChild(glow);
+        this.modGfx.push(glow);
+      }
+
+      // Volatile pulsing glow
+      if (enemy.volatileActive) {
+        const pulse = 0.5 + 0.5 * Math.sin(this.portalAngle * 0.1);
+        const glow = new Graphics();
+        glow.beginFill(0xff3333, 0.12 * pulse);
+        glow.drawCircle(0, 0, 22);
+        glow.endFill();
+        glow.x = enemy.x;
+        glow.y = enemy.y;
+        this.gameContainer!.addChild(glow);
+        this.modGfx.push(glow);
+      }
+
+      // Hasted speed lines
+      if (enemy.hastedMultiplier > 1 && Math.random() < 0.04) {
+        const streak = new Graphics();
+        const len = 8 + Math.random() * 14;
+        streak.lineStyle(1.5, 0xffffff, 0.4);
+        streak.moveTo(-len, -1);
+        streak.lineTo(0, -1);
+        streak.x = enemy.x;
+        streak.y = enemy.y;
+        this.gameContainer!.addChild(streak);
+        this.modGfx.push(streak);
       }
     }
 
@@ -1664,14 +1742,41 @@ export class Game {
           }
         }
 
+        // Volatile explosion
+        if (dead.volatileActive) {
+          const volatileDmg = Math.round(dead.maxHealth * 0.5);
+          for (const other of this.enemies) {
+            if (!other.alive) continue;
+            if (Math.hypot(other.x - dead.x, other.y - dead.y) < 120) {
+              other.takeDamage(volatileDmg);
+              if (other.alive) {
+                this.combatText.showDamage(other.x, other.y - 20, volatileDmg, 0xff3333);
+              }
+            }
+          }
+          this.addVfx((g, t) => {
+            const r = 120 * t;
+            const alpha = Math.max(0, 1 - t);
+            g.lineStyle(3, 0xff3333, alpha);
+            g.drawCircle(0, 0, r);
+            g.beginFill(0xff3333, alpha * 0.2);
+            g.drawCircle(0, 0, r);
+            g.endFill();
+          }, 25).position.set(dead.x, dead.y);
+        }
+
         this.gameContainer!.removeChild(dead.sprite);
+        if (dead.nameplate) {
+          this.gameContainer!.removeChild(dead.nameplate);
+        }
         const healAmt = this.player.skills.healOnKill();
         if (healAmt > 0) this.player.heal(healAmt);
         if (this.player.addXp(dead.xpReward)) {
           this.combatText.showDamage(dead.x, dead.y - 30, this.player.level - 1, 0x44ff88);
           Logger.log('combat', `Player reached level ${this.player.level}`);
         }
-        this.spawnLoot(dead.x, dead.y);
+        const rarityLootMult = dead.rarity === 'rare' ? 3 : dead.rarity === 'magic' ? 2 : 1;
+        this.spawnLoot(dead.x, dead.y, rarityLootMult);
         dead.destroy();
       }
     }
@@ -2171,9 +2276,9 @@ export class Game {
     }
   }
 
-  private spawnLoot(x: number, y: number) {
+  private spawnLoot(x: number, y: number, rarityMult: number = 1) {
     const pending: { drop: ItemDrop }[] = [];
-    const iq = 1 + ((this.player?.computedStats.itemQuantityPct || 0) / 100);
+    const iq = (1 + ((this.player?.computedStats.itemQuantityPct || 0) / 100)) * rarityMult;
     const mf = this.player?.computedStats.magicFindPct || 0;
 
     for (const drop of createRandomLoot(x, y, iq)) {
