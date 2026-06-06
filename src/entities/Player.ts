@@ -115,6 +115,15 @@ export class Player {
       for (const [stat, val] of Object.entries(item.computedStats)) {
         equipStats[stat] = (equipStats[stat] || 0) + (val as number);
       }
+      // Add socketed jewel stats
+      if (item.socketSlots) {
+        for (const socket of item.socketSlots) {
+          if (!socket.jewel) continue;
+          for (const [stat, val] of Object.entries(socket.jewel.computedStats)) {
+            equipStats[stat] = (equipStats[stat] || 0) + (val as number);
+          }
+        }
+      }
     }
     this._computedStats = computeStats(this.passiveTree, this.attrs, 100, 50, equipStats);
     const s = this._computedStats;

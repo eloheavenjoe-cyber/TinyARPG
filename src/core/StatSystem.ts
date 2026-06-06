@@ -62,6 +62,12 @@ export function computeStats(
     additionalProjectiles: 0,
     magicFindPct: 0,
     itemQuantityPct: 0,
+    allResistancePct: 0,
+    critDmgPct: 0,
+    minionDmgPct: 0,
+    onslaughtOnKillPct: 0,
+    bleedChancePct: 0,
+    dmgPerPassivePct: 0,
   };
 
   for (const [key, val] of Object.entries(otherEquip)) {
@@ -85,6 +91,12 @@ export function computeStats(
     else if (key === 'additionalProjectiles') base.additionalProjectiles += val;
     else if (key === 'magicFindPct') base.magicFindPct += val;
     else if (key === 'itemQuantityPct') base.itemQuantityPct += val;
+    else if (key === 'allResistancePct') base.damageReduction = Math.min(50, (base.damageReduction || 0) + val);
+    else if (key === 'critDmgPct') base.critDmgPct = (base.critDmgPct || 0) + val;
+    else if (key === 'minionDmgPct') base.minionDmgPct = (base.minionDmgPct || 0) + val;
+    else if (key === 'onslaughtOnKillPct') base.onslaughtOnKillPct = (base.onslaughtOnKillPct || 0) + val;
+    else if (key === 'bleedChancePct') base.bleedChancePct = Math.min(100, (base.bleedChancePct || 0) + val);
+    else if (key === 'dmgPerPassivePct') base.dmgPerPassivePct = (base.dmgPerPassivePct || 0) + val;
   }
 
   return base;
