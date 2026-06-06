@@ -17,7 +17,7 @@ export class TutorialScreen {
     const panelW = 600;
     const panelH = 80;
     const panelX = screenWidth / 2 - panelW / 2;
-    const panelY = screenHeight - 120;
+    const panelY = screenHeight - 220;
     const padTop = 22;
     const padMid = 30;
 
