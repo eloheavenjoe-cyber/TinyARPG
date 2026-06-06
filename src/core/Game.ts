@@ -31,6 +31,7 @@ import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
+import { HubTip } from '../ui/HubTip';
 import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadCthulhuAnimations, loadChestAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation, playRangerRollAnimation, playAnimation } from '../rendering/SpriteAnimator';
 import { loadItemIcons } from '../rendering/ItemIcons';
 import { Boss, BossId } from '../entities/Boss';
@@ -162,6 +163,8 @@ export class Game {
   private cryptJackpotClaimed: boolean = false;
   private playerPullTimer: number = 0;
   private currentSaveData: SaveData | null = null;
+  private hasSeenHubTip: boolean = false;
+  private hubTip?: HubTip;
 
   constructor(app: Application) {
     this.app = app;
@@ -1164,6 +1167,13 @@ export class Game {
 
       // Generate vendor stock on hub entry
       this.vendorStock = generateVendorStock(this.player.level);
+
+      // One-time hub tip on first entry
+      if (!this.hasSeenHubTip) {
+        this.hasSeenHubTip = true;
+        this.hubTip = new HubTip(SCREEN_WIDTH, SCREEN_HEIGHT);
+        this.app.stage.addChild(this.hubTip.container);
+      }
     }
 
     // Re-add player and combat text above the new room (room floor tiles would cover them)
@@ -1235,7 +1245,7 @@ export class Game {
   private spawnTutorialEnemies() {
     const state = this.zoneManager.state;
     if (!state) return;
-    const enemies = this.zoneManager.spawnEnemies(state.config, state.currentTemplate, state.roomIndex);
+    const enemies = this.zoneManager.spawnEnemies(state.config, state.currentTemplate, state.roomIndex, this.player?.x, this.player?.y);
     for (const e of enemies) {
       this.enemies.push(e);
       this.gameContainer!.addChild(e.sprite);
@@ -1325,6 +1335,15 @@ export class Game {
         this._consoleKeyWasDown = false;
       }
       if (this.devConsole.isVisible()) return;
+
+      // Hub tip X key close
+      if (this.hubTip && !this.hubTip.isClosed()) {
+        if (this.input.isKeyDown('KeyX')) {
+          this.hubTip.close();
+          this.hubTip = undefined;
+        }
+        return;
+      }
 
       // Escape key handling
       if (this.input.isKeyDown('Escape')) {

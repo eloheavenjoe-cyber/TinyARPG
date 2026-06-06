@@ -41,7 +41,7 @@ export class ZoneManager {
     return cfg.min + Math.floor(Math.random() * (cfg.max - cfg.min + 1));
   }
 
-  spawnEnemies(zone: ZoneConfig, template: RoomTemplate, roomIndex: number): Enemy[] {
+  spawnEnemies(zone: ZoneConfig, template: RoomTemplate, roomIndex: number, playerX?: number, playerY?: number): Enemy[] {
     const enemies: Enemy[] = [];
     const count = Math.round(this.countEnemies(zone, roomIndex) * 1.1);
 
@@ -92,7 +92,19 @@ export class ZoneManager {
       e.damage = Math.round(e.damage * dmgMult);
       e.xpReward = Math.round(e.xpReward * xpMult);
       enemies.push(e);
-      if (zone.isEndless === 'wave') e.alwaysAggro = true;
+      if (zone.isEndless === 'wave' || zone.id === 'tutorial' || zone.id === 'secret_crypt') {
+        e.alwaysAggro = true;
+      }
+      if (playerX !== undefined && playerY !== undefined) {
+        for (let retry = 0; retry < 20; retry++) {
+          const dist = Math.hypot(x - playerX, y - playerY);
+          if (dist >= 300 && dist <= 800) break;
+          x = sz.x + 32 + Math.random() * (sz.width - 64);
+          y = sz.y + 32 + Math.random() * (sz.height - 64);
+          x = Math.max(64, Math.min(ROOM_WIDTH - 64, x));
+          y = Math.max(64, Math.min(ROOM_HEIGHT - 64, y));
+        }
+      }
       const rarity = rollRarity();
       const modCount = rarity === 'rare' ? 3 : rarity === 'magic' ? 2 : 0;
       const mods = modCount > 0 ? getRandomMods(modCount) : [];

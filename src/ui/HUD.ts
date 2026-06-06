@@ -23,6 +23,8 @@ export class HUD {
   private xpFill: Graphics;
   private zoneText: Text;
   private buffContainer: Container = new Container();
+  private pText: Text;
+  private kText: Text;
 
   private readonly BAR_W = 200;
   private readonly BAR_GAP = 8;
@@ -126,6 +128,21 @@ export class HUD {
     this.buffContainer.x = rightX;
     this.buffContainer.y = xpY + 14;
 
+    const pKX = 1700;
+    this.pText = new Text('', new TextStyle({
+      fontFamily: 'monospace', fontSize: 13, fill: '#8888cc',
+      stroke: '#000000', strokeThickness: 2,
+    }));
+    this.pText.x = pKX;
+    this.pText.y = rightY;
+
+    this.kText = new Text('', new TextStyle({
+      fontFamily: 'monospace', fontSize: 13, fill: '#cc8844',
+      stroke: '#000000', strokeThickness: 2,
+    }));
+    this.kText.x = pKX;
+    this.kText.y = rightY + 22;
+
     this.zoneText = new Text('', new TextStyle({
       fontFamily: 'Georgia, serif', fontSize: 22, fill: '#ddaa55',
       stroke: '#000000', strokeThickness: 3,
@@ -142,6 +159,7 @@ export class HUD {
       this.xpBg, this.xpFill,
       this.buffContainer,
       this.zoneText,
+      this.pText, this.kText,
     );
   }
 
@@ -186,6 +204,8 @@ export class HUD {
 
     this.goldText.text = `${player.gold} Gold`;
     this.levelText.text = `Lv ${player.level}`;
+    this.pText.text = player.passivePoints > 0 ? `P:${player.passivePoints}` : '';
+    this.kText.text = player.skillSubPoints > 0 ? `K:${player.skillSubPoints}` : '';
 
     const xpPct = player.xpToNext > 0 ? player.xp / player.xpToNext : 0;
     this.xpFill.clear();
