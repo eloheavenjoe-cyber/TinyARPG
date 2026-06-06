@@ -37,6 +37,12 @@ const BASE_ICONS: Record<string, { col: number; row: number }> = {
   amulet_unique: { col: 8, row: 13 },
 };
 
+const JEWEL_ICONS: Record<string, { col: number; row: number }> = {
+  jewel_normal: { col: 11, row: 0 },
+  jewel_magic:  { col: 12, row: 0 },
+  jewel_rare:   { col: 13, row: 0 },
+};
+
 const ORB_ICONS: Record<string, { col: number; row: number }> = {
   mutation:      { col: 9, row: 10 },
   purification:  { col: 9, row: 12 },
@@ -45,6 +51,9 @@ const ORB_ICONS: Record<string, { col: number; row: number }> = {
   growth:        { col: 9, row: 9 },
   ascendance:    { col: 9, row: 7 },
   portal_scroll: { col: 10, row: 0 },
+  drilling:      { col: 11, row: 1 },
+  shattering:    { col: 12, row: 1 },
+  preservation:  { col: 13, row: 1 },
 };
 
 export function loadItemIcons(): Promise<void> {
@@ -57,6 +66,10 @@ export function loadItemIcons(): Promise<void> {
         textures.set(key, tex);
       }
       for (const [key, pos] of Object.entries(ORB_ICONS)) {
+        const tex = new Texture(base, new Rectangle(pos.col * CELL, pos.row * CELL, CELL, CELL));
+        textures.set(key, tex);
+      }
+      for (const [key, pos] of Object.entries(JEWEL_ICONS)) {
         const tex = new Texture(base, new Rectangle(pos.col * CELL, pos.row * CELL, CELL, CELL));
         textures.set(key, tex);
       }
