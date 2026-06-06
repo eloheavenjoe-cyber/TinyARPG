@@ -50,7 +50,7 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     templates: [TEMPLATE_CRYPT],
   },
   forest: {
-    id: 'forest', name: 'Verdant Forest', biome: 'forest',
+    id: 'forest', name: 'Verdant Forest', biome: 'forest', tileConfig: 'forest',
     roomCount: 4, enemyPool: ['grunt', 'archer'],
     enemyHpMult: 1.5, enemyDmgMult: 1.0, enemyXpMult: 1.0,
     isEndless: false, nextZone: 'hub', availableFromHub: true,
