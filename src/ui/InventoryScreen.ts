@@ -27,7 +27,10 @@ function getRarityColor(rarity: string): number {
 export class InventoryScreen {
   container: Container;
   private gridSlots: { bg: Graphics; item: Text; index: number; icon: Sprite }[] = [];
-  private equipSlots: { bg: Graphics; item: Text; label: Text; slot: Slot; icon: Sprite }[] = [];
+  private equipSlotsData: {
+    slot: Slot; bg: Graphics; item: Text; label: Text; icon: Sprite;
+    socketContainer: Container;
+  }[] = [];
   private selectedIndex = -1;
   private hoveredSlot: number | Slot | null = null;
   private onEquip: (gridIndex: number) => void = () => {};
@@ -138,67 +141,82 @@ export class InventoryScreen {
       }
     }
 
-    // Equipment panel (right side)
-    const equipX = screenW / 2 + 200;
-    const equipStartY = 80;
-    const equipSlotSize = 60;
-    const equipGap = 10;
-    const slotLabels: { slot: Slot; label: string }[] = [
-      { slot: 'weapon', label: 'Weapon' },
-      { slot: 'body', label: 'Body' },
-      { slot: 'helmet', label: 'Helmet' },
-      { slot: 'boots', label: 'Boots' },
-      { slot: 'ring', label: 'Ring 1' },
-      { slot: 'ring2', label: 'Ring 2' },
-      { slot: 'amulet', label: 'Amulet' },
+    // Paper doll — centered vertically, positioned beside the inventory grid
+    const dollCenterX = gridLeft + cols * (slotSize + gap) + 120;
+    const dollCenterY = screenH / 2 - 10;
+
+    const paperDollBg = new Graphics();
+    paperDollBg.beginFill(COLORS.panel, 0.8);
+    paperDollBg.drawRoundedRect(dollCenterX - 90, dollCenterY - 150, 220, 320, 8);
+    paperDollBg.endFill();
+    this.container.addChild(paperDollBg);
+
+    const es = 54;
+
+    const bodySilhouette = new Graphics();
+    bodySilhouette.beginFill(0x1a1a30, 0.6);
+    bodySilhouette.drawRoundedRect(dollCenterX - 12, dollCenterY - 30, 24, 60, 4);
+    bodySilhouette.drawCircle(dollCenterX, dollCenterY - 54, 18);
+    bodySilhouette.endFill();
+    this.container.addChild(bodySilhouette);
+
+    const dollSlots: { slot: Slot; x: number; y: number; label: string }[] = [
+      { slot: 'helmet' as Slot, x: 0, y: -130, label: 'Helmet' },
+      { slot: 'weapon' as Slot, x: -85, y: -70, label: 'Weapon' },
+      { slot: 'body' as Slot, x: 0, y: -70, label: 'Chest' },
+      { slot: 'ring' as Slot, x: 85, y: -70, label: 'Ring 1' },
+      { slot: 'ring2' as Slot, x: 85, y: 0, label: 'Ring 2' },
+      { slot: 'boots' as Slot, x: 0, y: 80, label: 'Boots' },
+      { slot: 'amulet' as Slot, x: 85, y: 80, label: 'Amulet' },
     ];
 
-    const panelBg = new Graphics();
-    panelBg.beginFill(COLORS.panel, 0.8);
-    panelBg.drawRoundedRect(
-      equipX - 10, equipStartY - 10,
-      equipSlotSize + 130, slotLabels.length * (equipSlotSize + equipGap) + 10, 6,
-    );
-    panelBg.endFill();
-    this.container.addChild(panelBg);
-
-    for (let i = 0; i < slotLabels.length; i++) {
-      const { slot, label } = slotLabels[i];
-      const sy = equipStartY + i * (equipSlotSize + equipGap);
-      const item = equipment[slot];
+    for (const ds of dollSlots) {
+      const item = equipment[ds.slot];
+      const sx = dollCenterX + ds.x;
+      const sy = dollCenterY + ds.y;
 
       const g = new Graphics();
       g.beginFill(item ? 0x222244 : COLORS.slotBg);
       g.lineStyle(1, item ? 0x4466aa : COLORS.slotBorder);
-      g.drawRoundedRect(0, 0, equipSlotSize, equipSlotSize, 4);
+      g.drawRoundedRect(-es / 2, -es / 2, es, es, 4);
       g.endFill();
-      g.x = equipX;
+      g.x = sx;
       g.y = sy;
       this.container.addChild(g);
 
-      const labelTxt = new Text(label, new TextStyle({
-        fontFamily: 'monospace', fontSize: 10, fill: COLORS.textDim,
+      const labelTxt = new Text(ds.label, new TextStyle({
+        fontFamily: 'monospace', fontSize: 9, fill: COLORS.textDim,
       }));
-      labelTxt.x = equipX + equipSlotSize + 8;
-      labelTxt.y = sy + 4;
+      labelTxt.anchor.set(0.5, 0);
+      labelTxt.x = sx;
+      labelTxt.y = sy + es / 2 + 2;
       this.container.addChild(labelTxt);
 
       const itemTxt = new Text(item ? item.base.name : '', new TextStyle({
-        fontFamily: 'monospace', fontSize: 10,
+        fontFamily: 'monospace', fontSize: 8,
         fill: item ? getRarityColor(item.rarity) : COLORS.textDim,
       }));
-      itemTxt.x = equipX + equipSlotSize + 8;
-      itemTxt.y = sy + 20;
+      itemTxt.anchor.set(0.5);
+      itemTxt.x = sx;
+      itemTxt.y = sy + 4;
       this.container.addChild(itemTxt);
 
       const equipIcon = new Sprite();
       equipIcon.anchor.set(0.5);
-      equipIcon.x = equipX + equipSlotSize / 2;
-      equipIcon.y = sy + equipSlotSize / 2;
+      equipIcon.x = sx;
+      equipIcon.y = sy;
       equipIcon.visible = false;
       this.container.addChild(equipIcon);
 
-      this.equipSlots.push({ bg: g, item: itemTxt, label: labelTxt, slot, icon: equipIcon });
+      const socketContainer = new Container();
+      socketContainer.x = sx;
+      socketContainer.y = sy + es / 2 + 14;
+      this.container.addChild(socketContainer);
+
+      this.equipSlotsData.push({
+        slot: ds.slot, bg: g, item: itemTxt, label: labelTxt, icon: equipIcon,
+        socketContainer,
+      });
     }
 
     this.craftMessageText = new Text('', new TextStyle({
@@ -417,11 +435,12 @@ export class InventoryScreen {
       }
     }
     if (!hoveredEntry) {
-      for (const s of this.equipSlots) {
-        if (this.mouseX >= s.bg.x && this.mouseX <= s.bg.x + 60 &&
-            this.mouseY >= s.bg.y && this.mouseY <= s.bg.y + 60) {
-          this.hoveredSlot = s.slot as any;
-          if (equipment[s.slot]) hoveredEntry = { kind: 'equip', item: equipment[s.slot] } as EquipSlot;
+      for (const esd of this.equipSlotsData) {
+        const ex = esd.bg.x, ey = esd.bg.y, half = 27;
+        if (this.mouseX >= ex - half && this.mouseX <= ex + half &&
+            this.mouseY >= ey - half && this.mouseY <= ey + half) {
+          this.hoveredSlot = esd.slot as any;
+          if (equipment[esd.slot]) hoveredEntry = { kind: 'equip', item: equipment[esd.slot] } as EquipSlot;
           break;
         }
       }
@@ -493,28 +512,54 @@ export class InventoryScreen {
     }
 
     // Update equipment visuals
-    for (const s of this.equipSlots) {
-      const item = equipment[s.slot];
-      s.bg.clear();
-      s.bg.beginFill(item ? 0x222244 : COLORS.slotBg);
-      s.bg.lineStyle(1, item ? 0x4466aa : COLORS.slotBorder);
-      s.bg.drawRoundedRect(0, 0, 60, 60, 4);
-      s.bg.endFill();
-      s.item.text = item ? item.base.name : '';
-      s.item.style = new TextStyle({
-        fontFamily: 'monospace', fontSize: 10,
+    for (const esd of this.equipSlotsData) {
+      const item = equipment[esd.slot];
+      esd.bg.clear();
+      esd.bg.beginFill(item ? 0x222244 : COLORS.slotBg);
+      esd.bg.lineStyle(1, item ? 0x4466aa : COLORS.slotBorder);
+      esd.bg.drawRoundedRect(-27, -27, 54, 54, 4);
+      esd.bg.endFill();
+      esd.item.text = item ? item.base.name : '';
+      esd.item.style = new TextStyle({
+        fontFamily: 'monospace', fontSize: 8,
         fill: item ? getRarityColor(item.rarity) : COLORS.textDim,
       });
       if (item && isItemIconsLoaded()) {
         const key = `${item.base.id}_${item.rarity}`;
         const tex = getItemTexture(key);
         if (tex) {
-          s.icon.texture = tex;
-          s.icon.visible = true;
-          continue;
+          esd.icon.texture = tex;
+          esd.icon.visible = true;
+        } else {
+          esd.icon.visible = false;
         }
+      } else {
+        esd.icon.visible = false;
       }
-      s.icon.visible = false;
+
+      // Socket indicators
+      esd.socketContainer.removeChildren();
+      if (!item || item.maxSockets === 0) continue;
+
+      const socketRadius = 4;
+      const socketGap = 14;
+      const totalW = item.maxSockets * socketGap;
+
+      for (let i = 0; i < item.maxSockets; i++) {
+        const sx = -totalW / 2 + i * socketGap + socketGap / 2;
+        const dot = new Graphics();
+        const hasJewel = item.socketSlots && i < item.socketSlots.length && item.socketSlots[i]?.jewel;
+        if (hasJewel) {
+          const jColor = getRarityColor(item.socketSlots[i].jewel!.rarity);
+          dot.beginFill(jColor);
+        } else {
+          dot.beginFill(0x333333);
+        }
+        dot.lineStyle(1, 0x555555);
+        dot.drawCircle(sx, 0, socketRadius);
+        dot.endFill();
+        esd.socketContainer.addChild(dot);
+      }
     }
 
     // Craft message
@@ -582,10 +627,12 @@ export class InventoryScreen {
     }
 
     // Check equipment slot clicks
-    for (const s of this.equipSlots) {
-      if (mx >= s.bg.x && mx <= s.bg.x + 60 && my >= s.bg.y && my <= s.bg.y + 60) {
-        if (this.activeOrb && equipment[s.slot]) {
-          const success = this.onCraftOrb(this.activeOrb, s.slot);
+    for (const esd of this.equipSlotsData) {
+      const ex = esd.bg.x, ey = esd.bg.y, half = 27;
+      if (this.mouseX >= ex - half && this.mouseX <= ex + half &&
+          this.mouseY >= ey - half && this.mouseY <= ey + half) {
+        if (this.activeOrb && equipment[esd.slot]) {
+          const success = this.onCraftOrb(this.activeOrb, esd.slot);
           if (success) {
             this.craftMessage = 'Orb applied!';
           } else {
@@ -600,8 +647,8 @@ export class InventoryScreen {
             this.onEquip(this.selectedIndex);
             this.selectedIndex = -1;
           }
-        } else if (equipment[s.slot]) {
-          this.onUnequip(s.slot);
+        } else if (equipment[esd.slot]) {
+          this.onUnequip(esd.slot);
         }
         return;
       }
