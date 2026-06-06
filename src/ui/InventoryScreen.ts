@@ -38,6 +38,7 @@ export class InventoryScreen {
   private tooltip?: Container;
   private mouseX = 0;
   private mouseY = 0;
+  private equipment: Record<Slot, GeneratedItem | null>;
   private activeOrb: string | null = null;
   private craftMessage: string | null = null;
   private craftMessageTimer = 0;
@@ -46,9 +47,13 @@ export class InventoryScreen {
   private onCraftOrbGrid: (orbId: string, gridIndex: number) => boolean = () => false;
   private onConsumePortalScroll: () => void = () => {};
   private onSocketJewel: (slot: Slot, gridIndex: number) => void = () => {};
+  private onDrillOrb: (slot: Slot) => void = () => {};
+  private onUnsocketOrb: (orbId: string, slot: Slot, socketIndex: number) => void = () => {};
   private activeSocketJewel: number | null = null;
   private draggingJewel: { gridIndex: number; icon: Sprite } | null = null;
   onSocketJewelCallback(cb: (slot: Slot, gridIndex: number) => void) { this.onSocketJewel = cb; }
+  onDrillOrbCallback(cb: (slot: Slot) => void) { this.onDrillOrb = cb; }
+  onUnsocketOrbCallback(cb: (orbId: string, slot: Slot, socketIndex: number) => void) { this.onUnsocketOrb = cb; }
   onCraftOrbCallback(cb: (orbId: string, slot: Slot) => boolean) { this.onCraftOrb = cb; }
   onCraftOrbGridCallback(cb: (orbId: string, gridIndex: number) => boolean) { this.onCraftOrbGrid = cb; }
   onConsumePortalScrollCallback(cb: () => void) { this.onConsumePortalScroll = cb; }
@@ -60,6 +65,7 @@ export class InventoryScreen {
     computedStats: any,
   ) {
     this.container = new Container();
+    this.equipment = equipment;
 
     const bg = new Graphics();
     bg.beginFill(COLORS.bg, 0.92);
@@ -110,6 +116,7 @@ export class InventoryScreen {
               empowerment: 'Empower', flux: 'Flux',
               mutation: 'Mutate', growth: 'Growth',
               ascendance: 'Ascend', purification: 'Purify',
+              drilling: 'Drill', shattering: 'Shatter', preservation: 'Preserve',
             };
             displayName = `${names[entry.orbId] || entry.orbId} x${entry.count}`;
             displayColor = 0x44dddd;
@@ -378,6 +385,9 @@ export class InventoryScreen {
       growth: 'Adds a random affix to a\nmagic item (max 4)',
       ascendance: 'Upgrades a normal item to\nrare with 4-6 affixes',
       purification: 'Removes all affixes from a\nmagic or rare item',
+      drilling: 'Re-rolls socket count on an\nitem (always different result)',
+      shattering: 'Destroys a socketed jewel\nand empties the socket',
+      preservation: 'Removes a socketed jewel\nand returns it to inventory',
     };
     const orbNames: Record<string, string> = {
       empowerment: 'Orb of Empowerment',
@@ -386,6 +396,9 @@ export class InventoryScreen {
       growth: 'Orb of Growth',
       ascendance: 'Orb of Ascendance',
       purification: 'Orb of Purification',
+      drilling: 'Drilling Orb',
+      shattering: 'Shattering Orb',
+      preservation: 'Preservation Orb',
     };
     const name = orbNames[orb.orbId] || orb.orbId;
     this.tooltip = new Container();
@@ -471,7 +484,7 @@ export class InventoryScreen {
           displayName = entry.item.base.name;
           displayColor = getRarityColor(entry.item.rarity);
         } else if (entry.kind === 'orb') {
-          const names: Record<string, string> = { empowerment: 'Empower', flux: 'Flux' };
+          const names: Record<string, string> = { empowerment: 'Empower', flux: 'Flux', drilling: 'Drill', shattering: 'Shatter', preservation: 'Preserve' };
           displayName = `${names[entry.orbId] || entry.orbId} x${entry.count}`;
           displayColor = 0x44dddd;
         }
@@ -699,11 +712,21 @@ export class InventoryScreen {
           }
         }
         if (this.activeOrb && equipment[esd.slot]) {
-          const success = this.onCraftOrb(this.activeOrb, esd.slot);
-          if (success) {
-            this.craftMessage = 'Orb applied!';
+          const orbId = this.activeOrb;
+          if (orbId === 'drilling') {
+            this.onDrillOrb(esd.slot);
+          } else if (orbId === 'shattering' || orbId === 'preservation') {
+            const socketIdx = this.getSocketAtPosition(esd.slot, this.mouseX, this.mouseY);
+            if (socketIdx >= 0) {
+              this.onUnsocketOrb(orbId, esd.slot, socketIdx);
+            }
           } else {
-            this.craftMessage = 'Item not eligible';
+            const success = this.onCraftOrb(this.activeOrb, esd.slot);
+            if (success) {
+              this.craftMessage = 'Orb applied!';
+            } else {
+              this.craftMessage = 'Item not eligible';
+            }
           }
           this.craftMessageTimer = 120;
           this.activeOrb = null;
@@ -724,6 +747,25 @@ export class InventoryScreen {
     this.activeOrb = null;
     this.activeSocketJewel = null;
     this.selectedIndex = -1;
+  }
+
+  private getSocketAtPosition(slot: Slot, mx: number, my: number): number {
+    const esd = this.equipSlotsData.find(e => e.slot === slot);
+    if (!esd) return -1;
+    const item = this.equipment[slot] as any;
+    if (!item?.socketSlots) return -1;
+
+    const socketRadius = 4;
+    const socketGap = 14;
+    const totalW = item.maxSockets * socketGap;
+    const socketY = esd.bg.y + 27 + 14;
+
+    for (let i = 0; i < item.socketSlots.length; i++) {
+      const sx = esd.socketContainer.x + (-totalW / 2 + i * socketGap + socketGap / 2);
+      const dist = Math.hypot(mx - sx, my - socketY);
+      if (dist < socketRadius + 4) return i;
+    }
+    return -1;
   }
 
   destroy() {

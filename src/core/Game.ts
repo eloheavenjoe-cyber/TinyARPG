@@ -3063,6 +3063,37 @@ export class Game {
           this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
         }
       });
+      this.inventoryScreen.onDrillOrbCallback((slot: Slot) => {
+        if (!this.player) return;
+        const success = this.player.drillSockets(slot);
+        if (success) {
+          const orbIdx = this.player.inventory.findIndex(
+            s => s !== null && s.kind === 'orb' && s.orbId === 'drilling'
+          );
+          if (orbIdx >= 0) {
+            const orbSlot = this.player.inventory[orbIdx] as any;
+            orbSlot.count--;
+            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
+          }
+          this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
+        }
+      });
+      this.inventoryScreen.onUnsocketOrbCallback((orbId: string, slot: Slot, socketIndex: number) => {
+        if (!this.player) return;
+        const destroy = orbId === 'shattering';
+        const success = this.player.unsocketJewel(slot, socketIndex, destroy);
+        if (success) {
+          const orbIdx = this.player.inventory.findIndex(
+            s => s !== null && s.kind === 'orb' && s.orbId === orbId
+          );
+          if (orbIdx >= 0) {
+            const orbSlot = this.player.inventory[orbIdx] as any;
+            orbSlot.count--;
+            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
+          }
+          this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
+        }
+      });
       this.inventoryScreen.onConsumePortalScrollCallback(() => {
         if (!this.player || !this.gameContainer) return;
         const idx = this.player.inventory.findIndex(
