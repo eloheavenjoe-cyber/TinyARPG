@@ -12,6 +12,7 @@ export function cloneTemplate(t: RoomTemplate): RoomTemplate {
     playerStart: { ...t.playerStart },
     decorationRects: t.decorationRects.map(d => ({ ...d })),
     buildings: t.buildings.map(b => ({ ...b })),
+    cabins: t.cabins.map(c => ({ ...c })),
     npcs: t.npcs.map(n => ({ ...n })),
   };
 }
@@ -23,6 +24,7 @@ export const TEMPLATE_OPEN: RoomTemplate = {
   spawnZones: [{ x: WALL_T + 50, y: WALL_T + 50, width: ROOM_WIDTH - WALL_T * 2 - 100, height: ROOM_HEIGHT - WALL_T * 2 - 100 }],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -44,6 +46,7 @@ export const TEMPLATE_PILLARS: RoomTemplate = {
   ],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -63,6 +66,7 @@ export const TEMPLATE_L_SHAPE: RoomTemplate = {
   ],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -84,6 +88,7 @@ export const TEMPLATE_CROSS: RoomTemplate = {
   ],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -105,6 +110,7 @@ export const TEMPLATE_RING: RoomTemplate = {
   ],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -142,6 +148,7 @@ export const TEMPLATE_HUB: RoomTemplate = {
     { x: 2700, y: 1100, width: 400, height: 250, wallColor: 0x6a5a4a, roofColor: 0x5a3a2a, label: 'Vendor' },
     { x: 3300, y: 1100, width: 400, height: 250, wallColor: 0x5a6a5a, roofColor: 0x3a4a3a, label: 'Stash' },
   ],
+  cabins: [],
   npcs: [
     { x: 2900, y: 1380, label: 'Vendor', tint: 0x44aa66 },
     { x: 3500, y: 1380, label: 'Stash', tint: 0x4488cc },
@@ -159,6 +166,7 @@ export const TEMPLATE_TUTORIAL: RoomTemplate = {
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -173,6 +181,7 @@ export const TEMPLATE_ARENA: RoomTemplate = {
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -189,6 +198,7 @@ export const TEMPLATE_DUNGEON: RoomTemplate = {
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -203,6 +213,7 @@ export const TEMPLATE_DEV: RoomTemplate = {
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -223,6 +234,7 @@ export const TEMPLATE_FOREST_1: RoomTemplate = {
     { x: 5200, y: 2800, width: 64, height: 64 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -251,6 +263,7 @@ export const TEMPLATE_FOREST_2: RoomTemplate = {
     { x: 6000, y: 1200, width: 64, height: 64 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -276,6 +289,7 @@ export const TEMPLATE_FOREST_3: RoomTemplate = {
     { x: 4800, y: 1200, width: 48, height: 48 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -304,6 +318,7 @@ export const TEMPLATE_DESERT_1: RoomTemplate = {
     { x: 400, y: 2000, width: 56, height: 40 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -332,6 +347,7 @@ export const TEMPLATE_DESERT_2: RoomTemplate = {
     { x: 5200, y: 1200, width: 56, height: 40 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -360,6 +376,7 @@ export const TEMPLATE_DESERT_3: RoomTemplate = {
     { x: 6000, y: 1200, width: 56, height: 112 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -378,6 +395,7 @@ export const TEMPLATE_DESERT_4: RoomTemplate = {
     { x: 3200, y: 2400, width: 48, height: 104 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -398,6 +416,7 @@ export const TEMPLATE_ICE_1: RoomTemplate = {
     { x: 2400, y: 2600, width: 64, height: 64 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -426,6 +445,7 @@ export const TEMPLATE_ICE_2: RoomTemplate = {
     { x: 6000, y: 1400, width: 88, height: 88 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -452,6 +472,7 @@ export const TEMPLATE_ICE_3: RoomTemplate = {
     { x: 2000, y: 2000, width: 48, height: 48 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -478,6 +499,7 @@ export const TEMPLATE_ICE_4: RoomTemplate = {
     { x: 400, y: 2800, width: 88, height: 88 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -506,6 +528,7 @@ export const TEMPLATE_ICE_5: RoomTemplate = {
     { x: 6000, y: 1600, width: 48, height: 48 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -533,6 +556,7 @@ export const TEMPLATE_FOREST_BOSS: RoomTemplate = {
     { x: 4800, y: 2400, width: 48, height: 48 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -560,6 +584,7 @@ export const TEMPLATE_DESERT_BOSS: RoomTemplate = {
     { x: 5400, y: 2400, width: 32, height: 48 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -589,6 +614,7 @@ export const TEMPLATE_ICE_BOSS: RoomTemplate = {
     { x: 4800, y: 1200, width: 40, height: 40 },
   ],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -616,6 +642,7 @@ export const TEMPLATE_CRYPT: RoomTemplate = {
   ],
   decorationRects: [],
   buildings: [],
+  cabins: [],
   npcs: [],
   playerStart: { x: 3200, y: 1792 },
 };

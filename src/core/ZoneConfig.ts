@@ -45,6 +45,16 @@ export interface NpcData {
   tint: number;
 }
 
+export interface CabinData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  doorSide: 'south' | 'north' | 'east' | 'west';
+  chestPos: { x: number; y: number };
+  spawnZones: { x: number; y: number; width: number; height: number }[];
+}
+
 export interface RoomTemplate {
   walls: { x: number; y: number; width: number; height: number }[];
   doors: DoorMarker[];
@@ -53,6 +63,7 @@ export interface RoomTemplate {
   playerStart: { x: number; y: number };
   decorationRects: { x: number; y: number; width: number; height: number }[];
   buildings: BuildingData[];
+  cabins: CabinData[];
   npcs: NpcData[];
 }
 
