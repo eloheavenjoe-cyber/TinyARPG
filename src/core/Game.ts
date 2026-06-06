@@ -14,7 +14,7 @@ import { Player, InventorySlot, EquipSlot } from '../entities/Player';
 import { Enemy, EnemyType } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
-import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, isOrbDrop, createOrbDrop, isPortalScrollDrop } from '../entities/ItemDrop';
+import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, createJewelDrop, isOrbDrop, createOrbDrop, isPortalScrollDrop, isJewelDrop } from '../entities/ItemDrop';
 import { decorateRoom } from '../world/RoomDecorator';
 import { TILE_CONFIGS } from '../core/TileConfigs';
 import { BiomeId } from './ZoneConfig';
@@ -26,7 +26,7 @@ import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
 import { CharacterScreen } from '../ui/CharacterScreen';
-import { generateItemDrop, generateOrbDrop, GeneratedItem, getMaxSockets } from './ItemGenerator';
+import { generateItemDrop, generateOrbDrop, generateJewel, GeneratedItem, getMaxSockets } from './ItemGenerator';
 import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
@@ -2202,6 +2202,17 @@ export class Game {
           clickedItem = true;
           break;
         }
+        if (isJewelDrop(drop) && Math.hypot(mouseWX - drop.x, mouseWY - drop.y) < 30) {
+          const gen = drop.item.generated;
+          if (this.player!.pickupItem(gen)) {
+            drop.pickup();
+            this.gameContainer!.removeChild(drop.container);
+            drop.destroy();
+            this.itemDrops.splice(this.itemDrops.indexOf(drop), 1);
+          }
+          clickedItem = true;
+          break;
+        }
       }
       if (!clickedItem) {
         this.useMainAbility();
@@ -2810,7 +2821,10 @@ export class Game {
     for (const drop of createRandomLoot(x, y, iq)) {
       pending.push({ drop });
     }
-    if (Math.random() < 0.4 * iq) {
+    if (Math.random() < 0.15) {
+      const jewel = generateJewel(this.player?.level);
+      pending.push({ drop: createJewelDrop(x, y, jewel) });
+    } else if (Math.random() < 0.4 * iq) {
       const gen = generateItemDrop(this.player?.level, mf);
       pending.push({ drop: createItemDrop(x, y, gen) });
     }
@@ -2840,6 +2854,7 @@ export class Game {
       const drop = this.itemDrops[i];
       if (drop.pickedUp) continue;
       if (isEquippableDrop(drop)) continue;
+      if (isJewelDrop(drop)) continue;
       if (Math.hypot(drop.x - this.player.x, drop.y - this.player.y) < 50) {
         const item = drop.pickup();
         switch (item.type) {

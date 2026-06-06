@@ -1,4 +1,4 @@
-import { ITEM_BASES, AFFIXES, UNIQUE_ITEMS, ItemBase, ItemAffix, Rarity } from './ItemDefs';
+import { ITEM_BASES, AFFIXES, UNIQUE_ITEMS, JEWEL_ONLY_AFFIXES, ItemBase, ItemAffix, Rarity } from './ItemDefs';
 
 export interface SocketSlot {
   jewel: GeneratedItem | null;
@@ -25,6 +25,100 @@ export function getMaxSockets(base: ItemBase): number {
   if (base.slot === 'boots' || base.slot === 'helmet') return 4;
   if (base.slot === 'weapon' || base.slot === 'body') return 6;
   return 0;
+}
+
+export function rollSockets(maxSockets: number, currentSockets?: number): number {
+  const distributions: Record<number, { value: number; weight: number }[]> = {
+    6: [
+      { value: 0, weight: 30 }, { value: 1, weight: 25 },
+      { value: 2, weight: 20 }, { value: 3, weight: 15 },
+      { value: 4, weight: 7 }, { value: 5, weight: 2.5 },
+      { value: 6, weight: 0.5 },
+    ],
+    4: [
+      { value: 0, weight: 35 }, { value: 1, weight: 30 },
+      { value: 2, weight: 20 }, { value: 3, weight: 10 },
+      { value: 4, weight: 5 },
+    ],
+    1: [
+      { value: 0, weight: 65 }, { value: 1, weight: 35 },
+    ],
+  };
+
+  const dist = distributions[maxSockets] || distributions[1];
+  const totalWeight = dist.reduce((s, d) => s + d.weight, 0);
+  let r = Math.random() * totalWeight;
+  let result = dist[0].value;
+
+  for (const d of dist) {
+    r -= d.weight;
+    if (r <= 0) { result = d.value; break; }
+  }
+
+  // Drilling Orb: always different than current
+  if (currentSockets !== undefined && result === currentSockets) {
+    result = (result + 1) % (maxSockets + 1);
+  }
+
+  return result;
+}
+
+export function generateJewel(playerLevel?: number): GeneratedItem {
+  const ilvl = playerLevel || 1;
+  const maxTierRoll = Math.random();
+  const maxTier = maxTierRoll < 0.50 ? 1 : maxTierRoll < 0.85 ? 2 : 3;
+
+  const rarityRoll = Math.random();
+  let rarity: Rarity;
+  let affixCount: number;
+  if (rarityRoll < 0.50) { rarity = 'normal'; affixCount = 1; }
+  else if (rarityRoll < 0.80) { rarity = 'magic'; affixCount = 2; }
+  else if (rarityRoll < 0.95) { rarity = 'rare'; affixCount = 3; }
+  else { rarity = 'rare'; affixCount = 4 + Math.floor(Math.random() * 3); }
+
+  const pool = AFFIXES.filter(a => a.tier <= maxTier).sort(() => Math.random() - 0.5);
+  const jewelPool = JEWEL_ONLY_AFFIXES.filter(a => a.tier <= maxTier).sort(() => Math.random() - 0.5);
+
+  const picked: { affix: ItemAffix; roll: number }[] = [];
+  const usedStats = new Set<string>();
+
+  for (let i = 0; i < affixCount; i++) {
+    const useJewel = jewelPool.length > 0 && Math.random() < 0.3;
+    const src = useJewel ? jewelPool : pool;
+    const pick = src.find(a => !usedStats.has(a.stat));
+    if (!pick) continue;
+    usedStats.add(pick.stat);
+    const roll = pick.min + Math.floor(Math.random() * (pick.max - pick.min + 1));
+    picked.push({ affix: pick, roll });
+  }
+
+  const stats: Record<string, number> = {};
+  for (const p of picked) {
+    stats[p.affix.stat] = (stats[p.affix.stat] || 0) + p.roll;
+  }
+
+  const tierCounts: Record<number, number> = {};
+  for (const a of picked) tierCounts[a.affix.tier] = (tierCounts[a.affix.tier] || 0) + 1;
+  const highestTier = Math.max(...Object.keys(tierCounts).map(Number), 1);
+  const levelReq = highestTier * 4;
+
+  const base: ItemBase = { id: 'jewel', name: 'Jewel', slot: 'ring', innateStats: {}, dropWeight: 0 };
+  const jewelName = rarity === 'rare' && affixCount >= 4
+    ? `Exquisite ${generateName(picked, 'Jewel')}`
+    : generateName(picked, 'Jewel');
+
+  return {
+    id: crypto.randomUUID(),
+    base, rarity,
+    affixes: picked,
+    damageRoll: 0,
+    computedName: jewelName,
+    computedStats: stats,
+    ilvl,
+    levelReq,
+    socketSlots: [],
+    maxSockets: 0,
+  };
 }
 
 function pickWeighted(bases: ItemBase[]): ItemBase {
@@ -62,6 +156,7 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
       : 0;
     const stats: Record<string, number> = { ...unique.innateStats, ...unique.fixedAffixes };
     if (dr > 0) stats.damage = dr;
+    const ms = getMaxSockets(base);
     return {
       id: crypto.randomUUID(),
       base, rarity: 'unique',
@@ -75,8 +170,8 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
       computedStats: stats,
       ilvl: playerLevel || 1,
       levelReq: 1,
-      socketSlots: [],
-      maxSockets: getMaxSockets(base),
+      socketSlots: Array.from({ length: rollSockets(ms) }, () => ({ jewel: null })),
+      maxSockets: ms,
     };
   }
 
@@ -126,7 +221,7 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
     computedStats: stats,
     ilvl,
     levelReq,
-    socketSlots: [],
+    socketSlots: Array.from({ length: rollSockets(ms) }, () => ({ jewel: null })),
     maxSockets: ms,
   };
   return item;
@@ -204,10 +299,13 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
 
 export function generateOrbDrop(): { orbId: string; name: string } {
   const r = Math.random();
-  if (r < 0.25) return { orbId: 'mutation', name: 'Orb of Mutation' };
-  if (r < 0.50) return { orbId: 'purification', name: 'Orb of Purification' };
-  if (r < 0.68) return { orbId: 'empowerment', name: 'Orb of Empowerment' };
-  if (r < 0.86) return { orbId: 'flux', name: 'Orb of Flux' };
-  if (r < 0.93) return { orbId: 'growth', name: 'Orb of Growth' };
-  return { orbId: 'ascendance', name: 'Orb of Ascendance' };
+  if (r < 0.20) return { orbId: 'mutation', name: 'Orb of Mutation' };
+  if (r < 0.35) return { orbId: 'purification', name: 'Orb of Purification' };
+  if (r < 0.45) return { orbId: 'empowerment', name: 'Orb of Empowerment' };
+  if (r < 0.53) return { orbId: 'flux', name: 'Orb of Flux' };
+  if (r < 0.58) return { orbId: 'growth', name: 'Orb of Growth' };
+  if (r < 0.63) return { orbId: 'ascendance', name: 'Orb of Ascendance' };
+  if (r < 0.69) return { orbId: 'drilling', name: 'Drilling Orb' };
+  if (r < 0.77) return { orbId: 'shattering', name: 'Shattering Orb' };
+  return { orbId: 'preservation', name: 'Preservation Orb' };
 }

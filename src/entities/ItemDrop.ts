@@ -105,8 +105,25 @@ export function isOrbDrop(drop: ItemDrop): drop is ItemDrop & { item: OrbItem } 
   return drop.item.type === 'orb';
 }
 
+export function isJewelDrop(drop: ItemDrop): drop is ItemDrop & { item: JewelItem } {
+  return drop.item.type === 'jewel';
+}
+
 export function isPortalScrollDrop(drop: ItemDrop): drop is ItemDrop & { item: ConsumableItem } {
   return drop.item.type === 'portalScroll';
+}
+
+export function createJewelDrop(x: number, y: number, generated: GeneratedItem): ItemDrop {
+  const rarityColors: Record<string, number> = {
+    normal: 0xffffff, magic: 0x4488ff, rare: 0xffcc00,
+  };
+  const color = generated.affixes.length >= 4 ? 0xff8800 : (rarityColors[generated.rarity] || 0xffffff);
+  return new ItemDrop(x, y, {
+    type: 'jewel',
+    name: generated.computedName,
+    color,
+    generated,
+  });
 }
 
 export function createItemDrop(x: number, y: number, generated: GeneratedItem): ItemDrop {
