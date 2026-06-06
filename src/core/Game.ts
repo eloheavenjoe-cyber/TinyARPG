@@ -26,7 +26,7 @@ import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
 import { CharacterScreen } from '../ui/CharacterScreen';
-import { generateItemDrop, generateOrbDrop, generateJewel, GeneratedItem, getMaxSockets } from './ItemGenerator';
+import { generateItemDrop, generateOrbDrop, generateJewel, GeneratedItem, getMaxSockets, SocketSlot } from './ItemGenerator';
 import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
@@ -495,6 +495,20 @@ export class Game {
     Logger.log('game', `Saved to slot ${this.currentSaveSlot}`);
   }
 
+  private serializeSlots(socketSlots: SocketSlot[]): { jewel: SerializedItem | null }[] {
+    return socketSlots.map(s => ({
+      jewel: s.jewel ? {
+        baseId: s.jewel.base.id,
+        rarity: s.jewel.rarity,
+        affixes: s.jewel.affixes.map(a => ({ affixId: a.affix.id, roll: a.roll })),
+        damageRoll: s.jewel.damageRoll,
+        computedName: s.jewel.computedName,
+        ilvl: s.jewel.ilvl,
+        levelReq: s.jewel.levelReq,
+      } : null,
+    }));
+  }
+
   private serializeInventory(inv: InventorySlot[]): SerializedInventorySlot[] {
     return inv.map(slot => {
       if (!slot) return null;
@@ -511,6 +525,7 @@ export class Game {
           computedName: item.computedName,
           ilvl: item.ilvl,
           levelReq: item.levelReq,
+          socketSlots: item.socketSlots.length > 0 ? this.serializeSlots(item.socketSlots) : undefined,
         },
       };
     });
@@ -540,6 +555,7 @@ export class Game {
         computedName: item.computedName,
         ilvl: item.ilvl,
         levelReq: item.levelReq,
+        socketSlots: item.socketSlots.length > 0 ? this.serializeSlots(item.socketSlots) : undefined,
       };
     }
     return result;
@@ -574,6 +590,7 @@ export class Game {
     for (const a of affixes) {
       stats[a.affix.stat] = (stats[a.affix.stat] || 0) + a.roll;
     }
+    const maxSockets = getMaxSockets(base);
     return {
       base,
       rarity: data.rarity,
@@ -584,8 +601,12 @@ export class Game {
       computedStats: stats,
       ilvl: data.ilvl,
       levelReq: data.levelReq,
-      socketSlots: [],
-      maxSockets: getMaxSockets(base),
+      socketSlots: data.socketSlots
+        ? data.socketSlots.map(s => ({
+            jewel: s.jewel ? this.deserializeItem(s.jewel) : null,
+          }))
+        : base.id === 'jewel' ? [] : Array.from({ length: maxSockets }, () => ({ jewel: null })),
+      maxSockets,
       id: `restored_${data.baseId}_${Date.now()}`,
     };
   }

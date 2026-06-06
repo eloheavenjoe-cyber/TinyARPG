@@ -23,6 +23,7 @@ export interface SerializedItem {
   computedName: string;
   ilvl: number;
   levelReq: number;
+  socketSlots?: { jewel: SerializedItem | null }[];
 }
 
 export type SerializedInventorySlot =
