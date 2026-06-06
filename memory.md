@@ -458,6 +458,9 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Extra projectile visibility**: Changed spread formula — `extra === 1` now uses fixed `0.08` spread instead of 0 (was invisible overlapping base projectile)
 - **Support skill mana cost**: Added `this.player.mana -= result.manaCost` for Ranger projectile support skills (was missing — only monk techniques deducted mana)
 - **AdditionalProjectiles from items**: IS working correctly — the stat is computed by StatSystem, read by `fireProjectile()`, and applied to all non-spread projectile skills
+- **Cthulhu attack animations**: Walk/idle guard in Boss.ts now checks `!this.chosenAttack` so attack textures aren't overwritten during windup — `1atk`/`2atk` animations now play during telegraph phase
+- **Normal enemy HP bars**: `applyRarity()` now called unconditionally in ZoneManager so all enemies get nameplates regardless of rarity
+- **Wave zone-wide aggro**: Added `alwaysAggro` flag to Enemy class — arena and crypt wave enemies always path to player regardless of distance
 
 **Files changed:** 15 files across 8 commits (+185 lines, added 54 sprite assets).
 
