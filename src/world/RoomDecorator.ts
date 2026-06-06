@@ -41,6 +41,13 @@ function getBiomeTint(biome: BiomeId): number {
   }
 }
 
+function applyTintVariance(base: number, factor: number): number {
+  const r = Math.min(255, Math.max(0, Math.round(((base >> 16) & 0xff) * factor)));
+  const g = Math.min(255, Math.max(0, Math.round(((base >> 8) & 0xff) * factor)));
+  const b = Math.min(255, Math.max(0, Math.round((base & 0xff) * factor)));
+  return (r << 16) | (g << 8) | b;
+}
+
 export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?: TileConfig, roadBlock?: Rect): DecoratorResult {
   const result: DecoratorResult = { decorations: [], obstacles: [], chests: [], breakables: [] };
   const config = BIOME_DECOR[biome];
@@ -91,6 +98,10 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?
       if (!tx) continue;
       sprite = new Sprite(tx);
       sprite.anchor.set(0.5, 1);
+      if (tileConfig.propTint !== undefined) {
+        const variance = 1 + (Math.random() - 0.5) * 0.16;
+        sprite.tint = applyTintVariance(tileConfig.propTint, variance);
+      }
     } else {
       sprite = new Sprite(Sprites.tree);
       sprite.anchor.set(0.5, 1);
@@ -116,6 +127,10 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?
       if (!tx) continue;
       sprite = new Sprite(tx);
       sprite.anchor.set(0.5, 1);
+      if (tileConfig.propTint !== undefined) {
+        const variance = 1 + (Math.random() - 0.5) * 0.16;
+        sprite.tint = applyTintVariance(tileConfig.propTint, variance);
+      }
     } else {
       sprite = new Sprite(Sprites.rock);
       sprite.anchor.set(0.5, 1);
@@ -141,6 +156,10 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?
       if (!tx) continue;
       sprite = new Sprite(tx);
       sprite.anchor.set(0.5, 1);
+      if (tileConfig.propTint !== undefined) {
+        const variance = 1 + (Math.random() - 0.5) * 0.16;
+        sprite.tint = applyTintVariance(tileConfig.propTint, variance);
+      }
     } else {
       sprite = new Sprite(Sprites.bush);
       sprite.anchor.set(0.5, 1);
