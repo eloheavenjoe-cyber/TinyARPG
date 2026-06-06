@@ -92,10 +92,11 @@ export class ZoneManager {
       e.damage = Math.round(e.damage * dmgMult);
       e.xpReward = Math.round(e.xpReward * xpMult);
       enemies.push(e);
+      if (zone.isEndless === 'wave') e.alwaysAggro = true;
       const rarity = rollRarity();
       const modCount = rarity === 'rare' ? 3 : rarity === 'magic' ? 2 : 0;
       const mods = modCount > 0 ? getRandomMods(modCount) : [];
-      if (mods.length > 0 || rarity !== 'normal') e.applyRarity(rarity, mods);
+      e.applyRarity(rarity, mods);
     }
 
     return enemies;

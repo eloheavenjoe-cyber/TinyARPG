@@ -49,6 +49,7 @@ export class Enemy {
   detectRange: number;
   deaggroRange: number;
   aggroed = false;
+  alwaysAggro = false;
   rarity: MonsterRarity = 'normal';
   mods: MonsterMod[] = [];
   hastedMultiplier = 1;
@@ -106,10 +107,13 @@ export class Enemy {
     const dy = playerY - this.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    // Aggro range check: aggro when entering detectRange, de-aggro when leaving deaggroRange
-    if (!this.aggroed && dist < this.detectRange) this.aggroed = true;
-    if (this.aggroed && dist > this.deaggroRange) this.aggroed = false;
-    if (!this.aggroed) return;
+    if (this.alwaysAggro) {
+      this.aggroed = true;
+    } else {
+      if (!this.aggroed && dist < this.detectRange) this.aggroed = true;
+      if (this.aggroed && dist > this.deaggroRange) this.aggroed = false;
+      if (!this.aggroed) return;
+    }
 
     const slowScale = this.slowTimer > 0 ? 0.5 : 1;
     if (slowScale < 1) this.speed *= slowScale;

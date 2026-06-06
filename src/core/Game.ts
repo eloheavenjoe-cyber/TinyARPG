@@ -2314,6 +2314,8 @@ export class Game {
             e.health = Math.round(e.health * hpMult);
             e.maxHealth = e.health;
             e.damage = Math.round(e.damage * 1.1);
+            e.alwaysAggro = true;
+            e.applyRarity('normal', []);
             this.enemies.push(e);
             this.gameContainer!.addChild(e.sprite);
             if (e.nameplate) this.gameContainer!.addChild(e.nameplate);

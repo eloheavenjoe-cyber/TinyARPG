@@ -181,7 +181,7 @@ export class Boss {
     }
 
     // Walk/idle animation
-    if (!this.attacking) {
+    if (!this.attacking && !this.chosenAttack) {
       if (dist > 80) {
         this.playAnim('walk');
       } else {
@@ -281,7 +281,7 @@ export class Boss {
     }
 
     // Animation: walk when moving, idle when stationary
-    if (!this.attacking) {
+    if (!this.attacking && !this.chosenAttack) {
       if (dist > 120) {
         this.playAnim('walk');
       } else {
