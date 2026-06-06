@@ -5,6 +5,13 @@ import { Logger } from '../core/Logger';
 import { buildItemTooltip, buildOrbTooltip } from './Tooltip';
 import { getItemTexture, isItemIconsLoaded } from '../rendering/ItemIcons';
 
+function getRarityColor(rarity: string): number {
+  const colors: Record<string, number> = {
+    normal: 0xffffff, magic: 0x4488ff, rare: 0xffcc00, unique: 0xff6600,
+  };
+  return colors[rarity] || 0xffffff;
+}
+
 const SLOT = 50;
 const GAP = 6;
 const INV_COLS = 5;
@@ -242,6 +249,29 @@ export class StashScreen {
         }
       }
       c.addChild(icon);
+    }
+
+    // Socket indicators
+    if (slot && slot.kind === 'equip' && slot.item.maxSockets > 0) {
+      const item = slot.item;
+      const socketRadius = 4;
+      const socketGap = 14;
+      const totalW = item.maxSockets * socketGap;
+      const socketY = SLOT / 2 + 12;
+      for (let i = 0; i < item.maxSockets; i++) {
+        const sx = SLOT / 2 - totalW / 2 + i * socketGap + socketGap / 2;
+        const dot = new Graphics();
+        const hasJewel = item.socketSlots && i < item.socketSlots.length && item.socketSlots[i]?.jewel;
+        if (hasJewel) {
+          dot.beginFill(getRarityColor(item.socketSlots[i].jewel!.rarity));
+        } else {
+          dot.beginFill(0x333333);
+        }
+        dot.lineStyle(1, 0x555555);
+        dot.drawCircle(sx, socketY, socketRadius);
+        dot.endFill();
+        c.addChild(dot);
+      }
     }
 
     c.x = x;
