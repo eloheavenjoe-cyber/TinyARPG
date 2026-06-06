@@ -416,8 +416,6 @@ export class Room {
 
       g.beginFill(WALL);
       g.drawRect(c.x, c.y, c.width, 8);
-      g.endFill();
-
       g.drawRect(c.x, c.y, 8, c.height - 24);
       g.drawRect(c.x + c.width - 8, c.y, 8, c.height - 24);
 
@@ -425,6 +423,7 @@ export class Room {
       const doorE = c.x + c.width / 2 + 24;
       g.drawRect(c.x, c.y + c.height - 32, doorW - c.x, 8);
       g.drawRect(doorE, c.y + c.height - 32, c.x + c.width - doorE, 8);
+      g.endFill();
 
       g.lineStyle(1, 0x7a5a2a, 0.4);
       for (let sy = c.y + 20; sy < c.y + c.height - 40; sy += 20) {
