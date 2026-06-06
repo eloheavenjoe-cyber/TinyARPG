@@ -58,6 +58,7 @@ export function decorateRoom(template: RoomTemplate, biome: BiomeId, tileConfig?
     ...template.doors.map(d => d.rect),
     ...template.portals.map(p => p.rect),
     ...template.buildings.map(b => ({ x: b.x, y: b.y, width: b.width, height: b.height })),
+    ...template.cabins.map(c => ({ x: c.x, y: c.y, width: c.width, height: c.height })),
   ];
   if (roadBlock) blockedRects.push(roadBlock);
 

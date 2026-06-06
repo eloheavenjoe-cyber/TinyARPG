@@ -50,7 +50,7 @@ export interface CabinData {
   y: number;
   width: number;
   height: number;
-  doorSide: 'south' | 'north' | 'east' | 'west';
+  doorSide: 'south';
   chestPos: { x: number; y: number };
   spawnZones: { x: number; y: number; width: number; height: number }[];
 }
