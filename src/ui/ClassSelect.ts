@@ -141,7 +141,8 @@ const CLASSES: ClassOption[] = [
 export class ClassSelect {
   container: Container;
   private callback: ClassPickCallback = () => {};
-  private buttons: { bg: Graphics; classType: ClassType }[] = [];
+  private buttons: { bg: Graphics; classType: ClassType; disabled: boolean }[] = [];
+  private readonly disabledClasses: Set<ClassType> = new Set(['warrior', 'monk']);
 
   constructor(screenWidth: number, screenHeight: number) {
     this.container = new Container();
@@ -169,42 +170,55 @@ export class ClassSelect {
 
     for (let i = 0; i < CLASSES.length; i++) {
       const cls = CLASSES[i];
+      const disabled = this.disabledClasses.has(cls.classType);
       const btnX = startX + i * (btnW + btnGap);
       const btnY = 300;
 
       const btn = new Graphics();
-      btn.beginFill(cls.color);
-      btn.drawRoundedRect(0, 0, btnW, btnH, 10);
-      btn.endFill();
-      btn.lineStyle(2, cls.borderColor);
-      btn.drawRoundedRect(0, 0, btnW, btnH, 10);
+      if (disabled) {
+        btn.beginFill(0x111122);
+        btn.drawRoundedRect(0, 0, btnW, btnH, 10);
+        btn.endFill();
+        btn.lineStyle(2, 0x555555);
+        btn.drawRoundedRect(0, 0, btnW, btnH, 10);
+      } else {
+        btn.beginFill(cls.color);
+        btn.drawRoundedRect(0, 0, btnW, btnH, 10);
+        btn.endFill();
+        btn.lineStyle(2, cls.borderColor);
+        btn.drawRoundedRect(0, 0, btnW, btnH, 10);
+      }
       btn.x = btnX;
       btn.y = btnY;
+      btn.alpha = disabled ? 0.35 : 1;
 
       // Icon
       const icon = new Graphics();
       cls.drawIcon(icon);
       icon.x = btnX + btnW / 2;
       icon.y = btnY + 50;
+      icon.alpha = disabled ? 0.4 : 1;
 
       const name = new Text(cls.label, new TextStyle({
-        fontFamily: 'Georgia, serif', fontSize: 24, fill: '#c0a060',
+        fontFamily: 'Georgia, serif', fontSize: 24, fill: disabled ? '#665544' : '#c0a060',
         stroke: '#000', strokeThickness: 1,
       }));
       name.anchor.set(0.5, 0);
       name.x = btnX + btnW / 2;
       name.y = btnY + 110;
+      name.alpha = disabled ? 0.5 : 1;
 
       const desc = new Text(cls.description, new TextStyle({
-        fontFamily: 'monospace', fontSize: 12, fill: '#888899',
+        fontFamily: 'monospace', fontSize: 12, fill: disabled ? '#555555' : '#888899',
         wordWrap: true, wordWrapWidth: 260,
       }));
       desc.anchor.set(0.5, 0);
       desc.x = btnX + btnW / 2;
       desc.y = btnY + 144;
+      desc.alpha = disabled ? 0.5 : 1;
 
       this.container.addChild(btn, icon, name, desc);
-      this.buttons.push({ bg: btn, classType: cls.classType });
+      this.buttons.push({ bg: btn, classType: cls.classType, disabled });
     }
 
     Logger.log('ui', 'Class select screen shown');
@@ -218,6 +232,7 @@ export class ClassSelect {
     if (!input.consumeClick()) return;
 
     for (const btn of this.buttons) {
+      if (btn.disabled) continue;
       const b = btn.bg.getBounds();
       if (input.mouseX >= b.x && input.mouseX <= b.x + b.width &&
           input.mouseY >= b.y && input.mouseY <= b.y + b.height) {

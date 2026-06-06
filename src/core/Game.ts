@@ -931,9 +931,16 @@ export class Game {
       this.app.stage.removeChild(this.tutorialScreen.container);
       this.tutorialScreen.destroy();
       this.tutorialScreen = undefined;
-      this.tutorialStage = null;
+      // Preserve tutorialStage for return from crypt
       this.tutorialKeys = new Set();
       this.tutorialKeyWasDown = new Set();
+    }
+
+    // Recreate tutorial screen when returning to unfinished tutorial
+    if (zone.id === 'tutorial' && !this.tutorialScreen && this.tutorialStage && this.tutorialStage !== 'complete') {
+      this.tutorialScreen = new TutorialScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
+      this.tutorialScreen.setStage(this.tutorialStage);
+      this.app.stage.addChild(this.tutorialScreen.container);
     }
 
     this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone), template.playerStart, template.cabins, state.roomIndex);
