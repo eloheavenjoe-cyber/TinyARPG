@@ -936,7 +936,7 @@ export class Game {
       this.tutorialKeyWasDown = new Set();
     }
 
-    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone), template.playerStart);
+    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone), template.playerStart, template.cabins, state.roomIndex);
     this.gameContainer.addChild(this.room.container);
 
     // Procedural decoration
@@ -971,6 +971,25 @@ export class Game {
       const brk = new Breakable(bp.x, bp.y);
       this.breakables.push(brk);
       this.gameContainer.addChild(brk.container);
+    }
+
+    // Cabin walls, spawn zones, and chests
+    for (const c of template.cabins) {
+      const doorW = c.width / 2 - 24;
+      this.room.walls.push({ x: c.x, y: c.y, width: c.width, height: 8 });
+      this.room.walls.push({ x: c.x + c.width - 8, y: c.y, width: 8, height: c.height });
+      this.room.walls.push({ x: c.x, y: c.y, width: 8, height: c.height });
+      this.room.walls.push({ x: c.x, y: c.y + c.height - 32, width: doorW, height: 8 });
+      this.room.walls.push({ x: c.x + c.width / 2 + 24, y: c.y + c.height - 32, width: c.width / 2 - 24, height: 8 });
+
+      for (const sz of c.spawnZones) {
+        template.spawnZones.push(sz);
+      }
+
+      const chest = new Chest(c.chestPos.x, c.chestPos.y);
+      chest.container.zIndex = 4;
+      this.chests.push(chest);
+      this.gameContainer.addChild(chest.container);
     }
 
     // Secret bush for hidden crypt door (tutorial zone only)
