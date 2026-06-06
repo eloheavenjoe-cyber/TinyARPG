@@ -4,6 +4,7 @@ export class InputManager {
   private keys: Set<string> = new Set();
   mouseX = 0;
   mouseY = 0;
+  isMouseDown = false;
   private mouseClicked = false;
   private mouseRightClicked = false;
 
@@ -27,12 +28,17 @@ export class InputManager {
 
     canvas.addEventListener('mousedown', (e) => {
       if (e.button === 0) {
+        this.isMouseDown = true;
         this.mouseClicked = true;
         Logger.log('input', `Mouse clicked at (${this.mouseX.toFixed(0)}, ${this.mouseY.toFixed(0)})`);
       } else if (e.button === 2) {
         this.mouseRightClicked = true;
         Logger.log('input', `Right-click at (${this.mouseX.toFixed(0)}, ${this.mouseY.toFixed(0)})`);
       }
+    });
+
+    window.addEventListener('mouseup', () => {
+      this.isMouseDown = false;
     });
 
     window.addEventListener('contextmenu', (e) => e.preventDefault());

@@ -8,7 +8,7 @@ import { SkillSubTree, RANGER_SUB_TREES } from '../core/SkillSubTree';
 import { PassiveTree } from '../core/PassiveTree';
 import { computeStats } from '../core/StatSystem';
 import { Slot, AFFIXES } from '../core/ItemDefs';
-import { GeneratedItem } from '../core/ItemGenerator';
+import { GeneratedItem, rollSockets } from '../core/ItemGenerator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Enemy } from './Enemy';
@@ -136,6 +136,54 @@ export class Player {
     const idx = this.inventory.findIndex(s => s === null);
     if (idx === -1) return false;
     this.inventory[idx] = { kind: 'equip', item };
+    return true;
+  }
+
+  socketJewel(slot: Slot, jewel: GeneratedItem, gridIndex: number): boolean {
+    const item = this.equipment[slot];
+    if (!item || !item.socketSlots) return false;
+    const emptyIdx = item.socketSlots.findIndex(s => !s.jewel);
+    if (emptyIdx === -1) return false;
+
+    // Remove jewel from inventory
+    this.inventory[gridIndex] = null;
+
+    // Socket it
+    item.socketSlots[emptyIdx].jewel = jewel;
+    this.recalcStats();
+    return true;
+  }
+
+  unsocketJewel(slot: Slot, socketIndex: number, destroy: boolean): boolean {
+    const item = this.equipment[slot];
+    if (!item || !item.socketSlots) return false;
+    const socket = item.socketSlots[socketIndex];
+    if (!socket.jewel) return false;
+
+    if (destroy) {
+      socket.jewel = null;
+      this.recalcStats();
+      return true;
+    }
+
+    // Return jewel to inventory
+    const idx = this.inventory.findIndex(s => s === null);
+    if (idx === -1) return false;
+    this.inventory[idx] = { kind: 'equip', item: socket.jewel };
+    socket.jewel = null;
+    this.recalcStats();
+    return true;
+  }
+
+  drillSockets(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item || !item.maxSockets) return false;
+    const newCount = rollSockets(item.maxSockets, item.socketSlots?.length || 0);
+    const oldCount = item.socketSlots?.length || 0;
+    item.socketSlots = Array.from({ length: newCount }, (_, i) =>
+      i < oldCount && item.socketSlots?.[i]?.jewel ? item.socketSlots[i] : { jewel: null }
+    );
+    this.recalcStats();
     return true;
   }
 

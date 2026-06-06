@@ -45,6 +45,10 @@ export class InventoryScreen {
   private onCraftOrb: (orbId: string, slot: Slot) => boolean = () => false;
   private onCraftOrbGrid: (orbId: string, gridIndex: number) => boolean = () => false;
   private onConsumePortalScroll: () => void = () => {};
+  private onSocketJewel: (slot: Slot, gridIndex: number) => void = () => {};
+  private activeSocketJewel: number | null = null;
+  private draggingJewel: { gridIndex: number; icon: Sprite } | null = null;
+  onSocketJewelCallback(cb: (slot: Slot, gridIndex: number) => void) { this.onSocketJewel = cb; }
   onCraftOrbCallback(cb: (orbId: string, slot: Slot) => boolean) { this.onCraftOrb = cb; }
   onCraftOrbGridCallback(cb: (orbId: string, gridIndex: number) => boolean) { this.onCraftOrbGrid = cb; }
   onConsumePortalScrollCallback(cb: () => void) { this.onConsumePortalScroll = cb; }
@@ -569,6 +573,54 @@ export class InventoryScreen {
     } else {
       this.craftMessageText.text = '';
     }
+
+    // Drag-drop for jewels
+    if (input.isMouseDown && !this.draggingJewel) {
+      for (const g of this.gridSlots) {
+        if (this.mouseX >= g.bg.x && this.mouseX <= g.bg.x + 50 &&
+            this.mouseY >= g.bg.y && this.mouseY <= g.bg.y + 50) {
+          const entry = inventory[g.index];
+          if (entry && entry.kind === 'equip' && entry.item.base.id === 'jewel') {
+            const icon = new Sprite();
+            if (isItemIconsLoaded()) {
+              const tex = getItemTexture(`${entry.item.base.id}_${entry.item.rarity}`);
+              if (tex) icon.texture = tex;
+            }
+            icon.anchor.set(0.5);
+            icon.scale.set(1.5);
+            icon.x = this.mouseX;
+            icon.y = this.mouseY;
+            this.container.addChild(icon);
+            this.draggingJewel = { gridIndex: g.index, icon };
+            this.selectedIndex = -1;
+            this.activeOrb = null;
+            this.activeSocketJewel = null;
+            break;
+          }
+        }
+      }
+    }
+
+    if (this.draggingJewel) {
+      this.draggingJewel.icon.x = this.mouseX;
+      this.draggingJewel.icon.y = this.mouseY;
+
+      if (!input.isMouseDown) {
+        let dropped = false;
+        for (const esd of this.equipSlotsData) {
+          const ex = esd.bg.x, ey = esd.bg.y, half = 27;
+          if (this.mouseX >= ex - half && this.mouseX <= ex + half &&
+              this.mouseY >= ey - half && this.mouseY <= ey + half) {
+            this.onSocketJewel(esd.slot, this.draggingJewel.gridIndex);
+            dropped = true;
+            break;
+          }
+        }
+        this.container.removeChild(this.draggingJewel.icon);
+        this.draggingJewel.icon.destroy();
+        this.draggingJewel = null;
+      }
+    }
   }
 
   private handleRightClick(inventory: InventorySlot[]) {
@@ -585,6 +637,11 @@ export class InventoryScreen {
           }
           this.activeOrb = this.activeOrb === entry.orbId ? null : entry.orbId;
           this.selectedIndex = this.activeOrb ? g.index : -1;
+          this.activeSocketJewel = null;
+        } else if (entry && entry.kind === 'equip' && entry.item.base.id === 'jewel') {
+          this.activeSocketJewel = this.activeSocketJewel === g.index ? null : g.index;
+          this.activeOrb = null;
+          this.selectedIndex = this.activeSocketJewel !== null ? g.index : -1;
         }
         return;
       }
@@ -620,6 +677,7 @@ export class InventoryScreen {
           }
         } else {
           this.activeOrb = null;
+          this.activeSocketJewel = null;
           this.selectedIndex = -1;
         }
         return;
@@ -631,6 +689,15 @@ export class InventoryScreen {
       const ex = esd.bg.x, ey = esd.bg.y, half = 27;
       if (this.mouseX >= ex - half && this.mouseX <= ex + half &&
           this.mouseY >= ey - half && this.mouseY <= ey + half) {
+        if (this.activeSocketJewel !== null) {
+          const jewelEntry = inventory[this.activeSocketJewel];
+          if (jewelEntry && jewelEntry.kind === 'equip' && jewelEntry.item.base.id === 'jewel') {
+            this.onSocketJewel(esd.slot, this.activeSocketJewel);
+            this.activeSocketJewel = null;
+            this.selectedIndex = -1;
+            return;
+          }
+        }
         if (this.activeOrb && equipment[esd.slot]) {
           const success = this.onCraftOrb(this.activeOrb, esd.slot);
           if (success) {
@@ -655,6 +722,7 @@ export class InventoryScreen {
     }
 
     this.activeOrb = null;
+    this.activeSocketJewel = null;
     this.selectedIndex = -1;
   }
 

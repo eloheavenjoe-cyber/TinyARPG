@@ -3054,6 +3054,15 @@ export class Game {
         );
         return success;
       });
+      this.inventoryScreen.onSocketJewelCallback((slot: Slot, gridIndex: number) => {
+        if (!this.player) return;
+        const jewelEntry = this.player.inventory[gridIndex];
+        if (!jewelEntry || jewelEntry.kind !== 'equip' || jewelEntry.item.base.id !== 'jewel') return;
+        const success = this.player.socketJewel(slot, jewelEntry.item, gridIndex);
+        if (success) {
+          this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
+        }
+      });
       this.inventoryScreen.onConsumePortalScrollCallback(() => {
         if (!this.player || !this.gameContainer) return;
         const idx = this.player.inventory.findIndex(
