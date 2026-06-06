@@ -747,6 +747,17 @@ Tier 4: #35, #43  → professional quality
 ### Tutorial Screen Fix
 - Panel moved from Y=960 to Y=860 to avoid overlapping the skill bar at Y=1002
 
+### Phase 13 — Verdant Forest Visual Upgrade (completed 2026-06-06)
+- **TileConfig forest entry**: Reuses tutorial PNGs with 6 different tree sprite cells from Trees.png/Trees2.png. Rustic autumn tints applied: floorTint 0x9a8a4a, accentTint 0xaa8833, wallTint 0xb0a090, propTint 0xbb8844
+- **Configurable tints**: TileConfig interface extended with optional floorTint/accentTint/wallTint/propTint fields, replacing hardcoded 0x999999 in Room.build()
+- **Elevation overlay**: 5 dark + 3 light seeded ellipse blobs drawn on floor for terrain depth. Configurable via TileConfig.elevation (darkBlobs, lightBlobs, darkAlpha, lightAlpha)
+- **Prop tint with variance**: RoomDecorator applies propTint ±8% random variance to tile-based trees, rocks, bushes via applyTintVariance() helper
+- **CabinData interface**: New CabinData type in ZoneConfig.ts (x, y, width, height, doorSide, chestPos, spawnZones). Added cabins: CabinData[] to RoomTemplate
+- **Cabin rendering**: Room.renderCabins() draws interior floor, wood walls, triangle roof, chimney, dark door opening using Graphics
+- **Cabin collision**: Walls pushed to room.walls with 48px south door gap. Cabin spawn zones added to template for enemy spawning inside
+- **Cabin chests**: Created at cabin.chestPos with zIndex 4
+- **Forest templates**: TEMPLATE_FOREST_1 gets 2 cabins, FOREST_2 gets 1, FOREST_3 gets 1. FOREST_BOSS has none
+
 ## Bug Patterns (updated 2026-06-06)
 - **HUD positioning:** No longer at Y=1030 — bottom-anchored at Y=974. Remove the old CSS scaling note reference.
 - **SkillBar must be positioned:** Container uses relative coords (`startX = -TOTAL_W/2`). Game.ts must set `container.x = 960; container.y = 1002;` after construction.
