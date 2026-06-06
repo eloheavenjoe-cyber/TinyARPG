@@ -1,6 +1,6 @@
 import { Container, Graphics, Text, TextStyle, TilingSprite, Sprite } from 'pixi.js';
 import { Logger } from '../core/Logger';
-import { BiomeData, BIOME_DATA, BiomeId, DoorMarker, PortalMarker, BuildingData, NpcData } from '../core/ZoneConfig';
+import { BiomeData, BIOME_DATA, BiomeId, DoorMarker, PortalMarker, BuildingData, NpcData, CabinData } from '../core/ZoneConfig';
 import { tileTextures, TILE_CONFIGS } from '../core/TileConfigs';
 
 export interface Rect {
@@ -65,11 +65,13 @@ export class Room {
   private decorations: Rect[];
   private buildings: BuildingData[];
   private npcs: NpcData[];
+  private cabins: CabinData[];
+  private roomIndex: number;
   private isPortalUnlocked: (targetZone: string) => boolean;
 
   private playerStart?: { x: number; y: number };
 
-  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = [], isPortalUnlocked?: (targetZone: string) => boolean, playerStart?: { x: number; y: number }) {
+  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = [], isPortalUnlocked?: (targetZone: string) => boolean, playerStart?: { x: number; y: number }, cabins: CabinData[] = [], roomIndex: number = 0) {
     this.container = new Container();
     this.walkableArea = {
       x: WALL_THICKNESS,
@@ -86,6 +88,8 @@ export class Room {
     this.npcs = npcs;
     this.isPortalUnlocked = isPortalUnlocked || (() => true);
     this.playerStart = playerStart;
+    this.cabins = cabins;
+    this.roomIndex = roomIndex;
     this.build();
     Logger.log('system', `Room created: ${ROOM_WIDTH}x${ROOM_HEIGHT}, walkable: ${this.walkableArea.width}x${this.walkableArea.height}`);
   }
@@ -96,7 +100,7 @@ export class Room {
 
     if (floorTx && tc) {
       const floor = new TilingSprite(floorTx, ROOM_WIDTH, ROOM_HEIGHT);
-      floor.tint = 0x999999;
+      floor.tint = tc.floorTint ?? 0x999999;
       this.container.addChild(floor);
 
       if (tc.accentTiles && tc.accentTiles.tiles.length > 0) {
@@ -106,13 +110,37 @@ export class Room {
           const accentTx = tileTextures[tileName];
           if (!accentTx) continue;
           const s = new Sprite(accentTx);
-          s.tint = 0x999999;
+          s.tint = tc.accentTint ?? 0x999999;
           s.x = Math.random() * ROOM_WIDTH;
           s.y = Math.random() * ROOM_HEIGHT;
           s.alpha = 0.3 + Math.random() * 0.4;
           accentContainer.addChild(s);
         }
         this.container.addChild(accentContainer);
+      }
+
+      if (tc.elevation) {
+        const elevGfx = new Graphics();
+        const seed = this.roomIndex;
+        for (let i = 0; i < tc.elevation.darkBlobs; i++) {
+          const cx = ((seed * 137 + i * 53 + 71) % 157) / 157 * ROOM_WIDTH;
+          const cy = ((seed * 251 + i * 97 + 43) % 131) / 131 * ROOM_HEIGHT;
+          const rx = 150 + ((seed * 199 + i * 67 + 13) % 100) / 100 * 350;
+          const ry = 150 + ((seed * 311 + i * 83 + 59) % 100) / 100 * 350;
+          elevGfx.beginFill(0x000000, tc.elevation.darkAlpha);
+          elevGfx.drawEllipse(cx, cy, rx, ry);
+          elevGfx.endFill();
+        }
+        for (let i = 0; i < tc.elevation.lightBlobs; i++) {
+          const cx = ((seed * 173 + i * 131 + 97) % 157) / 157 * ROOM_WIDTH;
+          const cy = ((seed * 229 + i * 89 + 31) % 131) / 131 * ROOM_HEIGHT;
+          const rx = 150 + ((seed * 263 + i * 73 + 17) % 100) / 100 * 350;
+          const ry = 150 + ((seed * 277 + i * 101 + 47) % 100) / 100 * 350;
+          elevGfx.beginFill(0xffffd0, tc.elevation.lightAlpha);
+          elevGfx.drawEllipse(cx, cy, rx, ry);
+          elevGfx.endFill();
+        }
+        this.container.addChild(elevGfx);
       }
     } else {
       const floor = new Graphics().beginFill(this.biomeData.floorColor).drawRect(0, 0, ROOM_WIDTH, ROOM_HEIGHT).endFill();
@@ -148,6 +176,7 @@ export class Room {
         ws.x = wall.x;
         ws.y = wall.y;
         this.container.addChild(ws);
+        ws.tint = tc.wallTint ?? 0xffffff;
       }
 
       if (tc.wallTrimColor !== undefined) {
@@ -176,6 +205,7 @@ export class Room {
     this.renderRoad();
     this.renderDecorations();
     this.renderBuildings();
+    this.renderCabins();
     this.renderNpcs();
     this.renderDoors();
     this.renderPortals();
@@ -368,6 +398,57 @@ export class Room {
       label.x = b.x + b.width / 2;
       label.y = b.y - 44;
       this.container.addChild(label);
+    }
+  }
+
+  private renderCabins() {
+    const WALL = 0x8b6b3a;
+    const ROOF = 0x5a3020;
+    const FLOOR = 0x5a3a2a;
+    const CHIMNEY = 0x7a7a7a;
+
+    for (const c of this.cabins) {
+      const g = new Graphics();
+
+      g.beginFill(FLOOR);
+      g.drawRect(c.x + 8, c.y + c.height - 32, c.width - 16, 24);
+      g.endFill();
+
+      g.beginFill(WALL);
+      g.drawRect(c.x, c.y, c.width, 8);
+      g.endFill();
+
+      g.drawRect(c.x, c.y, 8, c.height - 24);
+      g.drawRect(c.x + c.width - 8, c.y, 8, c.height - 24);
+
+      const doorW = c.x + c.width / 2 - 24;
+      const doorE = c.x + c.width / 2 + 24;
+      g.drawRect(c.x, c.y + c.height - 32, doorW - c.x, 8);
+      g.drawRect(doorE, c.y + c.height - 32, c.x + c.width - doorE, 8);
+
+      g.lineStyle(1, 0x7a5a2a, 0.4);
+      for (let sy = c.y + 20; sy < c.y + c.height - 40; sy += 20) {
+        g.moveTo(c.x + 8, sy);
+        g.lineTo(c.x + c.width - 8, sy);
+      }
+      g.lineStyle(0);
+
+      g.beginFill(ROOF);
+      g.moveTo(c.x - 12, c.y);
+      g.lineTo(c.x + c.width / 2, c.y - 32);
+      g.lineTo(c.x + c.width + 12, c.y);
+      g.closePath();
+      g.endFill();
+
+      g.beginFill(CHIMNEY);
+      g.drawRect(c.x + c.width - 40, c.y - 48, 28, 48);
+      g.endFill();
+
+      g.beginFill(0x2a1a0a);
+      g.drawRect(c.x + c.width / 2 - 14, c.y + c.height - 36, 28, 36);
+      g.endFill();
+
+      this.container.addChild(g);
     }
   }
 
