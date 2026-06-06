@@ -693,3 +693,64 @@ Tier 3: #29, #42, #37, #30  → deep atmosphere
 Tier 4: #35, #43  → professional quality
 \\\
 
+---
+
+## Phase 12 — Character Screen (completed 2026-06-06)
+
+### Character Screen (C key)
+- New `src/ui/CharacterScreen.ts`: full-screen overlay with two tabs (Stats / Abilities)
+- **Stats tab**: Attributes (STR/DEX/INT), Offensive (8 stats), Defensive (6 stats), Utility (7 stats) — all from `Player.computedStats`
+- **Abilities tab**: All 6 equipped skills in bar order. Badges: `[Melee]`, `[Projectile]`, `[Buff]`, `[Dash]`. Damaging skills show computed damage (via `Player.calcDamage()`), cooldown in seconds, mana cost. Non-damaging skills show description text.
+- Tab buttons with active highlighting, click to switch. Full rebuild on tab switch.
+- C key binding in Game.ts with overlay guard (blocked when inventory/tree/escape/vendor/stash open)
+- Escape chain closes character screen before subTreeScreen
+- Cleaned up in `cleanupGameSession()` and `restartGame()`
+- Empty slots shown as "(Empty)"
+- `aoe_target` effectType classified as `[Projectile]`
+- Stats panel removed from InventoryScreen (was showing only 6 stats)
+- `Player.calcDamage()` made public, `Player.getSkillCooldown(skill)` added
+
+### HUD Rework (completed 2026-06-06)
+- **Bottom-anchored positioning**: HUD panel at Y=974 (1080 - 100 - 6) — fixes clipping issue where MP/gold/level/XP were off-screen
+- **Unified bottom bar**: Dark metal panel (`0x1a1a28`) with gold trim (`0x8a7a3a`), full-width, rounded top corners
+- **HP bar** (left, 200×22px): Gold-framed rounded rect, gradient from deep crimson→bright red, smooth lerp (`displayed += (target - displayed) * min(1, 0.15 * dt)`), low-HP pulse at <30% (`alpha = 0.7 + 0.3 * sin(time * 0.15)`)
+- **MP bar** (left, below HP, 200×18px): Same ornate frame, sapphire fill, smooth lerp, mana label added (was missing)
+- **Right section** (X=1500): Gold (Georgia 16px gold), Level (mono 13px), XP bar (160×8px teal rounded), buff indicators (diamond + duration, max 4)
+- **Zone name**: Top-center, Georgia serif 22px, gold `#ddaa55`, dark stroke
+- `SCREEN_W`/`SCREEN_H` constants used throughout (no hardcoded 1920/1080 except where unavoidable)
+- Division-by-zero guards on HP/MP lerp targets
+
+### Skill Bar Rework
+- Larger ornate slots (90×44px, was 85×40): dark iron bg + gold trim matching HUD
+- **Radial cooldown sweep**: Pie-slice arc via `Graphics.arc()` instead of static black overlay
+- **Numeric countdown**: Seconds remaining centered in slot when on cooldown
+- Slots positioned via centered container at (960, 1002) within HUD panel
+- `SkillManager.cooldownRemaining()` and `getBuffTimer()` used for lookups
+
+### Enemy Nameplates
+- Three-tier structure: HP bar (4px, green→yellow→red by %), name (white bold), mods (single line, rarity-colored: blue=magic, yellow=rare, joined by ` | `)
+- Shown for all enemies (not just magic/rare)
+- Container-based (was single Text) — proper destroy with `{ children: true }`
+- Positioned 40px above sprite center-top (was 22px — raised to avoid sprite overlap)
+- `getDisplayName()` maps type IDs to readable names
+
+### Combat Text Improvements
+- Optional `rarityColor` and `damageType` parameters on `showDamage()`
+- Cold damage: tinted blue, Lightning damage: tinted yellow via `blendColors()` helper
+- Font size scales with damage amount (14-22px, log-like scale)
+- Backward compatible — existing 4-arg callers unchanged
+
+### Minimap Reposition
+- Moved from bottom-right to top-right (Y=6 instead of 1080-112-6)
+- Added alpha fade lerp on update + `fadeIn()`/`fadeOut()` methods
+
+### Tutorial Screen Fix
+- Panel moved from Y=960 to Y=860 to avoid overlapping the skill bar at Y=1002
+
+## Bug Patterns (updated 2026-06-06)
+- **HUD positioning:** No longer at Y=1030 — bottom-anchored at Y=974. Remove the old CSS scaling note reference.
+- **SkillBar must be positioned:** Container uses relative coords (`startX = -TOTAL_W/2`). Game.ts must set `container.x = 960; container.y = 1002;` after construction.
+- **Stance display gated:** `currentStance` buff only shown for `classType === 'monk'` — don't render for warrior/ranger.
+- **Enemy nameplate Y offset:** `updateSprite()` positions nameplate at `this.y - this.height / 2 - 40`. If adjusting, change both the positioning offset and the mod text Y in `createNameplate`.
+- **HUD.update signature changed:** Now takes `(player: Player, dt: number)` instead of just `(player: Player)`.
+
