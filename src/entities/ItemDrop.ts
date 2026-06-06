@@ -127,9 +127,11 @@ export function createJewelDrop(x: number, y: number, generated: GeneratedItem):
 }
 
 export function createItemDrop(x: number, y: number, generated: GeneratedItem): ItemDrop {
+  const socketSuffix = generated.socketSlots && generated.maxSockets > 0
+    ? ` (${generated.socketSlots.length})` : '';
   return new ItemDrop(x, y, {
     type: 'item',
-    name: generated.computedName,
+    name: `${generated.computedName}${socketSuffix}`,
     color: RARITY_COLORS[generated.rarity] || 0xffffff,
     generated,
   });
