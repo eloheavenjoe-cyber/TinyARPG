@@ -463,6 +463,8 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - **Wave zone-wide aggro**: Added `alwaysAggro` flag to Enemy class — arena and crypt wave enemies always path to player regardless of distance
 - **Crypt-to-town lock fix**: `tutorialStage` no longer nulled when entering crypt from tutorial. Tutorial screen recreated on return to unfinished tutorial
 - **Class select greyed-out**: Warrior and Monk cards shown at 35% alpha with grey borders. Only Ranger clickable. Disabled classes tracked via `disabledClasses` set
+- **First crypt wave aggro fix**: ZoneManager.spawnEnemies() now sets alwaysAggro for tutorial and crypt zones too (not just endless wave). Tutorial and crypt enemies always path to player
+- **Tutorial spawn distance**: SpawnEnemies() accepts optional playerX/playerY params. When provided (tutorial), enemies spawn 300-800px from player — not too close, not too far
 
 **Files changed:** 15 files across 8 commits (+185 lines, added 54 sprite assets).
 
@@ -762,6 +764,12 @@ Tier 4: #35, #43  → professional quality
 - **Cabin collision**: Walls pushed to room.walls with 48px south door gap. Cabin spawn zones added to template for enemy spawning inside
 - **Cabin chests**: Created at cabin.chestPos with zIndex 4
 - **Forest templates**: TEMPLATE_FOREST_1 gets 2 cabins, FOREST_2 gets 1, FOREST_3 gets 1. FOREST_BOSS has none
+
+### Phase 14 — Hub Tip, P/K Indicators, Aggro Fixes (completed 2026-06-06)
+- **Hub tip overlay** (`HubTip.ts`): Semi-transparent dark overlay shown once per session on first hub entry. Text: "Portals to new zones are to the left and right of town." Closes with X key. Gameplay pauses while tip is open
+- **P/K point indicators** (`HUD.ts`): Blue `P:3` text at (1700,986) — shows passive points when >0. Orange `K:1` text at (1700,1008) — shows sub skill points when >0. Hidden at 0, visible on level-up to remind player to spend
+- **Crypt/tutorial zone-wide aggro**: ZoneManager.spawnEnemies() sets `alwaysAggro = true` for tutorial and crypt zones (added `zone.id === 'tutorial' || zone.id === 'secret_crypt'` to existing endless-wave check)
+- **Tutorial spawn distance**: `spawnEnemies()` accepts optional `playerX`/`playerY` params. When provided, spawn position retries up to 20 times to land within 300-800px of the player
 
 ## Bug Patterns (updated 2026-06-06)
 - **HUD positioning:** No longer at Y=1030 — bottom-anchored at Y=974. Remove the old CSS scaling note reference.
