@@ -24,7 +24,14 @@ export interface OrbItem {
   count: number;
 }
 
-export type LootItem = ConsumableItem | EquippableItem | OrbItem;
+export interface JewelItem {
+  type: 'jewel';
+  name: string;
+  color: number;
+  generated: GeneratedItem;
+}
+
+export type LootItem = ConsumableItem | EquippableItem | OrbItem | JewelItem;
 
 const RARITY_COLORS: Record<string, number> = {
   normal: 0xffffff,

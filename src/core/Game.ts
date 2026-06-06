@@ -26,7 +26,7 @@ import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
 import { CharacterScreen } from '../ui/CharacterScreen';
-import { generateItemDrop, generateOrbDrop, GeneratedItem } from './ItemGenerator';
+import { generateItemDrop, generateOrbDrop, GeneratedItem, getMaxSockets } from './ItemGenerator';
 import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
@@ -584,6 +584,8 @@ export class Game {
       computedStats: stats,
       ilvl: data.ilvl,
       levelReq: data.levelReq,
+      socketSlots: [],
+      maxSockets: getMaxSockets(base),
       id: `restored_${data.baseId}_${Date.now()}`,
     };
   }

@@ -1,5 +1,9 @@
 import { ITEM_BASES, AFFIXES, UNIQUE_ITEMS, ItemBase, ItemAffix, Rarity } from './ItemDefs';
 
+export interface SocketSlot {
+  jewel: GeneratedItem | null;
+}
+
 export interface GeneratedItem {
   id: string;
   base: ItemBase;
@@ -11,6 +15,16 @@ export interface GeneratedItem {
   computedStats: Record<string, number>;
   ilvl: number;
   levelReq: number;
+  socketSlots: SocketSlot[];
+  maxSockets: number;
+}
+
+export function getMaxSockets(base: ItemBase): number {
+  if (base.id === 'jewel') return 0;
+  if (base.slot === 'ring' || base.slot === 'ring2' || base.slot === 'amulet') return 1;
+  if (base.slot === 'boots' || base.slot === 'helmet') return 4;
+  if (base.slot === 'weapon' || base.slot === 'body') return 6;
+  return 0;
 }
 
 function pickWeighted(bases: ItemBase[]): ItemBase {
@@ -61,6 +75,8 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
       computedStats: stats,
       ilvl: playerLevel || 1,
       levelReq: 1,
+      socketSlots: [],
+      maxSockets: getMaxSockets(base),
     };
   }
 
@@ -102,6 +118,7 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
   const ilvl = playerLevel || 1;
   const levelReq = maxTier * 4;
 
+  const ms = getMaxSockets(base);
   const item: GeneratedItem = {
     id: crypto.randomUUID(),
     base, rarity, affixes: picked, damageRoll,
@@ -109,6 +126,8 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
     computedStats: stats,
     ilvl,
     levelReq,
+    socketSlots: [],
+    maxSockets: ms,
   };
   return item;
 }
@@ -136,6 +155,8 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
       base, rarity: 'unique', affixes: mappedAffixes,
       uniqueId: unique.id, damageRoll: dr, computedName: unique.name,
       computedStats: stats, ilvl: playerLevel, levelReq: 1,
+      socketSlots: [],
+      maxSockets: getMaxSockets(base),
     };
   }
 
@@ -176,6 +197,8 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
     id: crypto.randomUUID(),
     base, rarity, affixes, damageRoll, computedName: generateName(affixes, base.name), computedStats: stats,
     ilvl, levelReq,
+    socketSlots: [],
+    maxSockets: getMaxSockets(base),
   };
 }
 

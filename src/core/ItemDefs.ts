@@ -39,6 +39,7 @@ export const ITEM_BASES: ItemBase[] = [
   { id: 'boots', name: 'Boots', slot: 'boots', innateStats: { armor: 2, moveSpeedPct: 2 }, dropWeight: 20 },
   { id: 'ring', name: 'Ring', slot: 'ring', innateStats: {}, dropWeight: 8 },
   { id: 'amulet', name: 'Amulet', slot: 'amulet', innateStats: {}, dropWeight: 5 },
+  { id: 'jewel', name: 'Jewel', slot: 'ring', innateStats: {}, dropWeight: 0 },
 ];
 
 export const AFFIXES: ItemAffix[] = [
@@ -161,6 +162,27 @@ export const AFFIXES: ItemAffix[] = [
   { id: 'of_meditation', name: 'of Meditation', type: 'suffix', stat: 'manaRegenPct', min: 5, max: 15, tier: 1 },
   { id: 'of_clarity', name: 'of Clarity', type: 'suffix', stat: 'manaRegenPct', min: 10, max: 25, tier: 2 },
   { id: 'of_transcendence', name: 'of Transcendence', type: 'suffix', stat: 'manaRegenPct', min: 18, max: 35, tier: 3 },
+];
+
+export const JEWEL_ONLY_AFFIXES: ItemAffix[] = [
+  { id: 'dmg_per_passive', name: 'of the Prodigy', type: 'suffix', stat: 'dmgPerPassivePct', min: 1, max: 2, tier: 1 },
+  { id: 'dmg_per_passive_t2', name: 'of the Savant', type: 'suffix', stat: 'dmgPerPassivePct', min: 2, max: 3, tier: 2 },
+  { id: 'dmg_per_passive_t3', name: 'of the Genius', type: 'suffix', stat: 'dmgPerPassivePct', min: 3, max: 5, tier: 3 },
+  { id: 'all_res', name: 'Prismatic', type: 'prefix', stat: 'allResistancePct', min: 3, max: 5, tier: 1 },
+  { id: 'all_res_t2', name: 'Iridescent', type: 'prefix', stat: 'allResistancePct', min: 5, max: 8, tier: 2 },
+  { id: 'all_res_t3', name: 'Refractive', type: 'prefix', stat: 'allResistancePct', min: 8, max: 12, tier: 3 },
+  { id: 'crit_dmg', name: 'of Precision', type: 'suffix', stat: 'critDmgPct', min: 10, max: 20, tier: 1 },
+  { id: 'crit_dmg_t2', name: 'of Accuracy', type: 'suffix', stat: 'critDmgPct', min: 20, max: 30, tier: 2 },
+  { id: 'crit_dmg_t3', name: 'of the Deadeye', type: 'suffix', stat: 'critDmgPct', min: 30, max: 40, tier: 3 },
+  { id: 'minion_dmg', name: "Master's", type: 'prefix', stat: 'minionDmgPct', min: 10, max: 18, tier: 1 },
+  { id: 'minion_dmg_t2', name: "Overlord's", type: 'prefix', stat: 'minionDmgPct', min: 18, max: 25, tier: 2 },
+  { id: 'minion_dmg_t3', name: "Warlord's", type: 'prefix', stat: 'minionDmgPct', min: 25, max: 35, tier: 3 },
+  { id: 'onslaught_kill', name: 'of Rush', type: 'suffix', stat: 'onslaughtOnKillPct', min: 5, max: 10, tier: 1 },
+  { id: 'onslaught_kill_t2', name: 'of Haste', type: 'suffix', stat: 'onslaughtOnKillPct', min: 10, max: 15, tier: 2 },
+  { id: 'onslaught_kill_t3', name: 'of Fury', type: 'suffix', stat: 'onslaughtOnKillPct', min: 15, max: 20, tier: 3 },
+  { id: 'bleed_chance', name: 'of the Wound', type: 'suffix', stat: 'bleedChancePct', min: 10, max: 20, tier: 1 },
+  { id: 'bleed_chance_t2', name: 'of Laceration', type: 'suffix', stat: 'bleedChancePct', min: 20, max: 30, tier: 2 },
+  { id: 'bleed_chance_t3', name: 'of the Butcher', type: 'suffix', stat: 'bleedChancePct', min: 30, max: 40, tier: 3 },
 ];
 
 export const UNIQUE_ITEMS: UniqueItem[] = [
