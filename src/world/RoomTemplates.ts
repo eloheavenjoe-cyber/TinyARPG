@@ -234,7 +234,20 @@ export const TEMPLATE_FOREST_1: RoomTemplate = {
     { x: 5200, y: 2800, width: 64, height: 64 },
   ],
   buildings: [],
-  cabins: [],
+  cabins: [
+    {
+      x: 1200, y: 1800, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 1350, y: 1900 },
+      spawnZones: [{ x: 1310, y: 1900, width: 130, height: 120 }],
+    },
+    {
+      x: 4800, y: 800, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 4950, y: 900 },
+      spawnZones: [{ x: 4910, y: 900, width: 130, height: 120 }],
+    },
+  ],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -263,7 +276,14 @@ export const TEMPLATE_FOREST_2: RoomTemplate = {
     { x: 6000, y: 1200, width: 64, height: 64 },
   ],
   buildings: [],
-  cabins: [],
+  cabins: [
+    {
+      x: 800, y: 800, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 950, y: 900 },
+      spawnZones: [{ x: 910, y: 900, width: 130, height: 120 }],
+    },
+  ],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
@@ -289,7 +309,14 @@ export const TEMPLATE_FOREST_3: RoomTemplate = {
     { x: 4800, y: 1200, width: 48, height: 48 },
   ],
   buildings: [],
-  cabins: [],
+  cabins: [
+    {
+      x: 3200, y: 1200, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 3350, y: 1300 },
+      spawnZones: [{ x: 3310, y: 1300, width: 130, height: 120 }],
+    },
+  ],
   npcs: [],
   playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };
