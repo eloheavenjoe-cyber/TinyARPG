@@ -216,10 +216,10 @@ export class InventoryScreen {
       equipIcon.visible = false;
       this.container.addChild(equipIcon);
 
-      // Socket indicators inside bottom of slot
+      // Socket indicators centered in slot, offset below icon
       const socketContainer = new Container();
       socketContainer.x = sx;
-      socketContainer.y = sy + ds.h / 2 - 8;
+      socketContainer.y = sy;
       this.container.addChild(socketContainer);
 
       this.equipSlotsData.push({
@@ -598,11 +598,13 @@ export class InventoryScreen {
         socketRows = Math.ceil(item.maxSockets / 2);
       }
 
+      const yOffset = esd.h * 0.3;
+
       for (let i = 0; i < item.maxSockets; i++) {
         const col = i % socketCols;
         const row = Math.floor(i / socketCols);
         const sx = (col - (socketCols - 1) / 2) * dotSpacing;
-        const sy = -((socketRows - 1) / 2) * dotSpacing + row * dotSpacing;
+        const syPos = yOffset - ((socketRows - 1) / 2) * dotSpacing + row * dotSpacing;
         const dot = new Graphics();
         const hasJewel = item.socketSlots && i < item.socketSlots.length && item.socketSlots[i]?.jewel;
         if (hasJewel) {
@@ -612,7 +614,7 @@ export class InventoryScreen {
           dot.beginFill(0x333333);
         }
         dot.lineStyle(1, 0x555555);
-        dot.drawCircle(sx, sy, socketRadius);
+        dot.drawCircle(sx, syPos, socketRadius);
         dot.endFill();
         esd.socketContainer.addChild(dot);
       }
@@ -658,19 +660,21 @@ export class InventoryScreen {
       this.draggingJewel.icon.y = this.mouseY;
 
       if (!input.isMouseDown) {
+        const gridIdx = this.draggingJewel.gridIndex;
+        this.container.removeChild(this.draggingJewel.icon);
+        this.draggingJewel.icon.destroy();
+        this.draggingJewel = null;
+
         let dropped = false;
         for (const esd of this.equipSlotsData) {
           const ex = esd.bg.x, ey = esd.bg.y;
           if (this.mouseX >= ex - esd.w / 2 && this.mouseX <= ex + esd.w / 2 &&
               this.mouseY >= ey - esd.h / 2 && this.mouseY <= ey + esd.h / 2) {
-            this.onSocketJewel(esd.slot, this.draggingJewel.gridIndex);
+            this.onSocketJewel(esd.slot, gridIdx);
             dropped = true;
             break;
           }
         }
-        this.container.removeChild(this.draggingJewel.icon);
-        this.draggingJewel.icon.destroy();
-        this.draggingJewel = null;
       }
     }
   }
@@ -794,14 +798,18 @@ export class InventoryScreen {
     const item = this.equipment[slot] as any;
     if (!item?.socketSlots) return -1;
 
+    const yOffset = esd.h * 0.3;
     const socketRadius = 4;
-    const socketGap = 14;
-    const totalW = item.maxSockets * socketGap;
-    const socketY = esd.socketContainer.y;
+    const dotSpacing = (socketRadius * 2 + 2) * 1.1;
+    const socketCols = item.maxSockets <= 2 ? item.maxSockets : 2;
+    const socketRows = item.maxSockets <= 2 ? 1 : item.maxSockets <= 4 ? 2 : Math.ceil(item.maxSockets / 2);
 
     for (let i = 0; i < item.socketSlots.length; i++) {
-      const sx = esd.socketContainer.x + (-totalW / 2 + i * socketGap + socketGap / 2);
-      const dist = Math.hypot(mx - sx, my - socketY);
+      const col = i % socketCols;
+      const row = Math.floor(i / socketCols);
+      const sx = esd.socketContainer.x + (col - (socketCols - 1) / 2) * dotSpacing;
+      const syPos = esd.socketContainer.y + yOffset - ((socketRows - 1) / 2) * dotSpacing + row * dotSpacing;
+      const dist = Math.hypot(mx - sx, my - syPos);
       if (dist < socketRadius + 4) return i;
     }
     return -1;
