@@ -265,11 +265,23 @@ export class InventoryScreen {
 
   private statLabel(stat: string): string {
     const labels: Record<string, string> = {
-      hp: 'HP', mana: 'Mana', armor: 'Armor', damage: 'Damage',
-      damagePct: 'Dmg %', attackSpeedPct: 'Atk Spd', moveSpeedPct: 'Move Spd',
-      str: 'STR', dex: 'DEX', int: 'INT',
-      armorPct: 'Armor %', hpRegen: 'HP Regen',
-      fireDmg: 'Fire Dmg', damageReduction: 'Dmg Red', projectileDmgPct: 'Proj Dmg',
+      hp: 'Life', mana: 'Mana', armor: 'Armour', damage: 'Damage',
+      damagePct: '% Damage', attackSpeedPct: '% Attack Speed', moveSpeedPct: '% Move Speed',
+      str: 'Strength', dex: 'Dexterity', int: 'Intelligence',
+      armorPct: '% Armour', hpRegen: 'Life Regen', hpPct: '% Life', manaPct: '% Mana',
+      fireDmg: 'Fire Damage', coldDmg: 'Cold Damage', lightningDmg: 'Lightning Damage',
+      damageReduction: '% Damage Reduction', dodgePct: '% Dodge',
+      meleeDmgPct: '% Melee Damage', projectileDmgPct: '% Projectile Damage',
+      cooldownReductionPct: '% Cooldown', manaCostReductionPct: '% Mana Cost',
+      additionalProjectiles: 'Extra Projectiles', skillDurationPct: '% Duration',
+      manaRegenPct: '% Mana Regen', skillAoePct: '% Skill AoE',
+      magicFindPct: '% Magic Find', itemQuantityPct: '% Item Quantity',
+      dmgPerPassivePct: '% Dmg per Passive', allResistancePct: '% All Resist',
+      critDmgPct: '% Crit Damage', minionDmgPct: '% Minion Damage',
+      onslaughtOnKillPct: '% Onslaught on Kill', bleedChancePct: '% Bleed Chance',
+      hpOnHit: 'HP on Hit', manaOnHit: 'Mana on Hit',
+      lifeLeechPct: '% Life Leech', fortifyOnHit: 'Fortify on Hit',
+      cullingStrikePct: '% Culling Strike', explodeOnKillPct: '% Explode on Kill',
     };
     return labels[stat] || stat;
   }
