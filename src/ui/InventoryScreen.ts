@@ -174,14 +174,15 @@ export class InventoryScreen {
       slot: Slot; dx: number; dy: number; label: string; w: number; h: number;
     }
 
+    const CELL = 28;
     const dollSlots: DollSlotDef[] = [
-      { slot: 'helmet', dx: 0, dy: -200, label: 'Helm', w: 56, h: 56 },
-      { slot: 'weapon', dx: -110, dy: -90, label: 'Weapon', w: 56, h: 112 },
-      { slot: 'body', dx: 0, dy: -90, label: 'Chest', w: 56, h: 112 },
-      { slot: 'ring', dx: 110, dy: -110, label: 'Ring 1', w: 44, h: 44 },
-      { slot: 'ring2', dx: 110, dy: 40, label: 'Ring 2', w: 44, h: 44 },
-      { slot: 'boots', dx: 0, dy: 130, label: 'Boots', w: 56, h: 56 },
-      { slot: 'amulet', dx: 110, dy: 130, label: 'Amulet', w: 44, h: 44 },
+      { slot: 'helmet', dx: 0 * CELL,       dy: -8 * CELL, label: 'Helm',    w: 2 * CELL, h: 2 * CELL },
+      { slot: 'weapon', dx: -4 * CELL,       dy: -3 * CELL, label: 'Weapon', w: 2 * CELL, h: 4 * CELL },
+      { slot: 'body',   dx: 0 * CELL,        dy: -3 * CELL, label: 'Chest',  w: 2 * CELL, h: 4 * CELL },
+      { slot: 'ring',   dx: 4 * CELL,        dy: -4 * CELL, label: 'Ring 1', w: 1 * CELL, h: 1 * CELL },
+      { slot: 'ring2',  dx: 4 * CELL,        dy: 1 * CELL,  label: 'Ring 2', w: 1 * CELL, h: 1 * CELL },
+      { slot: 'boots',  dx: 0 * CELL,        dy: 4 * CELL,  label: 'Boots',  w: 2 * CELL, h: 2 * CELL },
+      { slot: 'amulet', dx: 4 * CELL,        dy: 4 * CELL,  label: 'Amulet', w: 1 * CELL, h: 1 * CELL },
     ];
 
     for (const ds of dollSlots) {
