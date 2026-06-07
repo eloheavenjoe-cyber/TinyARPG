@@ -91,9 +91,9 @@ export class InventoryScreen {
     hint.y = 10;
     this.container.addChild(hint);
 
-    // Inventory grid (left third, centered)
+    // Inventory grid (left third, lined up with paper doll)
     const gridLeft = 163;
-    const gridTop = 80;
+    const gridTop = 250;
     const slotSize = 58;
     const gap = 6;
     const cols = 5;
@@ -159,16 +159,9 @@ export class InventoryScreen {
 
     const paperDollBg = new Graphics();
     paperDollBg.beginFill(COLORS.panel, 0.8);
-    paperDollBg.drawRoundedRect(dollCenterX - 180, dollCenterY - 240, 400, 500, 8);
+    paperDollBg.drawRoundedRect(dollCenterX - 180, dollCenterY - 250, 400, 500, 8);
     paperDollBg.endFill();
     this.container.addChild(paperDollBg);
-
-    const bodySilhouette = new Graphics();
-    bodySilhouette.beginFill(0x1a1a30, 0.6);
-    bodySilhouette.drawRoundedRect(dollCenterX - 14, dollCenterY - 40, 28, 80, 4);
-    bodySilhouette.drawCircle(dollCenterX, dollCenterY - 75, 22);
-    bodySilhouette.endFill();
-    this.container.addChild(bodySilhouette);
 
     interface DollSlotDef {
       slot: Slot; dx: number; dy: number; label: string; w: number; h: number;
@@ -176,13 +169,13 @@ export class InventoryScreen {
 
     const CELL = 28;
     const dollSlots: DollSlotDef[] = [
-      { slot: 'helmet', dx: 0 * CELL,       dy: -8 * CELL, label: 'Helm',    w: 2 * CELL, h: 2 * CELL },
-      { slot: 'weapon', dx: -4 * CELL,       dy: -3 * CELL, label: 'Weapon', w: 2 * CELL, h: 4 * CELL },
-      { slot: 'body',   dx: 0 * CELL,        dy: -3 * CELL, label: 'Chest',  w: 2 * CELL, h: 4 * CELL },
-      { slot: 'ring',   dx: 4 * CELL,        dy: -4 * CELL, label: 'Ring 1', w: 1 * CELL, h: 1 * CELL },
-      { slot: 'ring2',  dx: 4 * CELL,        dy: 1 * CELL,  label: 'Ring 2', w: 1 * CELL, h: 1 * CELL },
-      { slot: 'boots',  dx: 0 * CELL,        dy: 4 * CELL,  label: 'Boots',  w: 2 * CELL, h: 2 * CELL },
-      { slot: 'amulet', dx: 4 * CELL,        dy: 4 * CELL,  label: 'Amulet', w: 1 * CELL, h: 1 * CELL },
+      { slot: 'helmet', dx: 0 * CELL,       dy: -6 * CELL, label: 'Helm',    w: 2 * CELL, h: 2 * CELL },
+      { slot: 'weapon', dx: -4 * CELL,       dy: -1 * CELL, label: 'Weapon', w: 2 * CELL, h: 4 * CELL },
+      { slot: 'body',   dx: 0 * CELL,        dy: -1 * CELL, label: 'Chest',  w: 2 * CELL, h: 4 * CELL },
+      { slot: 'ring',   dx: 4 * CELL,        dy: -2 * CELL, label: 'Ring 1', w: 1 * CELL, h: 1 * CELL },
+      { slot: 'ring2',  dx: 4 * CELL,        dy: 3 * CELL,  label: 'Ring 2', w: 1 * CELL, h: 1 * CELL },
+      { slot: 'boots',  dx: 0 * CELL,        dy: 6 * CELL,  label: 'Boots',  w: 2 * CELL, h: 2 * CELL },
+      { slot: 'amulet', dx: 4 * CELL,        dy: 6 * CELL,  label: 'Amulet', w: 1 * CELL, h: 1 * CELL },
     ];
 
     for (const ds of dollSlots) {
@@ -207,9 +200,9 @@ export class InventoryScreen {
       labelTxt.y = sy + ds.h / 2 + 2;
       this.container.addChild(labelTxt);
 
-      const itemTxt = new Text(item ? item.base.name : '', new TextStyle({
+      const itemTxt = new Text('', new TextStyle({
         fontFamily: 'monospace', fontSize: 8,
-        fill: item ? getRarityColor(item.rarity) : COLORS.textDim,
+        fill: COLORS.textDim,
       }));
       itemTxt.anchor.set(0.5);
       itemTxt.x = sx;
@@ -547,7 +540,7 @@ export class InventoryScreen {
         if (tex) {
           slot.icon.texture = tex;
           slot.icon.visible = true;
-          slot.item.y = slot.bg.y + 36;
+          slot.item.y = slot.bg.y + 46;
         } else {
           slot.icon.visible = false;
           slot.item.y = slot.bg.y + 25;
@@ -566,10 +559,10 @@ export class InventoryScreen {
       esd.bg.lineStyle(1, item ? 0x4466aa : COLORS.slotBorder);
       esd.bg.drawRoundedRect(-esd.w / 2, -esd.h / 2, esd.w, esd.h, 4);
       esd.bg.endFill();
-      esd.item.text = item ? item.base.name : '';
+      esd.item.text = item ? '' : '';
       esd.item.style = new TextStyle({
         fontFamily: 'monospace', fontSize: 8,
-        fill: item ? getRarityColor(item.rarity) : COLORS.textDim,
+        fill: COLORS.textDim,
       });
       if (item && isItemIconsLoaded()) {
         const key = `${item.base.id}_${item.rarity}`;
@@ -584,16 +577,31 @@ export class InventoryScreen {
         esd.icon.visible = false;
       }
 
-      // Socket indicators inside slot bottom
+      // Socket indicators in grid layout inside slot bottom
       esd.socketContainer.removeChildren();
       if (!item || item.maxSockets === 0) continue;
 
       const socketRadius = 4;
-      const socketGap = 14;
-      const totalW = item.maxSockets * socketGap;
+      const dotSpacing = socketRadius * 2 + 2;
+      let socketCols: number;
+      let socketRows: number;
+
+      if (item.maxSockets <= 2) {
+        socketCols = item.maxSockets;
+        socketRows = 1;
+      } else if (item.maxSockets <= 4) {
+        socketCols = 2;
+        socketRows = 2;
+      } else {
+        socketCols = 2;
+        socketRows = Math.ceil(item.maxSockets / 2);
+      }
 
       for (let i = 0; i < item.maxSockets; i++) {
-        const sx = -totalW / 2 + i * socketGap + socketGap / 2;
+        const col = i % socketCols;
+        const row = Math.floor(i / socketCols);
+        const sx = (col - (socketCols - 1) / 2) * dotSpacing;
+        const sy = -((socketRows - 1) / 2) * dotSpacing + row * dotSpacing;
         const dot = new Graphics();
         const hasJewel = item.socketSlots && i < item.socketSlots.length && item.socketSlots[i]?.jewel;
         if (hasJewel) {
@@ -603,7 +611,7 @@ export class InventoryScreen {
           dot.beginFill(0x333333);
         }
         dot.lineStyle(1, 0x555555);
-        dot.drawCircle(sx, 0, socketRadius);
+        dot.drawCircle(sx, sy, socketRadius);
         dot.endFill();
         esd.socketContainer.addChild(dot);
       }
