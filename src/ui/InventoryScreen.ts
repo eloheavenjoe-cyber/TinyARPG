@@ -330,9 +330,37 @@ export class InventoryScreen {
       }
     }
 
-    // Stat summary
+    // Socketed Jewels section
+    if (item.socketSlots && item.socketSlots.some(s => s.jewel)) {
+      cy += 2;
+      elems.push({ left: addText('Socketed Jewels', { fontSize: 10, fill: '#557755', fontStyle: 'italic' }) });
+      cy += 14;
+      for (const s of item.socketSlots) {
+        if (!s.jewel) continue;
+        const jewelColor = getRarityColor(s.jewel.rarity);
+        elems.push({ left: addText(s.jewel.computedName, { fontSize: 11, fill: jewelColor }, 6) });
+        cy += lineH;
+        for (const a of s.jewel.affixes) {
+          const left = addText(`  ◇ ${a.affix.name}`, { fontSize: 10, fill: '#8899aa' }, 6);
+          const right = addText(`${a.roll > 0 ? '+' : ''}${a.roll}`, { fontSize: 10, fill: '#aaaabb' });
+          elems.push({ left, right });
+          cy += lineH - 2;
+        }
+      }
+    }
+
+    // Stat summary (including socketed jewel stats)
     cy += 2;
-    const nonZeroStats = Object.entries(item.computedStats).filter(([, v]) => v !== 0);
+    const combinedStats = { ...item.computedStats };
+    if (item.socketSlots) {
+      for (const s of item.socketSlots) {
+        if (!s.jewel) continue;
+        for (const [stat, val] of Object.entries(s.jewel.computedStats)) {
+          combinedStats[stat] = (combinedStats[stat] || 0) + (val as number);
+        }
+      }
+    }
+    const nonZeroStats = Object.entries(combinedStats).filter(([, v]) => v !== 0);
     if (nonZeroStats.length > 0) {
       elems.push({ left: addText('Stats', { fontSize: 10, fill: '#556688', fontStyle: 'italic' }) });
       cy += 14;
@@ -580,33 +608,34 @@ export class InventoryScreen {
 
       // Socket indicators in grid layout inside slot bottom
       esd.socketContainer.removeChildren();
-      if (!item || item.maxSockets === 0) continue;
+      if (!item || item.socketSlots.length === 0) continue;
 
       const socketRadius = 4;
       const dotSpacing = (socketRadius * 2 + 2) * 1.1;
+      const count = item.socketSlots.length;
       let socketCols: number;
       let socketRows: number;
 
-      if (item.maxSockets <= 2) {
-        socketCols = item.maxSockets;
+      if (count <= 2) {
+        socketCols = count;
         socketRows = 1;
-      } else if (item.maxSockets <= 4) {
+      } else if (count <= 4) {
         socketCols = 2;
         socketRows = 2;
       } else {
         socketCols = 2;
-        socketRows = Math.ceil(item.maxSockets / 2);
+        socketRows = Math.ceil(count / 2);
       }
 
       const yOffset = esd.h * 0.3;
 
-      for (let i = 0; i < item.maxSockets; i++) {
+      for (let i = 0; i < count; i++) {
         const col = i % socketCols;
         const row = Math.floor(i / socketCols);
         const sx = (col - (socketCols - 1) / 2) * dotSpacing;
         const syPos = yOffset - ((socketRows - 1) / 2) * dotSpacing + row * dotSpacing;
         const dot = new Graphics();
-        const hasJewel = item.socketSlots && i < item.socketSlots.length && item.socketSlots[i]?.jewel;
+        const hasJewel = item.socketSlots[i]?.jewel;
         if (hasJewel) {
           const jColor = getRarityColor(item.socketSlots[i].jewel!.rarity);
           dot.beginFill(jColor);
