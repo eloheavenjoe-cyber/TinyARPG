@@ -570,6 +570,7 @@ export class InventoryScreen {
         if (tex) {
           esd.icon.texture = tex;
           esd.icon.visible = true;
+          esd.icon.scale.set(1.15);
         } else {
           esd.icon.visible = false;
         }
@@ -582,7 +583,7 @@ export class InventoryScreen {
       if (!item || item.maxSockets === 0) continue;
 
       const socketRadius = 4;
-      const dotSpacing = socketRadius * 2 + 2;
+      const dotSpacing = (socketRadius * 2 + 2) * 1.1;
       let socketCols: number;
       let socketRows: number;
 
