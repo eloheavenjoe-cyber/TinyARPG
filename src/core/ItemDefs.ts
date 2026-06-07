@@ -183,6 +183,12 @@ export const JEWEL_ONLY_AFFIXES: ItemAffix[] = [
   { id: 'bleed_chance', name: 'of the Wound', type: 'suffix', stat: 'bleedChancePct', min: 10, max: 20, tier: 1 },
   { id: 'bleed_chance_t2', name: 'of Laceration', type: 'suffix', stat: 'bleedChancePct', min: 20, max: 30, tier: 2 },
   { id: 'bleed_chance_t3', name: 'of the Butcher', type: 'suffix', stat: 'bleedChancePct', min: 30, max: 40, tier: 3 },
+  { id: 'hp_on_hit', name: 'of the Healer', type: 'suffix', stat: 'hpOnHit', min: 1, max: 2, tier: 1 },
+  { id: 'hp_on_hit_t2', name: 'of the Surgeon', type: 'suffix', stat: 'hpOnHit', min: 2, max: 4, tier: 2 },
+  { id: 'hp_on_hit_t3', name: 'of the Physician', type: 'suffix', stat: 'hpOnHit', min: 4, max: 6, tier: 3 },
+  { id: 'mana_on_hit', name: 'of the Font', type: 'suffix', stat: 'manaOnHit', min: 1, max: 2, tier: 1 },
+  { id: 'mana_on_hit_t2', name: 'of the Wellspring', type: 'suffix', stat: 'manaOnHit', min: 2, max: 3, tier: 2 },
+  { id: 'mana_on_hit_t3', name: 'of the Oasis', type: 'suffix', stat: 'manaOnHit', min: 3, max: 5, tier: 3 },
 ];
 
 export const UNIQUE_ITEMS: UniqueItem[] = [

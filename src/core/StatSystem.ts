@@ -68,6 +68,8 @@ export function computeStats(
     onslaughtOnKillPct: 0,
     bleedChancePct: 0,
     dmgPerPassivePct: 0,
+    hpOnHit: 0,
+    manaOnHit: 0,
   };
 
   for (const [key, val] of Object.entries(otherEquip)) {
@@ -97,6 +99,8 @@ export function computeStats(
     else if (key === 'onslaughtOnKillPct') base.onslaughtOnKillPct = (base.onslaughtOnKillPct || 0) + val;
     else if (key === 'bleedChancePct') base.bleedChancePct = Math.min(100, (base.bleedChancePct || 0) + val);
     else if (key === 'dmgPerPassivePct') base.dmgPerPassivePct = (base.dmgPerPassivePct || 0) + val;
+    else if (key === 'hpOnHit') base.hpOnHit = (base.hpOnHit || 0) + val;
+    else if (key === 'manaOnHit') base.manaOnHit = (base.manaOnHit || 0) + val;
   }
 
   return base;

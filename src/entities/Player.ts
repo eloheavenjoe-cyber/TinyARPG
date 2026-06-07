@@ -766,6 +766,14 @@ export class Player {
     if (fortifyAmt > 0 && hitCount > 0) {
       this.fortifyTimer = 120;
     }
+    const hpOnHit = this._computedStats.hpOnHit || 0;
+    const manaOnHit = this._computedStats.manaOnHit || 0;
+    if (hpOnHit > 0 && hitCount > 0) {
+      this.health = Math.min(this.maxHealth, this.health + hpOnHit);
+    }
+    if (manaOnHit > 0 && hitCount > 0) {
+      this.mana = Math.min(this.maxMana, this.mana + manaOnHit);
+    }
 
     this.updateSprite();
     return true;
