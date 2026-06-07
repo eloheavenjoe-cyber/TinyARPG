@@ -30,6 +30,7 @@ export class InventoryScreen {
   private equipSlotsData: {
     slot: Slot; bg: Graphics; item: Text; label: Text; icon: Sprite;
     socketContainer: Container;
+    w: number; h: number;
   }[] = [];
   private selectedIndex = -1;
   private hoveredSlot: number | Slot | null = null;
@@ -90,10 +91,10 @@ export class InventoryScreen {
     hint.y = 10;
     this.container.addChild(hint);
 
-    // Inventory grid (left side, centered)
-    const gridLeft = 300;
+    // Inventory grid (left third, centered)
+    const gridLeft = 163;
     const gridTop = 80;
-    const slotSize = 50;
+    const slotSize = 58;
     const gap = 6;
     const cols = 5;
     const rows = 6;
@@ -152,44 +153,46 @@ export class InventoryScreen {
       }
     }
 
-    // Paper doll — centered vertically, positioned beside the inventory grid
-    const dollCenterX = gridLeft + cols * (slotSize + gap) + 120;
+    // Paper doll (center third)
+    const dollCenterX = screenW / 2;
     const dollCenterY = screenH / 2 - 10;
 
     const paperDollBg = new Graphics();
     paperDollBg.beginFill(COLORS.panel, 0.8);
-    paperDollBg.drawRoundedRect(dollCenterX - 90, dollCenterY - 150, 220, 320, 8);
+    paperDollBg.drawRoundedRect(dollCenterX - 180, dollCenterY - 240, 400, 500, 8);
     paperDollBg.endFill();
     this.container.addChild(paperDollBg);
 
-    const es = 54;
-
     const bodySilhouette = new Graphics();
     bodySilhouette.beginFill(0x1a1a30, 0.6);
-    bodySilhouette.drawRoundedRect(dollCenterX - 12, dollCenterY - 30, 24, 60, 4);
-    bodySilhouette.drawCircle(dollCenterX, dollCenterY - 54, 18);
+    bodySilhouette.drawRoundedRect(dollCenterX - 14, dollCenterY - 40, 28, 80, 4);
+    bodySilhouette.drawCircle(dollCenterX, dollCenterY - 75, 22);
     bodySilhouette.endFill();
     this.container.addChild(bodySilhouette);
 
-    const dollSlots: { slot: Slot; x: number; y: number; label: string }[] = [
-      { slot: 'helmet' as Slot, x: 0, y: -130, label: 'Helmet' },
-      { slot: 'weapon' as Slot, x: -85, y: -70, label: 'Weapon' },
-      { slot: 'body' as Slot, x: 0, y: -70, label: 'Chest' },
-      { slot: 'ring' as Slot, x: 85, y: -70, label: 'Ring 1' },
-      { slot: 'ring2' as Slot, x: 85, y: 0, label: 'Ring 2' },
-      { slot: 'boots' as Slot, x: 0, y: 80, label: 'Boots' },
-      { slot: 'amulet' as Slot, x: 85, y: 80, label: 'Amulet' },
+    interface DollSlotDef {
+      slot: Slot; dx: number; dy: number; label: string; w: number; h: number;
+    }
+
+    const dollSlots: DollSlotDef[] = [
+      { slot: 'helmet', dx: 0, dy: -200, label: 'Helm', w: 56, h: 56 },
+      { slot: 'weapon', dx: -110, dy: -90, label: 'Weapon', w: 56, h: 112 },
+      { slot: 'body', dx: 0, dy: -90, label: 'Chest', w: 56, h: 112 },
+      { slot: 'ring', dx: 110, dy: -110, label: 'Ring 1', w: 44, h: 44 },
+      { slot: 'ring2', dx: 110, dy: 40, label: 'Ring 2', w: 44, h: 44 },
+      { slot: 'boots', dx: 0, dy: 130, label: 'Boots', w: 56, h: 56 },
+      { slot: 'amulet', dx: 110, dy: 130, label: 'Amulet', w: 44, h: 44 },
     ];
 
     for (const ds of dollSlots) {
       const item = equipment[ds.slot];
-      const sx = dollCenterX + ds.x;
-      const sy = dollCenterY + ds.y;
+      const sx = dollCenterX + ds.dx;
+      const sy = dollCenterY + ds.dy;
 
       const g = new Graphics();
       g.beginFill(item ? 0x222244 : COLORS.slotBg);
       g.lineStyle(1, item ? 0x4466aa : COLORS.slotBorder);
-      g.drawRoundedRect(-es / 2, -es / 2, es, es, 4);
+      g.drawRoundedRect(-ds.w / 2, -ds.h / 2, ds.w, ds.h, 4);
       g.endFill();
       g.x = sx;
       g.y = sy;
@@ -200,7 +203,7 @@ export class InventoryScreen {
       }));
       labelTxt.anchor.set(0.5, 0);
       labelTxt.x = sx;
-      labelTxt.y = sy + es / 2 + 2;
+      labelTxt.y = sy + ds.h / 2 + 2;
       this.container.addChild(labelTxt);
 
       const itemTxt = new Text(item ? item.base.name : '', new TextStyle({
@@ -219,16 +222,42 @@ export class InventoryScreen {
       equipIcon.visible = false;
       this.container.addChild(equipIcon);
 
+      // Socket indicators inside bottom of slot
       const socketContainer = new Container();
       socketContainer.x = sx;
-      socketContainer.y = sy + es / 2 + 14;
+      socketContainer.y = sy + ds.h / 2 - 8;
       this.container.addChild(socketContainer);
 
       this.equipSlotsData.push({
         slot: ds.slot, bg: g, item: itemTxt, label: labelTxt, icon: equipIcon,
-        socketContainer,
+        socketContainer, w: ds.w, h: ds.h,
       });
     }
+
+    // Bag placeholder (right third)
+    const bagPanelX = screenW / 2 + 380;
+    const bagPanelY = dollCenterY - 80;
+    const bagBg = new Graphics();
+    bagBg.beginFill(COLORS.panel, 0.8);
+    bagBg.drawRoundedRect(bagPanelX, bagPanelY, 180, 200, 8);
+    bagBg.endFill();
+    this.container.addChild(bagBg);
+
+    const bagTitle = new Text('Bag', new TextStyle({
+      fontFamily: 'Georgia, serif', fontSize: 16, fill: '#7a6a3a',
+    }));
+    bagTitle.anchor.set(0.5, 0);
+    bagTitle.x = bagPanelX + 90;
+    bagTitle.y = bagPanelY + 10;
+    this.container.addChild(bagTitle);
+
+    const bagHint = new Text('Coming soon', new TextStyle({
+      fontFamily: 'monospace', fontSize: 10, fill: COLORS.textDim,
+    }));
+    bagHint.anchor.set(0.5, 0);
+    bagHint.x = bagPanelX + 90;
+    bagHint.y = bagPanelY + 50;
+    this.container.addChild(bagHint);
 
     this.craftMessageText = new Text('', new TextStyle({
       fontFamily: 'monospace', fontSize: 14, fill: '#ffdd88',
@@ -444,8 +473,8 @@ export class InventoryScreen {
     let hoveredEntry: InventorySlot = null;
     this.hoveredSlot = null;
     for (const g of this.gridSlots) {
-      if (this.mouseX >= g.bg.x && this.mouseX <= g.bg.x + 50 &&
-          this.mouseY >= g.bg.y && this.mouseY <= g.bg.y + 50) {
+      if (this.mouseX >= g.bg.x && this.mouseX <= g.bg.x + 58 &&
+          this.mouseY >= g.bg.y && this.mouseY <= g.bg.y + 58) {
         this.hoveredSlot = g.index;
         hoveredEntry = inventory[g.index];
         break;
@@ -453,9 +482,9 @@ export class InventoryScreen {
     }
     if (!hoveredEntry) {
       for (const esd of this.equipSlotsData) {
-        const ex = esd.bg.x, ey = esd.bg.y, half = 27;
-        if (this.mouseX >= ex - half && this.mouseX <= ex + half &&
-            this.mouseY >= ey - half && this.mouseY <= ey + half) {
+        const ex = esd.bg.x, ey = esd.bg.y;
+        if (this.mouseX >= ex - esd.w / 2 && this.mouseX <= ex + esd.w / 2 &&
+            this.mouseY >= ey - esd.h / 2 && this.mouseY <= ey + esd.h / 2) {
           this.hoveredSlot = esd.slot as any;
           if (equipment[esd.slot]) hoveredEntry = { kind: 'equip', item: equipment[esd.slot] } as EquipSlot;
           break;
@@ -501,7 +530,7 @@ export class InventoryScreen {
         slot.bg.beginFill(COLORS.slotBg);
         slot.bg.lineStyle(1, COLORS.slotBorder);
       }
-      slot.bg.drawRoundedRect(0, 0, 50, 50, 4);
+      slot.bg.drawRoundedRect(0, 0, 58, 58, 4);
       slot.bg.endFill();
       slot.item.text = displayName;
       slot.item.style = new TextStyle({
@@ -534,7 +563,7 @@ export class InventoryScreen {
       esd.bg.clear();
       esd.bg.beginFill(item ? 0x222244 : COLORS.slotBg);
       esd.bg.lineStyle(1, item ? 0x4466aa : COLORS.slotBorder);
-      esd.bg.drawRoundedRect(-27, -27, 54, 54, 4);
+      esd.bg.drawRoundedRect(-esd.w / 2, -esd.h / 2, esd.w, esd.h, 4);
       esd.bg.endFill();
       esd.item.text = item ? item.base.name : '';
       esd.item.style = new TextStyle({
@@ -554,7 +583,7 @@ export class InventoryScreen {
         esd.icon.visible = false;
       }
 
-      // Socket indicators
+      // Socket indicators inside slot bottom
       esd.socketContainer.removeChildren();
       if (!item || item.maxSockets === 0) continue;
 
@@ -590,8 +619,8 @@ export class InventoryScreen {
     // Drag-drop for jewels
     if (input.isMouseDown && !this.draggingJewel) {
       for (const g of this.gridSlots) {
-        if (this.mouseX >= g.bg.x && this.mouseX <= g.bg.x + 50 &&
-            this.mouseY >= g.bg.y && this.mouseY <= g.bg.y + 50) {
+        if (this.mouseX >= g.bg.x && this.mouseX <= g.bg.x + 58 &&
+            this.mouseY >= g.bg.y && this.mouseY <= g.bg.y + 58) {
           const entry = inventory[g.index];
           if (entry && entry.kind === 'equip' && entry.item.base.id === 'jewel') {
             const icon = new Sprite();
@@ -621,9 +650,9 @@ export class InventoryScreen {
       if (!input.isMouseDown) {
         let dropped = false;
         for (const esd of this.equipSlotsData) {
-          const ex = esd.bg.x, ey = esd.bg.y, half = 27;
-          if (this.mouseX >= ex - half && this.mouseX <= ex + half &&
-              this.mouseY >= ey - half && this.mouseY <= ey + half) {
+          const ex = esd.bg.x, ey = esd.bg.y;
+          if (this.mouseX >= ex - esd.w / 2 && this.mouseX <= ex + esd.w / 2 &&
+              this.mouseY >= ey - esd.h / 2 && this.mouseY <= ey + esd.h / 2) {
             this.onSocketJewel(esd.slot, this.draggingJewel.gridIndex);
             dropped = true;
             break;
@@ -641,7 +670,7 @@ export class InventoryScreen {
     const my = this.mouseY;
 
     for (const g of this.gridSlots) {
-      if (mx >= g.bg.x && mx <= g.bg.x + 50 && my >= g.bg.y && my <= g.bg.y + 50) {
+      if (mx >= g.bg.x && mx <= g.bg.x + 58 && my >= g.bg.y && my <= g.bg.y + 58) {
         const entry = inventory[g.index];
         if (entry && entry.kind === 'orb') {
           if (entry.orbId === 'portal_scroll') {
@@ -667,7 +696,7 @@ export class InventoryScreen {
 
     // Check grid clicks
     for (const g of this.gridSlots) {
-      if (mx >= g.bg.x && mx <= g.bg.x + 50 && my >= g.bg.y && my <= g.bg.y + 50) {
+      if (mx >= g.bg.x && mx <= g.bg.x + 58 && my >= g.bg.y && my <= g.bg.y + 58) {
         const entry = inventory[g.index];
         if (entry) {
           if (entry.kind === 'equip') {
@@ -699,9 +728,9 @@ export class InventoryScreen {
 
     // Check equipment slot clicks
     for (const esd of this.equipSlotsData) {
-      const ex = esd.bg.x, ey = esd.bg.y, half = 27;
-      if (this.mouseX >= ex - half && this.mouseX <= ex + half &&
-          this.mouseY >= ey - half && this.mouseY <= ey + half) {
+      const ex = esd.bg.x, ey = esd.bg.y;
+      if (this.mouseX >= ex - esd.w / 2 && this.mouseX <= ex + esd.w / 2 &&
+          this.mouseY >= ey - esd.h / 2 && this.mouseY <= ey + esd.h / 2) {
         if (this.activeSocketJewel !== null) {
           const jewelEntry = inventory[this.activeSocketJewel];
           if (jewelEntry && jewelEntry.kind === 'equip' && jewelEntry.item.base.id === 'jewel') {
@@ -758,7 +787,7 @@ export class InventoryScreen {
     const socketRadius = 4;
     const socketGap = 14;
     const totalW = item.maxSockets * socketGap;
-    const socketY = esd.bg.y + 27 + 14;
+    const socketY = esd.socketContainer.y;
 
     for (let i = 0; i < item.socketSlots.length; i++) {
       const sx = esd.socketContainer.x + (-totalW / 2 + i * socketGap + socketGap / 2);
