@@ -877,3 +877,19 @@ Tier 4: #35, #43  → professional quality
 - Jewel icons: `jewel_normal`/`jewel_magic`/`jewel_rare` at placeholder (col 11-13, row 0)
 - New orb icons: `drilling`/`shattering`/`preservation` at (col 11-13, row 1)
 
+### Phase 16 — Gold Float Text + P/K Circle Indicators (completed 2026-06-07)
+
+**Gold Float Text (Idea #4):**
+- Gold pickup now shows `+X` floating text in gold color (`0xffd700`) at the gold pile's position
+- `CombatText.showDamage()` accepts `string | number` for the amount parameter to support `+` prefix
+
+**P/K Circle Indicators:**
+- Replaced plain `P:{n}` / `K:{n}` text with stylized solid circle indicators
+- Main circle (radius 14): P uses blue-grey `#8888cc` with `#5a5a7a` border, K uses orange `#cc8844` with `#997744` border
+- White bold letter centered on each circle
+- Red notification badge (radius 9, `#dd3333` with `#aa2222` border) at top-right offset showing unspent point count
+- Both circles hidden when 0 points (same as before)
+- Clicking circles opens respective screen (passive tree / skill sub tree) with overlay guards matching hotkey behavior
+- Hotkeys P/K remain functional
+
+
