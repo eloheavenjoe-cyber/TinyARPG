@@ -48,7 +48,8 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     ClassSelect.ts            Class picker (Warrior/Ranger)
     AbilitySelect.ts          Main ability picker (4 per class)
     PassiveTreeScreen.ts      Full-screen passive tree overlay with clickable attribute buttons
-    InventoryScreen.ts        Full-screen inventory with polished tooltips (sections, stats, level req)
+    InventoryScreen.ts        Full-screen inventory with paper doll layout, 5×6 grid, socket indicators, drag-drop jewel socketing, craft/equip/unequip UX
+    CharacterScreen.ts        Full-screen character sheet (Stats + Abilities tabs)
     DeathScreen.ts            Death overlay with restart
     HUD.ts                    Health/mana bars (bottom-left), gold counter, level, XP bar
     SkillBar.ts               6-slot skill bar (bottom-center), keybinds 1-6
@@ -329,14 +330,19 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 ## Key Constants
 - Canvas: 1920×1080, Room: 1600×896 at offset (160,92)
 - Walls: 32px thick, Player hitbox: 28×28 (center-positioned)
-- Skill bar: 6 slots at Y=1030 (bottom-center)
-- HUD: bottom-left at (18, 1030)
+- Skill bar: 6 slots at Y=1002 (within HUD panel)
+- HUD: full-width bottom bar, panel starts at Y=980, height 100px
+- HUD HP bar: X=18, Y=992; MP bar: X=18, Y=1022
 - Player base HP: 100, base mana: 50, base speed: 6
 - Enemy HP: 40, speed: 2.2, XP: 10
-- Inventory: 30 slots (5×6 grid), slot size 50px
+- Inventory: 30 slots (5×6 grid), slot size 58px
 - Equipment: 7 slots (Weapon, Body, Helmet, Boots, Ring, Ring2, Amulet)
+- Inventory screen: grid at X=163, Y=250; paper doll centered at X=960; bag at X=1510
+- Paper doll grid cell: 28px (1×1=rings, 2×2=helm/boots, 2×4=weapon/chest)
 - Orb drop rate: ~5% (× itemQuantityMult), item drop rate: ~40% (× itemQuantityMult)
-- Portal scroll drop rate: ~8% (× itemQuantityMult)
+- Jewel drop rate: ~15% of item drops, portal scroll drop rate: ~8% (× itemQuantityMult)
+- Drilling Orb: ~6%, Shattering Orb: ~8%, Preservation Orb: ~1.5%
+- Socket distributions: 6-max (30/25/20/15/7/2.5/0.5%), 4-max (35/30/20/10/5%), 1-max (65/35%)
 - Enemy types: Grunt (40 HP, 2.2 spd, 10 XP, size 36, sprite 1.3x), Archer (25 HP, 2.5 spd, 12 XP, size 34, sprite 1.2x), Juggernaut (120 HP, 1.2 spd, 25 XP, size 55, sprite 1.7x), Cultist (35 HP, 2.0 spd, 15 XP, size 32, sprite 1.15x)
 - Ranger projectile: base speed 10, arrow sprite 7×3, hitbox 7×3
 - Enemy speed variance: ±15% (0.85-1.15 of base)
@@ -483,6 +489,12 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
 - Enemy sprite files must be tracked in git (case-sensitive on Linux deployment)
 - Execute passive (3.0x dmg, 20% threshold) defined in SkillDefs but not wired into damage
 - Ring of Blades keystone (multi_shot orbit) not implemented
+- Dragon class not implemented (class select shows it greyed out)
+- Jewel icons use placeholder sprite positions (needs actual jewel PNG on spritesheet)
+- Bag panel in inventory is placeholder only (right third shows "Coming soon")
+- Rings/amulets max 1 socket naturally — second socket reserved for future corrupted orb mechanic
+- No `gloves` equipment slot exists (referenced in sizing docs but Slot type has no gloves entry)
+- Socket tiles do not show on non-equipped items (vendor/stash display count but not per-socket indicators)
 - **Fixed:** Item icons now show in inventory grid, equipment slots, vendor, and stash (was grid-only, now all slots)
 
 ### Phase 5j — Room Expansion & Camera System (completed 2026-06-05)
@@ -771,10 +783,97 @@ Tier 4: #35, #43  → professional quality
 - **Crypt/tutorial zone-wide aggro**: ZoneManager.spawnEnemies() sets `alwaysAggro = true` for tutorial and crypt zones (added `zone.id === 'tutorial' || zone.id === 'secret_crypt'` to existing endless-wave check)
 - **Tutorial spawn distance**: `spawnEnemies()` accepts optional `playerX`/`playerY` params. When provided, spawn position retries up to 20 times to land within 300-800px of the player
 
-## Bug Patterns (updated 2026-06-06)
-- **HUD positioning:** No longer at Y=1030 — bottom-anchored at Y=974. Remove the old CSS scaling note reference.
+## Bug Patterns (updated 2026-06-07)
+- **HUD positioning:** No longer at Y=1030 — bottom-anchored at Y=980 with BOTTOM_MARGIN=0. Flush with screen bottom.
 - **SkillBar must be positioned:** Container uses relative coords (`startX = -TOTAL_W/2`). Game.ts must set `container.x = 960; container.y = 1002;` after construction.
 - **Stance display gated:** `currentStance` buff only shown for `classType === 'monk'` — don't render for warrior/ranger.
 - **Enemy nameplate Y offset:** `updateSprite()` positions nameplate at `this.y - this.height / 2 - 40`. If adjusting, change both the positioning offset and the mod text Y in `createNameplate`.
 - **HUD.update signature changed:** Now takes `(player: Player, dt: number)` instead of just `(player: Player)`.
+- **Drag-drop freeze:** Must clear `this.draggingJewel = null` and destroy the drag icon BEFORE calling `this.onSocketJewel()` — the Game.ts callback calls `inventoryScreen?.update()` which causes infinite recursion if drag state is still set.
+- **Socket count display:** Use `item.socketSlots.length` for both grid sizing and loop bound, not `item.maxSockets`. A 3-socket chest shows 3 dots, not 6.
+- **Socket centering:** Socket container positioned at `sy` (slot center), dots offset by `esd.h * 0.3` downward. `getSocketAtPosition()` must match the same Y offset formula.
+- **Paper doll slot sizes:** 1×1=28px (rings/amulet), 2×2=56px (helm/boots), 2×4=56×112px (weapon/chest). Grid cell = 28px.
+- **Inventory screen layout:** Three columns (left=grid, center=paper doll, right=bag placeholder). Grid top lined up with paper doll panel top at Y=250. Craft message at Y=930 (above HUD panel).
+
+### Phase 15 — Socketable Jewels (completed 2026-06-07)
+
+**Data Model:**
+- `SocketSlot { jewel: GeneratedItem | null }` — per-socket state
+- `GeneratedItem.socketSlots: SocketSlot[]` — actual socket contents, length = current socket count
+- `GeneratedItem.maxSockets: number` — theoretical max derived from base type via `getMaxSockets()`
+- `JewelItem` type added to `LootItem` union (`type: 'jewel'`)
+- `JEWEL_BASE` in ITEM_BASES with `dropWeight: 0` (jewels use own drop path)
+
+**Jewel-Only Affixes (18, 3 tiers each):**
+- `dmgPerPassivePct` (of the Prodigy/Savant/Genius), `allResistancePct` (Prismatic/Iridescent/Refractive)
+- `critDmgPct` (of Precision/Accuracy/the Deadeye), `minionDmgPct` (Master's/Overlord's/Warlord's)
+- `onslaughtOnKillPct` (of Rush/Haste/Fury), `bleedChancePct` (of the Wound/Laceration/the Butcher)
+- `hpOnHit` (of the Healer/Surgeon/Physician), `manaOnHit` (of the Font/Wellspring/Oasis)
+
+**Socket Generation:**
+- `rollSockets(maxSockets, currentSockets?)` — weighted random, exponential rarity toward max
+- Chest/weapon 0-6 (30%/25%/20%/15%/7%/2.5%/0.5%), helm/boots 0-4 (35%/30%/20%/10%/5%), rings/amulets 0-1 (65%/35%)
+- Drilling Orb: always rolls a different count than current
+- Socket count displayed as `(N)` suffix on item nameplates
+
+**New Currency Items:**
+- `Drilling Orb` (~6% drop): rerolls socket count on an item
+- `Shattering Orb` (~8% drop): removes and destroys one jewel from a socket
+- `Preservation Orb` (~1.5% drop): removes one jewel and returns it to inventory
+- All added to `generateOrbDrop()` weighted distribution
+
+**Jewel Generation:**
+- `generateJewel(playerLevel?)` — own rarity roll: normal 50% (1 affix), magic 30% (2), rare 15% (3), exquisite 5% (4-6)
+- ~15% of item drops are jewels instead of equipment
+- Affixes: 70/30 split between normal pool and jewel-only pool
+- Rarity drops: normal=white, magic=blue, rare=yellow, exquisite=orange-gold (0xff8800)
+
+**Paper Doll Equipment UI:**
+- Replaced vertical slot list with classic RPG paper doll layout
+- Three-column screen layout: inventory grid (left, 58px slots), paper doll (center), bag placeholder (right)
+- Slot sizes: 1×1 grid cell = 28px for rings/amulet, 2×2 = 56px for helm/boots, 2×4 = 56×112px for weapon/chest
+- Body silhouette removed (was causing visual clutter)
+- Item name text hidden on equipped items (only slot label shows)
+- Equipment icons rendered at 1.15× scale
+
+**Socket Indicators:**
+- Socket container positioned at slot center (`sy`), dots offset downward by `esd.h * 0.3`
+- Grid layout: 1×N for 1-2 sockets, 2×2 for 3-4, 2×3 for 5-6
+- Spacing: `(radius*2+2) * 1.1 = ~11px` per cell
+- Empty sockets: dark grey (`0x333333`), filled: jewel rarity color
+- Dots visible only for actual socket count (not max)
+
+**Socketing UX:**
+- Right-click jewel in inventory → toggles active, then left-click equipment slot to socket
+- Drag jewel from inventory grid → drop on paper doll slot to socket
+- Drag icon uses Sprite with texture fallback, destroyed on drop or cancel
+- Drag-drop clears drag state BEFORE invoking callback to prevent recursive update crashes
+
+**Stat Integration:**
+- `recalcStats()` iterates socketed jewel affixes via `item.socketSlots`
+- New stats in StatSystem: `allResistancePct`, `critDmgPct`, `minionDmgPct`, `onslaughtOnKillPct`, `bleedChancePct`, `dmgPerPassivePct`, `hpOnHit`, `manaOnHit`
+- HP on hit and Mana on hit applied in `Player.applySkillDamage()` after leech/fortify
+
+**Tooltip:**
+- Items show "Socketed Jewels" section with each jewel's name (rarity-colored) and affixes
+- Stat summary merges item stats + socketed jewel stats for combined total
+- Full stat label cleanup: 37 entries replacing 14, every stat key gets a clean label
+
+**Save/Load:**
+- `SerializedItem.socketSlots?` added for backward-compatible socket persistance
+- `serializeSlots()` helper recursively serializes socketed jewels
+- `deserializeItem()` restores sockets with fallback to empty array
+- Vendor and stash display socket count suffix and socket indicator dots
+
+**UI Alignment:**
+- HUD panel flush with screen bottom (BOTTOM_MARGIN=0, panel at Y=980)
+- Bag placeholder centered in right third at X=1510
+- Craft message at Y=930 (clear of HUD)
+- P/K indicators at X=1650 (clear of minimap at X=1714)
+- Inventory grid top (250) lines up with paper doll panel top
+- Paper doll content centered in panel (adjusted dy values by +56)
+
+**Sprite Mappings (ItemIcons.ts):**
+- Jewel icons: `jewel_normal`/`jewel_magic`/`jewel_rare` at placeholder (col 11-13, row 0)
+- New orb icons: `drilling`/`shattering`/`preservation` at (col 11-13, row 1)
 
