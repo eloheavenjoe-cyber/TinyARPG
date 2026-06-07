@@ -23,8 +23,12 @@ export class HUD {
   private xpFill: Graphics;
   private zoneText: Text;
   private buffContainer: Container = new Container();
-  private pText: Text;
-  private kText: Text;
+  private pContainer: Container;
+  private pBadgeText: Text;
+  private kContainer: Container;
+  private kBadgeText: Text;
+  onPassiveClick?: () => void;
+  onSubTreeClick?: () => void;
 
   private readonly BAR_W = 200;
   private readonly BAR_GAP = 8;
@@ -128,20 +132,15 @@ export class HUD {
     this.buffContainer.x = rightX;
     this.buffContainer.y = xpY + 14;
 
-    const pKX = 1650;
-    this.pText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 13, fill: '#8888cc',
-      stroke: '#000000', strokeThickness: 2,
-    }));
-    this.pText.x = pKX;
-    this.pText.y = rightY;
+    const pInd = this.createIndicator('P', 0x8888cc, 0x5a5a7a, 1664, 998);
+    this.pContainer = pInd.container;
+    this.pBadgeText = pInd.badgeText;
+    this.pContainer.on('pointerdown', () => this.onPassiveClick?.());
 
-    this.kText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 13, fill: '#cc8844',
-      stroke: '#000000', strokeThickness: 2,
-    }));
-    this.kText.x = pKX;
-    this.kText.y = rightY + 22;
+    const kInd = this.createIndicator('K', 0xcc8844, 0x997744, 1664, 1020);
+    this.kContainer = kInd.container;
+    this.kBadgeText = kInd.badgeText;
+    this.kContainer.on('pointerdown', () => this.onSubTreeClick?.());
 
     this.zoneText = new Text('', new TextStyle({
       fontFamily: 'Georgia, serif', fontSize: 22, fill: '#ddaa55',
@@ -159,8 +158,56 @@ export class HUD {
       this.xpBg, this.xpFill,
       this.buffContainer,
       this.zoneText,
-      this.pText, this.kText,
+      this.pContainer, this.kContainer,
     );
+  }
+
+  private createIndicator(letter: string, mainColor: number, borderColor: number, cx: number, cy: number): { container: Container; badgeText: Text } {
+    const container = new Container();
+    container.x = cx;
+    container.y = cy;
+    container.eventMode = 'static';
+    container.cursor = 'pointer';
+    container.visible = false;
+
+    const mainRadius = 14;
+    const badgeRadius = 9;
+
+    const circle = new Graphics();
+    circle.beginFill(mainColor);
+    circle.drawCircle(0, 0, mainRadius);
+    circle.endFill();
+    circle.lineStyle(2, borderColor, 0.8);
+    circle.drawCircle(0, 0, mainRadius);
+
+    const letterText = new Text(letter, new TextStyle({
+      fontFamily: 'monospace', fontSize: 14, fill: '#ffffff',
+      fontWeight: 'bold', stroke: '#000000', strokeThickness: 1,
+    }));
+    letterText.anchor.set(0.5);
+
+    const badgeOffsetX = mainRadius - 2;
+    const badgeOffsetY = -mainRadius + 2;
+
+    const badge = new Graphics();
+    badge.beginFill(0xdd3333);
+    badge.drawCircle(0, 0, badgeRadius);
+    badge.endFill();
+    badge.lineStyle(1, 0xaa2222, 1);
+    badge.drawCircle(0, 0, badgeRadius);
+    badge.x = badgeOffsetX;
+    badge.y = badgeOffsetY;
+
+    const badgeText = new Text('', new TextStyle({
+      fontFamily: 'monospace', fontSize: 11, fill: '#ffffff',
+      fontWeight: 'bold', stroke: '#000000', strokeThickness: 1,
+    }));
+    badgeText.anchor.set(0.5);
+    badgeText.x = badgeOffsetX;
+    badgeText.y = badgeOffsetY;
+
+    container.addChild(circle, letterText, badge, badgeText);
+    return { container, badgeText };
   }
 
   update(player: Player, dt: number) {
@@ -204,8 +251,10 @@ export class HUD {
 
     this.goldText.text = `${player.gold} Gold`;
     this.levelText.text = `Lv ${player.level}`;
-    this.pText.text = player.passivePoints > 0 ? `P:${player.passivePoints}` : '';
-    this.kText.text = player.skillSubPoints > 0 ? `K:${player.skillSubPoints}` : '';
+    this.pContainer.visible = player.passivePoints > 0;
+    this.kContainer.visible = player.skillSubPoints > 0;
+    this.pBadgeText.text = player.passivePoints > 0 ? `${player.passivePoints}` : '';
+    this.kBadgeText.text = player.skillSubPoints > 0 ? `${player.skillSubPoints}` : '';
 
     const xpPct = player.xpToNext > 0 ? player.xp / player.xpToNext : 0;
     this.xpFill.clear();

@@ -15,7 +15,7 @@ export class CombatTextManager {
     this.container = new Container();
   }
 
-  showDamage(x: number, y: number, amount: number, color: number = 0xffffff, rarityColor?: number, damageType?: 'cold' | 'lightning') {
+  showDamage(x: number, y: number, amount: number | string, color: number = 0xffffff, rarityColor?: number, damageType?: 'cold' | 'lightning') {
     let finalColor = rarityColor ?? color;
 
     if (damageType === 'cold') {
@@ -24,7 +24,8 @@ export class CombatTextManager {
       finalColor = this.blendColors(finalColor, 0xffdd44, 0.4);
     }
 
-    const size = Math.min(22, Math.max(14, 12 + Math.floor(amount / 10)));
+    const num = typeof amount === 'number' ? amount : 0;
+    const size = Math.min(22, Math.max(14, 12 + Math.floor(num / 10)));
 
     const t = new Text(`${amount}`, new TextStyle({
       fontFamily: 'monospace',

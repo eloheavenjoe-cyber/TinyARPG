@@ -304,6 +304,16 @@ export class Game {
     this.gameContainer.addChild(this.player.sprite);
     this.gameContainer.addChild(this.combatText.container);
     this.hud = new HUD();
+    this.hud.onPassiveClick = () => {
+      if (!this.treeOpen && !this.inventoryOpen && !this.escapeMenuOpen && !this.vendorOpen && !this.stashOpen && !this.subTreeScreen) {
+        this.toggleTree();
+      }
+    };
+    this.hud.onSubTreeClick = () => {
+      if (!this.treeOpen && !this.inventoryOpen && !this.escapeMenuOpen && !this.vendorOpen && !this.stashOpen && !this.subTreeScreen) {
+        this.toggleSubTree();
+      }
+    };
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
     this.skillBar.container.x = 960;
@@ -406,6 +416,16 @@ export class Game {
     this.gameContainer.addChild(this.combatText.container);
 
     this.hud = new HUD();
+    this.hud.onPassiveClick = () => {
+      if (!this.treeOpen && !this.inventoryOpen && !this.escapeMenuOpen && !this.vendorOpen && !this.stashOpen && !this.subTreeScreen) {
+        this.toggleTree();
+      }
+    };
+    this.hud.onSubTreeClick = () => {
+      if (!this.treeOpen && !this.inventoryOpen && !this.escapeMenuOpen && !this.vendorOpen && !this.stashOpen && !this.subTreeScreen) {
+        this.toggleSubTree();
+      }
+    };
     this.app.stage.addChild(this.hud.container);
     this.skillBar = new SkillBar();
     this.skillBar.container.x = 960;
@@ -2879,7 +2899,10 @@ export class Game {
       if (Math.hypot(drop.x - this.player.x, drop.y - this.player.y) < 50) {
         const item = drop.pickup();
         switch (item.type) {
-          case 'gold': this.player!.gold += item.value; break;
+          case 'gold':
+            this.player!.gold += item.value;
+            this.combatText.showDamage(drop.x, drop.y - 10, `+${item.value}`, 0xffd700);
+            break;
           case 'healthPotion': this.player!.health = Math.min(this.player!.maxHealth, this.player!.health + item.value); break;
           case 'manaPotion': this.player!.mana = Math.min(this.player!.maxMana, this.player!.mana + item.value); break;
           case 'orb': this.player!.pickupOrb(item.orbId, item.count); break;
