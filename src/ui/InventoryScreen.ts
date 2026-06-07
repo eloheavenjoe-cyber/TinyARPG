@@ -228,8 +228,8 @@ export class InventoryScreen {
       });
     }
 
-    // Bag placeholder (right third)
-    const bagPanelX = screenW / 2 + 380;
+    // Bag placeholder (centered in right third)
+    const bagPanelX = 1510;
     const bagPanelY = dollCenterY - 80;
     const bagBg = new Graphics();
     bagBg.beginFill(COLORS.panel, 0.8);
@@ -259,7 +259,7 @@ export class InventoryScreen {
     }));
     this.craftMessageText.anchor.set(0.5, 0);
     this.craftMessageText.x = screenW / 2;
-    this.craftMessageText.y = screenH - 40;
+    this.craftMessageText.y = 930;
     this.container.addChild(this.craftMessageText);
   }
 

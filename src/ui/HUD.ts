@@ -29,7 +29,7 @@ export class HUD {
   private readonly BAR_W = 200;
   private readonly BAR_GAP = 8;
   private readonly PANEL_H = 100;
-  private readonly BOTTOM_MARGIN = 6;
+  private readonly BOTTOM_MARGIN = 0;
 
   private pulseTimer = 0;
 
@@ -128,7 +128,7 @@ export class HUD {
     this.buffContainer.x = rightX;
     this.buffContainer.y = xpY + 14;
 
-    const pKX = 1700;
+    const pKX = 1650;
     this.pText = new Text('', new TextStyle({
       fontFamily: 'monospace', fontSize: 13, fill: '#8888cc',
       stroke: '#000000', strokeThickness: 2,
