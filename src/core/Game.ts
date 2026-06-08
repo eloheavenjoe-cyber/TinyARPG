@@ -563,7 +563,7 @@ export class Game {
         currentRoomIndex: this.zoneManager.roomIndex,
         completedZoneIds: [...this.zoneManager.completedZoneIds],
         cryptJackpotClaimed: this.cryptJackpotClaimed || undefined,
-        urns: this.urns.filter(u => u.isOpen).map(u => u.serialize()),
+        urns: this.urns.filter(u => u.state === 'cleared' || u.isOpen).map(u => u.serialize()),
       },
       player: {
         x: p.x, y: p.y,
@@ -2175,6 +2175,17 @@ export class Game {
         }
         this.wasEKeyDown = true;
         break;
+      }
+    }
+
+    // Remove fully faded cleared urns
+    for (let i = this.urns.length - 1; i >= 0; i--) {
+      const urn = this.urns[i];
+      if (urn.isOpen && urn.container.alpha <= 0) {
+        this.gameContainer!.removeChild(urn.container);
+        urn.destroy();
+        this.urnSpawnGroups.delete(urn.id);
+        this.urns.splice(i, 1);
       }
     }
 
