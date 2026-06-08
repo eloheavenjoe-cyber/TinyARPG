@@ -1141,3 +1141,20 @@ Tier 4: #35, #43  → professional quality
 - V key handler gated to `classType === 'summoner'`
 - Soul drops on enemy kill gated to `classType === 'summoner'`
 - Right-click soul capture gated to `classType === 'summoner'`
+
+### Phase 22b — Cursed Urn Gameplay Loop Rework (completed 2026-06-09)
+
+- **Enemy spawn on open**: 6-10 enemies (scaled by urn rarity) spawn in a ring around the urn
+- **Staggered spawn**: Enemies deploy one at a time over 0.8s via spawn queue
+- **Spawn positioning**: Ring pattern 80-200px radius with wall/player collision validation
+- **Kill tracking**: `UrnSpawnGroup` in Game.ts tracks totalSpawned/totalKilled per urn
+- **Loot gated on clear**: Loot only drops after all urn enemies are killed, drops at urn position
+- **Urn enemies drop no loot**: `dropsLoot = false` + gate in death loop; 50% reduced XP granted
+- **Urn fade-out**: Container alpha 1→0 over 1.2s on clear, then removed from world
+- **Urn state machine**: `idle` → `active` (enemies fighting) → `cleared` (fading)
+- **Save/load**: Only cleared urns saved; opened-but-uncleared urns reset on zone re-entry
+- **Enemy fields**: `spawnSource`, `urnId`, `dropsLoot`, `xpMultiplier`, `spawnAnimTimer`
+- **Spawn-in animation**: Enemies scale from 0→1 over 200ms, preserving rarity scale
+
+**Files changed:** Enemy.ts (+5 fields, +17 lines), CursedUrn.ts (state machine, fade, id), Game.ts (+234 lines)
+
