@@ -1158,3 +1158,10 @@ Tier 4: #35, #43  → professional quality
 
 **Files changed:** Enemy.ts (+5 fields, +17 lines), CursedUrn.ts (state machine, fade, id), Game.ts (+234 lines)
 
+### Phase 22c — Hub Zone Cleanup: No Chests or Urns in Town (completed 2026-06-09)
+
+- Procedural chests (`decor.chests`) in `buildCurrentZoneRoom()` now gated behind `zone.id !== 'hub'`
+- Cursed urn spawning (`spawnUrns()`) in `buildCurrentZoneRoom()` now gated behind `zone.id !== 'hub'`
+- Breakables (pots/barrels) deliberately left in hub for visual flavor
+- Cabin chests were already hub-excluded (hub template has `cabins: []`)
+
