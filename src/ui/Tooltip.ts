@@ -109,8 +109,10 @@ export function buildItemTooltip(item: GeneratedItem): Container {
 
     cy += 4;
 
-    elems.push({ left: addText('CORRUPTED', { fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#8b1a1a', fontWeight: 'bold', letterSpacing: 2 }) });
-    cy += 14;
+    if (item.warpOutcome === 'no_change') {
+      elems.push({ left: addText('CORRUPTED', { fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#8b1a1a', fontWeight: 'bold', letterSpacing: 2 }) });
+      cy += 14;
+    }
 
     if (item.warpOutcome) {
       const outcomeLabels: Record<string, string> = {
