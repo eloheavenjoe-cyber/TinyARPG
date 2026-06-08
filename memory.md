@@ -892,4 +892,84 @@ Tier 4: #35, #43  → professional quality
 - Clicking circles opens respective screen (passive tree / skill sub tree) with overlay guards matching hotkey behavior
 - Hotkeys P/K remain functional
 
+### Phase 17 — Dark Fantasy UI Visual Overhaul (completed 2026-06-09)
+
+- **index.html**: Google Fonts (Cinzel, MedievalSharp, Uncial Antiqua), scrollbar styling, low-HP red vignette DOM overlay
+- **DeveloperConsole.ts**: Dark parchment `rgba(10,8,5,0.92)` with `backdrop-filter: blur(4px)`, gold/bronze styling
+- **HUD.ts**: Chamfered panel with gold glow, gradient HP bars (`#6b0000→#cc2200→#ff4400`) and MP bars (`#1a0a4e→#5555bb`), shimmer flash on change, hexagon gem P/K indicators, gold ruled dividers, low-HP vignette relay to DOM
+- **SkillBar.ts**: Chamfered octagonal stone sockets, bronze borders, pulsing gold glow ring, gold shimmer edge on cooldown sweep arc
+- **Minimap.ts**: Runic border ticks, corner arc ornaments, pulsing gold player dot with outer glow ring, edge vignette
+- **BossHpBar.ts**: Gradient fills per boss (golem=gold, reaper=purple, cthulhu=green), outer gold glow, bronze trough frame
+- **Tooltip.ts**: Dark parchment `0x0a0810`, drop shadow, gold ruled dividers, scalloped decorative top edge, rarity borders with inner bronze frame
+- **EscapeMenu.ts**: Chamfered panel, corner ornaments, fade-in + scale animation (0.95→1), gold hover on buttons
+- **DeathScreen.ts**: Cinzel crimson "You Died", pulsing ember glow button, dark vignette borders, chamfered button
+- **CharacterScreen.ts**: Dark parchment panel, gold active tab with bottom bar, gold ruled section dividers, updated fonts
+- **All remaining UI screens**: Fonts `'Georgia, serif'`→`'Cinzel, serif'`, `'monospace'`→`'MedievalSharp, serif'`/`'Uncial Antiqua, serif'`. Colors: panel backgrounds→`0x0a0810`, borders→`0x6b4c1e`, text→`#e8dcc8`/`#f0c060`. Affected: Inventory, MainMenu, PassiveTree, HubTip, Settings, Vendor, Stash, ClassSelect, AbilitySelect, SaveSlot, SkillSubTree, Tutorial
+- **Entity labels**: CombatText, ItemDrop, Enemy nameplates, Room door/portal/building labels, SecretBush/Chest prompts — all updated fonts/colors
+- **29 files changed, +1025/−339 lines**
+
+### Phase 18 — Performance Optimization (completed 2026-06-09)
+
+**Critical fixes (bugs):**
+- **SkillBar.ts**: Added `slot.glow.clear()` before glow redraw — fixed unbounded geometry accumulation (3600+ shapes/slot/minute leak)
+- **CharacterScreen.ts**: Replaced full `rebuild()` every frame with dirty-flag snapshot comparison — only rebuilds when stats change
+- **InventoryScreen.ts**: Cached TextStyle objects by fill color via `slotStyleCache` Map — eliminated 37 allocations/frame (2,220 GC-eligible objects/min)
+
+**High impact:**
+- **HUD.ts**: Pre-allocated 4 buff Text objects instead of `removeChildren()` + `new Text()` per frame
+- **HUD.ts**: Cached `vignetteEl` DOM reference in constructor (was `getElementById` 60×/s)
+- **HUD.ts**: Dirty flags for HP/MP gradient redraws — only redraw when >0.5% change
+- **HUD.ts**: Text dirty flags for all 7 labels — skip `.text` assignment when value unchanged
+- **HUD.ts**: Snap lerp target when converged (< 0.001) — prevents perpetual micro-delta
+- **HUD.ts**: Shimmer clear only when visible (skip redundant `clear()`)
+- **Minimap.ts**: Split static wall layer from dynamic entity layer — walls redrawn once per room change instead of 60×/s
+
+**Medium impact:**
+- **BossHpBar.ts**: Pre-computed gradient stops per bossId, dirty-checked fill width, boss name set once
+- **Game.ts**: Zone name guard, interact prompt reuses Text with visibility toggle + position dirty check
+- **Game.ts**: `visibilitychange` handler pauses PixiJS ticker when tab hidden
+- **EscapeMenu.ts**: Pre-created hover/normal TextStyles (was alloc per hover event)
+- **SkillBar.ts**: Skill name/keybind set only on skill ID change, glow alpha redraw quantized (>0.02 delta)
+
+**8 files changed, +352/−124 lines**
+
+### Phase 19 — Warp Stone System (completed 2026-06-09)
+
+**Naming**: Warp Stone (item), Warped (status), Warping (verb)
+
+**Data layer:**
+- `GeneratedItem`: Added `warped`, `warpOutcome`, `warpImplicit` fields (backward-compatible defaults)
+- `SerializedItem`: Matching serialization in SaveManager + Game.ts serialize/deserialize
+- `WARP_STONE_CONFIG`: Tunable outcome weights, socket caps, stat surge ranges
+- `WARP_IMPLICITS`: 34 corruption implicits across all 6 eligible slot types (ring, amulet, helmet, boots, weapon, body)
+- `generateOrbDrop()`. ~6% drop chance for Warp Stone
+
+**7 outcomes:**
+1. Warped Implicit (30): Replace innate stats with a corruption implicit
+2. Warp Chaos (20): Full affix reroll (4-6 new affixes, any rarity→rare)
+3. Extra Socket (15): +1 socket (capped per type, ring/amulet→2, helmet/boots→4, weapon/body→6)
+4. Stat Surge (10): Boost a random affix by 20-50%
+5. Rarity Shift (10): Normal→Rare (4 affixes), Magic→Rare (fill to 4-6), Rare→Warp Chaos
+6. Double Warp (5): Two non-duplicate outcomes (not #6)
+7. No Change (10): Just marks as Warped
+
+**Guards:**
+- All existing orb/socket methods check `item.warped` and return false
+- Unique items rejected (same as all other orbs)
+- No slot-based restriction — works on all 7 equipment slots
+- Confirmation modal in InventoryScreen before applying
+- Warped items display "WARPED" tag in crimson + outcome description
+- Warp implicit (if present) shown in purple italic above affixes
+
+**34 warp implicits:**
+- Ring (6): berserker/vitality/leeching/swiftness/evasion/frostbite
+- Amulet (6): omniscience/treasure/recovery/deep/endurance/longevity
+- Helmet (6): explosions/precision/clarity/fortification/rage/bolts
+- Boots (4): surefooting/hunt/flames/gale
+- Weapon (6): carnage/storm/pyre/frost/reaper/haste
+- Body (6): colossus/stone/iron skin/fortification/leeching/vitality
+
+**Files changed:** 7 files, +298 lines (+17 in follow-up fix)
+
+
 
