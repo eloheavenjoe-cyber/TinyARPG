@@ -30,6 +30,8 @@ export function buildItemTooltip(item: GeneratedItem): Container {
   const elems: Line[] = [];
   const dividerYs: number[] = [];
   let cy = pad;
+  let corrStartY: number | undefined;
+  let corrEndY: number | undefined;
 
   const addText = (text: string, overrides: Partial<TextStyle>, xOff = 0): Text => {
     const t = new Text(text, new TextStyle({ fontFamily: 'MedievalSharp, serif', ...overrides }));
@@ -46,12 +48,6 @@ export function buildItemTooltip(item: GeneratedItem): Container {
   const baseLabel = addText(item.base.name, { fontSize: 10, fill: '#8a7a5a' });
   elems.push({ left: baseLabel });
   cy += 12;
-
-  // Warp implicit display (if present) — italic purple, above affixes
-  if (item.warpImplicit) {
-    elems.push({ left: addText(`Warped: ${item.warpImplicit.name} (+${item.warpImplicit.value})`, { fontSize: 10, fill: '#b060e0', fontStyle: 'italic' }) });
-    cy += 14;
-  }
 
   dividerYs.push(cy);
 
@@ -97,6 +93,39 @@ export function buildItemTooltip(item: GeneratedItem): Container {
     }
   }
 
+  // Corruption zone — only for warped items
+  if (item.warped) {
+    cy += 2;
+    corrStartY = cy;
+    elems.push({ left: addText('Corruption', { fontSize: 10, fill: '#9966cc', fontStyle: 'italic' }) });
+    cy += 14;
+
+    if (item.warpImplicit) {
+      const left = addText(`\u2B21 ${item.warpImplicit.name}`, { fontSize: 11, fill: '#b060e0', fontStyle: 'italic' }, 6);
+      const right = addText(`+${item.warpImplicit.value}`, { fontFamily: 'Uncial Antiqua, serif', fontSize: 11, fill: '#c080f0' });
+      elems.push({ left, right });
+      cy += lineH;
+    }
+
+    cy += 4;
+
+    elems.push({ left: addText('CORRUPTED', { fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#8b1a1a', fontWeight: 'bold', letterSpacing: 2 }) });
+    cy += 14;
+
+    if (item.warpOutcome) {
+      const outcomeLabels: Record<string, string> = {
+        warped_implicit: 'Outcome: Warped Implicit', warp_chaos: 'Outcome: Warp Chaos',
+        extra_socket: 'Outcome: Extra Socket', stat_surge: 'Outcome: Stat Surge',
+        rarity_shift: 'Outcome: Rarity Shift', double_warp: 'Outcome: Double Warp',
+        no_change: 'Outcome: No Change',
+      };
+      elems.push({ left: addText(outcomeLabels[item.warpOutcome] || item.warpOutcome, { fontSize: 9, fill: '#8855aa', fontStyle: 'italic' }) });
+      cy += 12;
+    }
+
+    corrEndY = cy;
+  }
+
   if (item.levelReq > 1) {
     cy += 2;
     elems.push({ left: addText(`Requires Level ${item.levelReq}`, { fontSize: 10, fill: '#8a7a5a', fontStyle: 'italic' }) });
@@ -127,26 +156,6 @@ export function buildItemTooltip(item: GeneratedItem): Container {
           cy += 14;
         }
       }
-    }
-  }
-
-  // WARPED tag — shown on all warped items, after all mods
-  if (item.warped) {
-    cy += 2;
-    elems.push({ left: addText('WARPED', { fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#8b1a1a', fontWeight: 'bold' }) });
-    cy += 14;
-    if (item.warpOutcome) {
-      const outcomeLabels: Record<string, string> = {
-        warped_implicit: 'Outcome: Warped Implicit',
-        warp_chaos: 'Outcome: Warp Chaos',
-        extra_socket: 'Outcome: Extra Socket',
-        stat_surge: 'Outcome: Stat Surge',
-        rarity_shift: 'Outcome: Rarity Shift',
-        double_warp: 'Outcome: Double Warp',
-        no_change: 'Outcome: No Change',
-      };
-      elems.push({ left: addText(outcomeLabels[item.warpOutcome] || item.warpOutcome, { fontSize: 9, fill: '#8855aa', fontStyle: 'italic' }) });
-      cy += 12;
     }
   }
 
@@ -195,6 +204,27 @@ export function buildItemTooltip(item: GeneratedItem): Container {
   }
 
   c.addChild(bg);
+
+  // Purple-tinted background behind corruption zone
+  if (corrStartY !== undefined && corrEndY !== undefined) {
+    const corrBg = new Graphics();
+    corrBg.beginFill(0x500078, 0.15);
+    corrBg.drawRoundedRect(pad, corrStartY, maxW - pad * 2, corrEndY - corrStartY + 4, 3);
+    corrBg.endFill();
+    c.addChild(corrBg);
+
+    // Purple gradient divider above corruption zone
+    const grad = new Graphics();
+    grad.lineStyle(1, 0xb060e0, 0.6);
+    grad.moveTo(pad, corrStartY);
+    grad.lineTo(maxW - pad, corrStartY);
+    grad.lineStyle(1, 0xb060e0, 0.15);
+    grad.moveTo(pad, corrStartY - 2);
+    grad.lineTo(maxW - pad, corrStartY - 2);
+    grad.moveTo(pad, corrStartY + 2);
+    grad.lineTo(maxW - pad, corrStartY + 2);
+    c.addChild(grad);
+  }
 
   // Gold ruled dividers between sections
   for (const dy of dividerYs) {
