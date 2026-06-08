@@ -24,9 +24,9 @@ export class Minimap {
     this.container.x = screenX;
     this.container.y = screenY;
 
-    // Background
+    // Background — warm dark brown, not black
     this.bgGfx = new Graphics();
-    this.bgGfx.beginFill(0x05030a, 0.7);
+    this.bgGfx.beginFill(0x14100c, 0.75);
     this.bgGfx.drawRoundedRect(0, 0, MINIMAP_W, MINIMAP_H, 4);
     this.bgGfx.endFill();
     this.container.addChild(this.bgGfx);
@@ -39,22 +39,13 @@ export class Minimap {
     this.gfx = new Graphics();
     this.container.addChild(this.gfx);
 
-    // Vignette overlay
+    // Vignette overlay — subtle edge darkening only
     this.vignette = new Graphics();
-    this.vignette.beginFill(0x000000, 0);
-    // Draw darkened edges with multiple layers
-    for (let i = 0; i < 8; i++) {
-      const edge = i * 0.03;
-      this.vignette.beginFill(0x000000, edge);
+    for (let i = 0; i < 4; i++) {
+      this.vignette.beginFill(0x000000, 0.02);
       this.vignette.drawRect(0, 0, MINIMAP_W, MINIMAP_H);
       this.vignette.endFill();
     }
-    this.vignette.beginFill(0x000000, 0.15);
-    this.vignette.drawRect(0, 0, MINIMAP_W, 4);
-    this.vignette.drawRect(0, MINIMAP_H - 4, MINIMAP_W, 4);
-    this.vignette.drawRect(0, 0, 4, MINIMAP_H);
-    this.vignette.drawRect(MINIMAP_W - 4, 0, 4, MINIMAP_H);
-    this.vignette.endFill();
     this.container.addChild(this.vignette);
 
     // Ornate border
@@ -106,7 +97,7 @@ export class Minimap {
     this.container.addChild(this.borderGfx);
   }
 
-  update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[], urns?: { x: number; y: number; isOpen: boolean }[]) {
+  update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[], urns?: { x: number; y: number; isOpen: boolean }[], doors?: { rect: { x: number; y: number; width: number; height: number } }[]) {
     this.currentAlpha += (this.targetAlpha - this.currentAlpha) * 0.1;
     /* PERF: snap alpha when converged to skip redundant assignment */
     if (Math.abs(this.currentAlpha - this.targetAlpha) < 0.005) {
@@ -127,21 +118,12 @@ export class Minimap {
       this.lastWallCount = walls.length;
       const sg = this.staticGfx;
       sg.clear();
-      sg.beginFill(0x2a2a44, 0.65);
+      sg.beginFill(0x1a1612, 0.8);
       for (const wall of walls) {
         sg.drawRect(wall.x * sx, wall.y * sy, wall.width * sx, wall.height * sy);
       }
       sg.endFill();
     }
-
-    // Draw chests
-    g.beginFill(0xc8963e, 0.75);
-    for (const c of chests) {
-      if (!c.isOpen) {
-        g.drawCircle(c.x * sx, c.y * sy, 2);
-      }
-    }
-    g.endFill();
 
     // Draw breakables
     g.beginFill(0x888888, 0.4);
@@ -152,34 +134,51 @@ export class Minimap {
     }
     g.endFill();
 
-    // Draw cursed urns
+    // Draw chests + urns — pale blue dots
+    g.beginFill(0x88ccff, 0.75);
+    for (const c of chests) {
+      if (!c.isOpen) {
+        g.drawCircle(c.x * sx, c.y * sy, 3);
+      }
+    }
     if (urns) {
-      g.beginFill(0xcc44ff, 0.6);
       for (const u of urns) {
         if (!u.isOpen) {
           g.drawCircle(u.x * sx, u.y * sy, 3);
         }
       }
-      g.endFill();
     }
+    g.endFill();
 
-    // Draw enemies
-    g.beginFill(0xcc2200, 0.75);
+    // Draw enemies — crimson dots
+    g.beginFill(0xcc2200, 0.85);
     for (const e of enemies) {
       if (e.alive) {
-        g.drawCircle(e.x * sx, e.y * sy, 2);
+        g.drawCircle(e.x * sx, e.y * sy, 3);
       }
     }
     g.endFill();
 
-    // Draw player — pulsing gold dot with outer glow
-    const playerGlowAlpha = 0.2 + 0.15 * Math.sin(this.pulseTimer);
-    g.beginFill(0xc8963e, playerGlowAlpha);
-    g.drawCircle(playerX * sx, playerY * sy, 5);
+    // Draw player — bright gold dot with soft white glow
+    const playerGlowAlpha = 0.25 + 0.2 * Math.sin(this.pulseTimer);
+    g.beginFill(0xffffff, playerGlowAlpha * 0.35);
+    g.drawCircle(playerX * sx, playerY * sy, 6);
     g.endFill();
     g.beginFill(0xf0c060);
-    g.drawCircle(playerX * sx, playerY * sy, 3);
+    g.drawCircle(playerX * sx, playerY * sy, 4);
     g.endFill();
+
+    // Draw doors/exits — bright white pulsing dots
+    if (doors) {
+      const doorPulse = 0.6 + 0.4 * Math.sin(this.pulseTimer * 2);
+      g.beginFill(0xffffff, doorPulse);
+      for (const door of doors) {
+        const cx = (door.rect.x + door.rect.width / 2) * sx;
+        const cy = (door.rect.y + door.rect.height / 2) * sy;
+        g.drawCircle(cx, cy, 3);
+      }
+      g.endFill();
+    }
   }
 
   fadeIn() {

@@ -148,6 +148,7 @@ export class Game {
   private characterScreenOpen = false;
   private characterScreen?: CharacterScreen;
   private wasCKeyDown = false;
+  private wasVKeyDown = false;
   private devConsole: DeveloperConsole;
   private tutorialStage: TutorialStage | null = null;
   private tutorialKeys: Set<string> = new Set();
@@ -370,13 +371,15 @@ export class Game {
     this.tutorialScreen = new TutorialScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
     this.app.stage.addChild(this.tutorialScreen.container);
 
-    this.soulVaultScreen = new SoulVaultScreen(
-      1920, 1080,
-      (soul) => this.summonSpectre(soul),
-      () => this.despawnSpectre(),
-      () => { this.soulVaultScreen?.toggle(); this.soulVaultOpen = false; },
-    );
-    this.app.stage.addChild(this.soulVaultScreen.container);
+    if (classType === 'summoner') {
+      this.soulVaultScreen = new SoulVaultScreen(
+        1920, 1080,
+        (soul) => this.summonSpectre(soul),
+        () => this.despawnSpectre(),
+        () => { this.soulVaultScreen?.toggle(); this.soulVaultOpen = false; },
+      );
+      this.app.stage.addChild(this.soulVaultScreen.container);
+    }
   }
 
   private loadGame(slotIndex: number) {
@@ -1545,7 +1548,10 @@ export class Game {
       // Escape key handling
       if (this.input.isKeyDown('Escape')) {
         if (!this.wasEscapeKeyDown) {
-          if (this.vendorOpen) {
+          if (this.soulVaultScreen?.visible) {
+            this.soulVaultScreen.toggle();
+            this.soulVaultOpen = false;
+          } else if (this.vendorOpen) {
             this.closeVendor();
           } else if (this.stashOpen) {
             this.closeStash();
@@ -1567,6 +1573,9 @@ export class Game {
       }
       if (!this.input.isKeyDown('KeyE')) {
         this.wasEKeyDown = false;
+      }
+      if (!this.input.isKeyDown('KeyV')) {
+        this.wasVKeyDown = false;
       }
       if (this.characterScreenOpen) {
         const cDown = this.input.isKeyDown('KeyC');
@@ -1661,22 +1670,16 @@ export class Game {
         }
         this.wasCKeyDown = cDown;
 
-        // V key: Soul Vault
-        if (this.input.isKeyDown('KeyV') && !this.lastKeys.has('KeyV')) {
+        // V key: Soul Vault (summoner only)
+        if (this.player?.classType === 'summoner' && this.input.isKeyDown('KeyV') && !this.wasVKeyDown) {
           if (!this.devConsole.isVisible() && !this.vendorOpen && !this.stashOpen &&
-              !this.soulVaultScreen?.visible && !this.inventoryOpen && !this.treeOpen &&
+              !this.inventoryOpen && !this.treeOpen &&
               !this.characterScreenOpen && !this.subTreeScreen && !this.escapeMenuOpen) {
             this.soulVaultScreen?.toggle();
             this.soulVaultOpen = !this.soulVaultOpen;
-            this.lastKeys.add('KeyV');
-            return;
           }
-          if (this.soulVaultScreen?.visible) {
-            this.soulVaultScreen.toggle();
-            this.soulVaultOpen = false;
-            this.lastKeys.add('KeyV');
-            return;
-          }
+          this.wasVKeyDown = true;
+          return;
         }
       }
     }
@@ -1934,7 +1937,7 @@ export class Game {
 
     // Update minimap
     if (this.minimap && this.room) {
-      this.minimap.update(this.player.x, this.player.y, this.room.walls, this.enemies, this.chests, this.breakables, this.urns);
+      this.minimap.update(this.player.x, this.player.y, this.room.walls, this.enemies, this.chests, this.breakables, this.urns, this.room.doors);
     }
 
     // Recall portal drawing and collision
@@ -2512,8 +2515,8 @@ export class Game {
       }
     }
 
-    // Right click: capture soul drop
-    if (this.input.consumeRightClick()) {
+    // Right click: capture soul drop (summoner only)
+    if (this.player?.classType === 'summoner' && this.input.consumeRightClick()) {
       for (let i = this.soulDrops.length - 1; i >= 0; i--) {
         const drop = this.soulDrops[i];
         const d = Math.sqrt((drop.x - mouseWX) ** 2 + (drop.y - mouseWY) ** 2);
@@ -2582,25 +2585,27 @@ export class Game {
         const rarityLootMult = dead.rarity === 'rare' ? 3 : dead.rarity === 'magic' ? 2 : 1;
         this.spawnLoot(dead.x, dead.y, rarityLootMult);
 
-        // Soul drop for spectre capture
-        const soulDropChance = 0.04 * (1 + (this.player.computedStats.magicFindPct || 0) / 100);
-        if (Math.random() < soulDropChance) {
-          const soulLabel = new Text(`Soul of ${this.getEnemyDisplayName(dead.type)}`, new TextStyle({
-            fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#66ccff',
-            stroke: '#000', strokeThickness: 2,
-          }));
-          soulLabel.anchor.set(0.5);
-          const soulContainer = new Container();
-          soulContainer.addChild(soulLabel);
-          soulContainer.x = dead.x;
-          soulContainer.y = dead.y;
-          this.gameContainer!.addChild(soulContainer);
-          this.soulDrops.push({
-            x: dead.x, y: dead.y,
-            enemyType: dead.type,
-            label: `Soul of ${this.getEnemyDisplayName(dead.type)}`,
-            container: soulContainer,
-          });
+        // Soul drop for spectre capture (summoner only)
+        if (this.player?.classType === 'summoner') {
+          const soulDropChance = 0.04 * (1 + (this.player.computedStats.magicFindPct || 0) / 100);
+          if (Math.random() < soulDropChance) {
+            const soulLabel = new Text(`Soul of ${this.getEnemyDisplayName(dead.type)}`, new TextStyle({
+              fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#66ccff',
+              stroke: '#000', strokeThickness: 2,
+            }));
+            soulLabel.anchor.set(0.5);
+            const soulContainer = new Container();
+            soulContainer.addChild(soulLabel);
+            soulContainer.x = dead.x;
+            soulContainer.y = dead.y;
+            this.gameContainer!.addChild(soulContainer);
+            this.soulDrops.push({
+              x: dead.x, y: dead.y,
+              enemyType: dead.type,
+              label: `Soul of ${this.getEnemyDisplayName(dead.type)}`,
+              container: soulContainer,
+            });
+          }
         }
 
         dead.destroy();
