@@ -3096,11 +3096,12 @@ export class Game {
             orbSlot.count--;
             if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
           }
+          this.inventoryScreen?.update(
+            this.player.inventory, this.player.equipment,
+            this.player.computedStats, this.input,
+          );
+          this.inventoryScreen?.forceRefreshTooltip();
         }
-        this.inventoryScreen?.update(
-          this.player.inventory, this.player.equipment,
-          this.player.computedStats, this.input,
-        );
         return success;
       });
       this.inventoryScreen.onCraftOrbGridCallback((orbId: string, gridIndex: number): boolean => {
@@ -3124,11 +3125,12 @@ export class Game {
             orbSlot.count--;
             if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
           }
+          this.inventoryScreen?.update(
+            this.player.inventory, this.player.equipment,
+            this.player.computedStats, this.input,
+          );
+          this.inventoryScreen?.forceRefreshTooltip();
         }
-        this.inventoryScreen?.update(
-          this.player.inventory, this.player.equipment,
-          this.player.computedStats, this.input,
-        );
         return success;
       });
       this.inventoryScreen.onSocketJewelCallback((slot: Slot, gridIndex: number) => {
@@ -3138,6 +3140,7 @@ export class Game {
         const success = this.player.socketJewel(slot, jewelEntry.item, gridIndex);
         if (success) {
           this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
+          this.inventoryScreen?.forceRefreshTooltip();
         }
       });
       this.inventoryScreen.onDrillOrbCallback((slot: Slot) => {
@@ -3153,6 +3156,7 @@ export class Game {
             if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
           }
           this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
+          this.inventoryScreen?.forceRefreshTooltip();
         }
       });
       this.inventoryScreen.onUnsocketOrbCallback((orbId: string, slot: Slot, socketIndex: number) => {
@@ -3169,6 +3173,7 @@ export class Game {
             if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
           }
           this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
+          this.inventoryScreen?.forceRefreshTooltip();
         }
       });
       this.inventoryScreen.onConsumePortalScrollCallback(() => {
