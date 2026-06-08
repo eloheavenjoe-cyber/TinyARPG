@@ -993,3 +993,7 @@ Tier 4: #35, #43  → professional quality
 - Old "WARPED" tag and placement above affixes removed
 
 **Files:** 5 source files (+148/−56), 7 implementation commits + plan file
+
+### Phase 20b — CORRUPTED Tag Gating (completed 2026-06-09)
+- CORRUPTED red tag now only shows for `no_change` warp outcome (the one that purely taints the item)
+- Other outcomes (warped_implicit, warp_chaos, extra_socket, etc.) show the corruption zone with outcome description but no crimson label — the item's visible changes are sufficient feedback
