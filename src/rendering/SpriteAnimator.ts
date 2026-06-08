@@ -26,8 +26,12 @@ let pendingMonkSprites: AnimatedSprite[] = [];
 let cthulhuFrames: Record<CthulhuAnimName, Texture[]> | null = null;
 let pendingCthulhuSprites: AnimatedSprite[] = [];
 
+let summonerFrames: Record<AnimName, Texture[]> | null = null;
+let pendingSummonerSprites: AnimatedSprite[] = [];
+
 function getFrames(classType: 'warrior' | 'ranger' | 'monk' | 'summoner'): Record<AnimName, Texture[]> | null {
-  if (classType === 'monk' || classType === 'summoner') return null;
+  if (classType === 'monk') return null;
+  if (classType === 'summoner') return summonerFrames;
   return classType === 'ranger' ? rangerFrames : warriorFrames;
 }
 
@@ -140,6 +144,80 @@ export async function loadWarriorAnimations(): Promise<void> {
     }
   }
   pendingWarriorSprites = [];
+}
+
+const SUMMONER_FRAME_W = 64;
+const SUMMONER_FRAME_H = 64;
+
+async function loadSummonerSheet(name: AnimName, url: string): Promise<Texture[]> {
+  const img = await loadImage(url);
+  const base = new BaseTexture(img);
+  const frameCount = Math.floor(base.width / SUMMONER_FRAME_W);
+  const frames: Texture[] = [];
+  for (let i = 0; i < frameCount; i++) {
+    frames.push(new Texture(base, new Rectangle(i * SUMMONER_FRAME_W, 0, SUMMONER_FRAME_W, SUMMONER_FRAME_H)));
+  }
+  return frames;
+}
+
+export async function loadSummonerAnimations(): Promise<void> {
+  if (summonerFrames) return;
+  const entries: [AnimName, string][] = [
+    ['idle', 'sprites/summoner/crow_idle.png'],
+    ['walk', 'sprites/summoner/crow_walk.png'],
+    ['attack', 'sprites/summoner/crow_attack.png'],
+  ];
+
+  const results = await Promise.all(entries.map(async ([name, url]) => {
+    try {
+      return { name, frames: await loadSummonerSheet(name, url) };
+    } catch {
+      const canvas = document.createElement('canvas');
+      canvas.width = SUMMONER_FRAME_W;
+      canvas.height = SUMMONER_FRAME_H;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#3a2060';
+      ctx.fillRect(0, 0, SUMMONER_FRAME_W, SUMMONER_FRAME_H);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px monospace';
+      ctx.fillText(name, 16, 36);
+      return { name, frames: [Texture.from(canvas), Texture.from(canvas), Texture.from(canvas)] };
+    }
+  }));
+
+  const result = {} as Record<AnimName, Texture[]>;
+  for (const { name, frames } of results) result[name] = frames;
+  summonerFrames = result;
+
+  for (const sprite of pendingSummonerSprites) {
+    const f = summonerFrames.idle;
+    if (f && f.length > 0) {
+      sprite.textures = f;
+      sprite.tint = 0xffffff;
+      sprite.animationSpeed = 0.12;
+      sprite.play();
+    }
+  }
+  pendingSummonerSprites = [];
+}
+
+export function createSummonerSprite(): AnimatedSprite {
+  if (summonerFrames && summonerFrames.idle.length > 0) {
+    const sprite = new AnimatedSprite(summonerFrames.idle);
+    sprite.anchor.set(0.5, 0.5);
+    sprite.animationSpeed = 0.12;
+    sprite.play();
+    return sprite;
+  }
+  const sprite = new AnimatedSprite([Texture.WHITE]);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.tint = 0x8844cc;
+  pendingSummonerSprites.push(sprite);
+  return sprite;
+}
+
+export function isSummonerLoaded(): boolean {
+  return summonerFrames !== null;
 }
 
 export async function loadRangerAnimations(): Promise<void> {

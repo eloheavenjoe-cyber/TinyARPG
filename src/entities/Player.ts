@@ -1,7 +1,7 @@
 import { AnimatedSprite, Texture } from 'pixi.js';
 import { Sprites } from '../rendering/Sprites';
 import { InputManager } from '../core/InputManager';
-import { createWarriorSprite, createRangerSprite, createMonkSprite, playMonkAnimation, MonkAnimName, isMonkLoaded, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
+import { createWarriorSprite, createRangerSprite, createMonkSprite, createSummonerSprite, playMonkAnimation, MonkAnimName, isMonkLoaded, isSummonerLoaded, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
 import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
 import { SkillSubTree, RANGER_SUB_TREES, SUMMONER_SUB_TREES } from '../core/SkillSubTree';
@@ -87,6 +87,8 @@ export class Player {
     } else if (classType === 'monk' && isMonkLoaded()) {
       this.sprite = createMonkSprite();
       this.sprite.scale.set(1.125);
+    } else if (classType === 'summoner' && isSummonerLoaded()) {
+      this.sprite = createSummonerSprite();
     } else {
       const tex = classType === 'ranger' ? Sprites.ranger
         : classType === 'summoner' ? Sprites.summoner

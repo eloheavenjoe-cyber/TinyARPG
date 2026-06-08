@@ -33,7 +33,7 @@ import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
 import { HubTip } from '../ui/HubTip';
-import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadCthulhuAnimations, loadChestAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation, playRangerRollAnimation, playAnimation } from '../rendering/SpriteAnimator';
+import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadSummonerAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadCthulhuAnimations, loadChestAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation, playRangerRollAnimation, playAnimation } from '../rendering/SpriteAnimator';
 import { loadItemIcons } from '../rendering/ItemIcons';
 import { Boss, BossId } from '../entities/Boss';
 import { BossHpBar } from '../ui/BossHpBar';
@@ -231,6 +231,7 @@ export class Game {
       loadReaperAnimations(),
       loadGolemAnimations(),
       loadMonkAnimations(),
+      loadSummonerAnimations(),
       loadCultistAnimations(),
       loadArcherAnimations(),
       loadGruntAnimations(),
