@@ -997,3 +997,87 @@ Tier 4: #35, #43  → professional quality
 ### Phase 20b — CORRUPTED Tag Gating (completed 2026-06-09)
 - CORRUPTED red tag now only shows for `no_change` warp outcome (the one that purely taints the item)
 - Other outcomes (warped_implicit, warp_chaos, extra_socket, etc.) show the corruption zone with outcome description but no crimson label — the item's visible changes are sufficient feedback
+
+### Phase 21 — Summoner Class (completed 2026-06-09)
+
+**Core Systems:**
+- New `ClassType: 'summoner'` with INT primary stat (minion damage = `20 × skillMult × (1 + INT × 0.01)`)
+- 6-slot skill bar: pick 1 of 4 main abilities + 5 fixed support skills
+- `'summon'` and `'channel'` effectTypes added to SkillDef interface
+- 3 new files: SummonerSkillDefs.ts, Minion.ts, SoulVaultScreen.ts (+509 lines)
+- 14 modified files (+1229/−15 total across all commits)
+
+**Main Abilities (slot 0, pick 1 of 4):**
+1. Bone Spear — projectile_pierce, mana 10, cd 0.5s, dmgMult 1.2, pierces 2
+2. Soul Drain — channel, mana 15, cd 3s, 4 ticks, heals 50% to self+minions
+3. Corpse Explosion — aoe_target, mana 20, cd 0.8s, 15% corpse maxHP, 120px radius
+4. Command Wrath — buff, mana 25, cd 8s, +30% minion dmg/atk speed 4s
+
+**Support Skills (Key 2-6, fixed):**
+1. Raise Skeleton — summon, mana 25, cd 4s, max 3 permanent skeleton warriors (60 HP, 8 dmg)
+2. Summon Skeleton Mage — summon, mana 30, cd 8s, max 2 temporary mages (15s, 40 HP, 10 dmg, ranged)
+3. Bone Armor — buff, mana 20, cd 15s, +30% DR self, +15% DR minions, 6s
+4. Death Mark — debuff, mana 15, cd 6s, +25% damage taken on target, 8s
+5. Flesh Offering — buff, mana 10, cd 2s, consumes corpse, +40% atk speed/+20% dmg to minions, 6s
+
+**Minion Entity (src/entities/Minion.ts, 221 lines):**
+- Three types: skeleton_warrior, skeleton_mage, spectre
+- AI: combat mode (chase nearest enemy within 600px) + follow mode (formation around player)
+- Movement: sinusoidal wobble, repulsion from other minions, wall collision
+- Mages fire magic projectiles via `wantsToFire` flag (checked by Game.ts)
+- Timed minions (mages) auto-expire at lifetime end
+
+**Spectre System:**
+- 4% soul drop on enemy death (scaled by magic find), cyan-blue nameplate "Soul of Grunt/Archer/etc"
+- Right-click to capture (soul vault limit 8)
+- Soul Vault (V key): full-screen overlay, 8-slot grid + active spectre slot
+- Spectre inherits source enemy type's base stats (HP, damage, speed) with level scaling
+- `summonSpectre()`: scales stats by `(1 + levelDiff × 0.05) × minionDmgMult × minionHpMult`
+- Save/load persistence with backward-compatible optional fields
+
+**Passive Tree:**
+- `minionDmgPct` / `minionHpPct` added to NodeEffects interface
+- 4 minion nodes in Sorcery Branch (branching from Archmage):
+  - Bone Lord (+5% minion damage), Necrotic Power (+10%), Soul Weaver (+15% dmg, +10% life), Bone Plating (+10% life)
+
+**Sub Skill Trees (4 trees × 12 nodes, 1 point per 4 levels):**
+- Bone Spear: Bone Barrage (+2 proj), Marrow Seekers (homing), Shattering Impact (-15% armor), Ossified Volley (4th shot crits)
+- Soul Drain: Life Siphon (100% heal), Essence Theft (mana restore), Shared Torment (chain +1), Unending Feast (+2 ticks)
+- Corpse Explosion: Chain Reaction (chain 3), Necrotic Cloud (4s poison), Desecrate (spawn corpses), Overkill (+50% dmg, +40px)
+- Command Wrath: Inspiring Presence (+15% move), Shared Fury (extend on hit), War Drums (-2s cd), Blood Pact (HP cost, +50% dmg)
+
+**Stats & Items:**
+- `minionHpPct` stat added to StatSystem (base + equipment pipeline)
+- 3-tier minion life affixes: Reanimating (10-18%), Necrotizing (18-28%), of the Lich (28-40%)
+- Summoner uses projectileDmgMult for calcDamage (like ranger), INT as primary stat (like monk)
+
+**Game Loop Integration:**
+- `minions: Minion[]` array in Game.ts with per-frame update loop
+- Corpse tracking: `recentCorpses[]` with 5s timeout, max 8 corpses
+- `findNearestEnemy()` helper for mage projectile targeting
+- Minion death cleanup on zone transitions and session cleanup
+- Channel skill support (reuses monk's `channeling`/`channelTimer` infrastructure)
+- V key binding for Soul Vault (guarded against other open UIs)
+- Right-click capture via `input.consumeRightClick()`
+
+**Character Screen:**
+- `[Summon]` badge (purple `#8844cc`) and `[Channel]` badge (cyan `#66ccff`)
+
+**Summoner Animated Sprites (crow):**
+- `public/sprites/summoner/crow_idle.png` (256×64, 4 frames)
+- `public/sprites/summoner/crow_walk.png` (256×64, 4 frames)
+- `public/sprites/summoner/crow_attack.png` (320×64, 5 frames)
+- Custom loader `loadSummonerSheet()` with 64×64 frame slicing (vs default 96×84)
+- `createSummonerSprite()` / `isSummonerLoaded()` — follows warrior/warrior pending pattern
+- Loaded during startup `Promise.all` alongside other animation sets
+
+**Minion Idle Clumping Fix (completed inline):**
+- Root cause: all minions targeted identical position `(playerX, playerY + 80)` during idle, with wobble + repulsion pushing past the 10px stop threshold every frame, creating perpetual oscillation
+- Formation system: persistent angular slots via golden-angle distribution (`minionId × 2.39996 % 2π`)
+- Type-based radii: warriors 50px, mages 90px, spectres 65px
+- Arrival hysteresis: 20px threshold to arrive, 40px threshold to re-engage
+- `isIdleArrived` flag stops movement commands once settled; cleared on enemy detection
+- Repulsion push under 40px is ignored by idle minions
+- `formationAngle` assigned once on first idle, persists across combat cycles
+
+**19 files changed across 3 commits, 19 design/plan files also created**
