@@ -8,7 +8,7 @@ import { SkillSubTree, RANGER_SUB_TREES } from '../core/SkillSubTree';
 import { PassiveTree } from '../core/PassiveTree';
 import { computeStats } from '../core/StatSystem';
 import { Slot, AFFIXES } from '../core/ItemDefs';
-import { GeneratedItem, rollSockets } from '../core/ItemGenerator';
+import { GeneratedItem, rollSockets, WARP_STONE_CONFIG, WARP_IMPLICITS } from '../core/ItemGenerator';
 import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Enemy } from './Enemy';
@@ -124,6 +124,10 @@ export class Player {
           }
         }
       }
+      // Add warp implicit stat
+      if (item.warpImplicit) {
+        equipStats[item.warpImplicit.stat] = (equipStats[item.warpImplicit.stat] || 0) + item.warpImplicit.value;
+      }
     }
     this._computedStats = computeStats(this.passiveTree, this.attrs, 100, 50, equipStats);
     const s = this._computedStats;
@@ -132,6 +136,170 @@ export class Player {
     this.maxMana = s.maxMana;
     this.mana = Math.min(this.mana, this.maxMana);
     this.speed = 6 * s.moveSpeedMult;
+  }
+
+  // PURPOSE: Apply Warp Stone to an equipped item. Permanent, irreversible.
+  // INPUTS:  slot — the equipment slot to target
+  // OUTPUTS: true if warping succeeded, false if rejected
+  // SIDE EFFECTS: Mutates item in-place, recalculates all stats
+  warpItem(slot: Slot): boolean {
+    const item = this.equipment[slot];
+    if (!item) return false;
+    const ok = this.warpItemInternal(item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  // PURPOSE: Apply Warp Stone to an item in the inventory grid.
+  warpInventoryItem(gridIndex: number): boolean {
+    const entry = this.inventory[gridIndex];
+    if (!entry || entry.kind !== 'equip') return false;
+    const ok = this.warpItemInternal(entry.item);
+    if (ok) this.recalcStats();
+    return ok;
+  }
+
+  // PURPOSE: Core warp logic — validates, marks, rolls outcome, applies it.
+  private warpItemInternal(item: GeneratedItem): boolean {
+    if (item.warped) return false;
+    if (item.uniqueId) return false;
+    const { slot } = item.base;
+    if (slot === 'weapon' || slot === 'body') return false;
+
+    item.warped = true;
+    const outcome = this.rollWarpOutcome(item);
+    item.warpOutcome = outcome;
+    this.applyWarpOutcome(item, outcome);
+    item.computedStats = this.recalcWarpedStats(item);
+    return true;
+  }
+
+  // PURPOSE: Weighted random roll from WARP_STONE_CONFIG.outcomeWeights.
+  private rollWarpOutcome(item: GeneratedItem): string {
+    const { outcomeWeights } = WARP_STONE_CONFIG;
+    const entries = Object.entries(outcomeWeights) as [string, number][];
+    const total = entries.reduce((s, [, w]) => s + w, 0);
+    let r = Math.random() * total;
+    for (const [key, weight] of entries) {
+      r -= weight;
+      if (r <= 0) {
+        if (key === 'extra_socket') {
+          const cap = WARP_STONE_CONFIG.socketCaps[item.base.slot as keyof typeof WARP_STONE_CONFIG.socketCaps] || 0;
+          const current = item.socketSlots?.length || 0;
+          if (current >= cap) break; // fall through
+        }
+        if (key === 'stat_surge' && item.affixes.length === 0) break;
+        return key;
+      }
+    }
+    return 'warped_implicit';
+  }
+
+  // PURPOSE: Dispatch outcome key to the correct apply method.
+  private applyWarpOutcome(item: GeneratedItem, outcome: string): void {
+    switch (outcome) {
+      case 'warped_implicit': this.applyWarpImplicit(item); break;
+      case 'warp_chaos': this.applyWarpChaos(item); break;
+      case 'extra_socket': this.applyExtraSocket(item); break;
+      case 'stat_surge': this.applyStatSurge(item); break;
+      case 'rarity_shift': this.applyRarityShift(item); break;
+      case 'double_warp': this.applyDoubleWarp(item); break;
+      case 'no_change': break;
+    }
+  }
+
+  private applyWarpImplicit(item: GeneratedItem): void {
+    const slot = item.base.slot;
+    const pool = WARP_IMPLICITS[slot] || WARP_IMPLICITS.ring;
+    const choice = pool[Math.floor(Math.random() * pool.length)];
+    const value = choice.min + Math.floor(Math.random() * (choice.max - choice.min + 1));
+    item.warpImplicit = { name: choice.name, stat: choice.stat, value };
+  }
+
+  private applyWarpChaos(item: GeneratedItem): void {
+    const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
+    const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+    const count = 4 + Math.floor(Math.random() * 3);
+    const pickPref = Math.min(Math.ceil(count / 2), prefixes.length);
+    const pickSuff = Math.min(Math.floor(count / 2), suffixes.length);
+    item.affixes = [];
+    for (const src of [prefixes.slice(0, pickPref), suffixes.slice(0, pickSuff)]) {
+      for (const affix of src) {
+        const roll = affix.min + Math.floor(Math.random() * (affix.max - affix.min + 1));
+        item.affixes.push({ affix, roll });
+      }
+    }
+    item.rarity = 'rare';
+  }
+
+  private applyExtraSocket(item: GeneratedItem): void {
+    const slotKey = item.base.slot as keyof typeof WARP_STONE_CONFIG.socketCaps;
+    const cap = WARP_STONE_CONFIG.socketCaps[slotKey] || 0;
+    const current = item.socketSlots?.length || 0;
+    if (current >= cap) return;
+    item.socketSlots = [...(item.socketSlots || []), { jewel: null }];
+  }
+
+  private applyStatSurge(item: GeneratedItem): void {
+    if (item.affixes.length === 0) return;
+    const target = item.affixes[Math.floor(Math.random() * item.affixes.length)];
+    const mult = WARP_STONE_CONFIG.statSurgeMultMin +
+      Math.random() * (WARP_STONE_CONFIG.statSurgeMultMax - WARP_STONE_CONFIG.statSurgeMultMin);
+    const boosted = Math.round(target.roll * mult);
+    target.roll = boosted;
+  }
+
+  private applyRarityShift(item: GeneratedItem): void {
+    if (item.rarity === 'normal') {
+      const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
+      const suffixes = AFFIXES.filter(a => a.type === 'suffix').sort(() => Math.random() - 0.5);
+      const pickPref = Math.min(2, prefixes.length);
+      const pickSuff = Math.min(2, suffixes.length);
+      item.affixes = [];
+      for (const src of [prefixes.slice(0, pickPref), suffixes.slice(0, pickSuff)]) {
+        for (const affix of src) {
+          const roll = affix.min + Math.floor(Math.random() * (affix.max - affix.min + 1));
+          item.affixes.push({ affix, roll });
+        }
+      }
+      item.rarity = 'rare';
+    } else if (item.rarity === 'magic') {
+      const currentStats = new Set(item.affixes.map(a => a.affix.stat));
+      const pool = AFFIXES.filter(a => !currentStats.has(a.stat)).sort(() => Math.random() - 0.5);
+      const extra = Math.min(4 - item.affixes.length, pool.length);
+      for (let i = 0; i < extra; i++) {
+        const a = pool[i];
+        if (!a) break;
+        const roll = a.min + Math.floor(Math.random() * (a.max - a.min + 1));
+        item.affixes.push({ affix: a, roll });
+      }
+      item.rarity = 'rare';
+    } else {
+      this.applyWarpChaos(item);
+    }
+  }
+
+  private applyDoubleWarp(item: GeneratedItem): void {
+    const outcomes = Object.keys(WARP_STONE_CONFIG.outcomeWeights).filter(k => k !== 'double_warp');
+    const pick = () => outcomes[Math.floor(Math.random() * outcomes.length)];
+    const o1 = pick();
+    let o2 = pick();
+    while (o2 === o1) o2 = pick();
+    this.applyWarpOutcome(item, o1);
+    this.applyWarpOutcome(item, o2);
+  }
+
+  // PURPOSE: Recompute computedStats from base innate + affixes + warpImplicit.
+  private recalcWarpedStats(item: GeneratedItem): Record<string, number> {
+    const stats: Record<string, number> = { ...item.base.innateStats };
+    if (item.damageRoll > 0) stats.damage = item.damageRoll;
+    for (const p of item.affixes) {
+      stats[p.affix.stat] = (stats[p.affix.stat] || 0) + p.roll;
+    }
+    if (item.warpImplicit) {
+      stats[item.warpImplicit.stat] = (stats[item.warpImplicit.stat] || 0) + item.warpImplicit.value;
+    }
+    return stats;
   }
 
   hasSubKeystone(keystoneId: string): boolean {
@@ -150,7 +318,7 @@ export class Player {
 
   socketJewel(slot: Slot, jewel: GeneratedItem, gridIndex: number): boolean {
     const item = this.equipment[slot];
-    if (!item || !item.socketSlots) return false;
+    if (!item || !item.socketSlots || item.warped) return false;
     const emptyIdx = item.socketSlots.findIndex(s => !s.jewel);
     if (emptyIdx === -1) return false;
 
@@ -165,7 +333,7 @@ export class Player {
 
   unsocketJewel(slot: Slot, socketIndex: number, destroy: boolean): boolean {
     const item = this.equipment[slot];
-    if (!item || !item.socketSlots) return false;
+    if (!item || !item.socketSlots || item.warped) return false;
     const socket = item.socketSlots[socketIndex];
     if (!socket.jewel) return false;
 
@@ -186,7 +354,7 @@ export class Player {
 
   drillSockets(slot: Slot): boolean {
     const item = this.equipment[slot];
-    if (!item || !item.maxSockets) return false;
+    if (!item || !item.maxSockets || item.warped) return false;
     const newCount = rollSockets(item.maxSockets, item.socketSlots?.length || 0);
     const oldCount = item.socketSlots?.length || 0;
     item.socketSlots = Array.from({ length: newCount }, (_, i) =>
@@ -236,6 +404,7 @@ export class Player {
   }
 
   private empowerItemInternal(item: GeneratedItem): boolean {
+    if (item.warped) return false;
     if (item.rarity !== 'rare' || item.uniqueId) return false;
     if (item.affixes.length >= 6) return false;
 
@@ -254,6 +423,7 @@ export class Player {
   }
 
   private fluxItemInternal(item: GeneratedItem): boolean {
+    if (item.warped) return false;
     if (item.rarity !== 'rare' || item.uniqueId) return false;
 
     const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
@@ -313,6 +483,7 @@ export class Player {
   }
 
   private mutateItemInternal(item: GeneratedItem): boolean {
+    if (item.warped) return false;
     if (item.rarity !== 'normal' || item.uniqueId) return false;
 
     const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
@@ -337,6 +508,7 @@ export class Player {
   }
 
   private growItemInternal(item: GeneratedItem): boolean {
+    if (item.warped) return false;
     if (item.rarity !== 'magic' || item.uniqueId) return false;
     if (item.affixes.length >= 4) return false;
 
@@ -355,6 +527,7 @@ export class Player {
   }
 
   private ascendItemInternal(item: GeneratedItem): boolean {
+    if (item.warped) return false;
     if (item.rarity !== 'normal' || item.uniqueId) return false;
 
     const prefixes = AFFIXES.filter(a => a.type === 'prefix').sort(() => Math.random() - 0.5);
@@ -383,6 +556,7 @@ export class Player {
   }
 
   private purifyItemInternal(item: GeneratedItem): boolean {
+    if (item.warped) return false;
     if (item.rarity === 'normal' || item.uniqueId) return false;
 
     item.affixes = [];

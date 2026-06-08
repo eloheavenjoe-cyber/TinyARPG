@@ -24,6 +24,9 @@ export interface SerializedItem {
   ilvl: number;
   levelReq: number;
   socketSlots?: { jewel: SerializedItem | null }[];
+  warped?: boolean;
+  warpOutcome?: string | null;
+  warpImplicit?: { name: string; stat: string; value: number } | null;
 }
 
 export type SerializedInventorySlot =

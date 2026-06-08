@@ -1,4 +1,4 @@
-import { ITEM_BASES, AFFIXES, UNIQUE_ITEMS, JEWEL_ONLY_AFFIXES, ItemBase, ItemAffix, Rarity } from './ItemDefs';
+import { ITEM_BASES, AFFIXES, UNIQUE_ITEMS, JEWEL_ONLY_AFFIXES, ItemBase, ItemAffix, Rarity, Slot } from './ItemDefs';
 
 export interface SocketSlot {
   jewel: GeneratedItem | null;
@@ -17,6 +17,9 @@ export interface GeneratedItem {
   levelReq: number;
   socketSlots: SocketSlot[];
   maxSockets: number;
+  warped: boolean;
+  warpOutcome: string | null;
+  warpImplicit: { name: string; stat: string; value: number } | null;
 }
 
 export function getMaxSockets(base: ItemBase): number {
@@ -118,6 +121,7 @@ export function generateJewel(playerLevel?: number): GeneratedItem {
     levelReq,
     socketSlots: [],
     maxSockets: 0,
+    warped: false, warpOutcome: null, warpImplicit: null,
   };
 }
 
@@ -172,6 +176,7 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
       levelReq: 1,
       socketSlots: Array.from({ length: rollSockets(ms) }, () => ({ jewel: null })),
       maxSockets: ms,
+      warped: false, warpOutcome: null, warpImplicit: null,
     };
   }
 
@@ -223,6 +228,7 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
     levelReq,
     socketSlots: Array.from({ length: rollSockets(ms) }, () => ({ jewel: null })),
     maxSockets: ms,
+    warped: false, warpOutcome: null, warpImplicit: null,
   };
   return item;
 }
@@ -252,6 +258,7 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
       computedStats: stats, ilvl: playerLevel, levelReq: 1,
       socketSlots: [],
       maxSockets: getMaxSockets(base),
+      warped: false, warpOutcome: null, warpImplicit: null,
     };
   }
 
@@ -294,18 +301,74 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
     ilvl, levelReq,
     socketSlots: [],
     maxSockets: getMaxSockets(base),
+    warped: false, warpOutcome: null, warpImplicit: null,
   };
 }
 
 export function generateOrbDrop(): { orbId: string; name: string } {
   const r = Math.random();
   if (r < 0.20) return { orbId: 'mutation', name: 'Orb of Mutation' };
-  if (r < 0.35) return { orbId: 'purification', name: 'Orb of Purification' };
-  if (r < 0.45) return { orbId: 'empowerment', name: 'Orb of Empowerment' };
-  if (r < 0.53) return { orbId: 'flux', name: 'Orb of Flux' };
-  if (r < 0.58) return { orbId: 'growth', name: 'Orb of Growth' };
-  if (r < 0.63) return { orbId: 'ascendance', name: 'Orb of Ascendance' };
-  if (r < 0.69) return { orbId: 'drilling', name: 'Drilling Orb' };
-  if (r < 0.77) return { orbId: 'shattering', name: 'Shattering Orb' };
+  if (r < 0.34) return { orbId: 'purification', name: 'Orb of Purification' };
+  if (r < 0.44) return { orbId: 'empowerment', name: 'Orb of Empowerment' };
+  if (r < 0.52) return { orbId: 'flux', name: 'Orb of Flux' };
+  if (r < 0.57) return { orbId: 'growth', name: 'Orb of Growth' };
+  if (r < 0.62) return { orbId: 'ascendance', name: 'Orb of Ascendance' };
+  if (r < 0.68) return { orbId: 'drilling', name: 'Drilling Orb' };
+  if (r < 0.76) return { orbId: 'shattering', name: 'Shattering Orb' };
+  if (r < 0.82) return { orbId: 'warp_stone', name: 'Warp Stone' };
   return { orbId: 'preservation', name: 'Preservation Orb' };
 }
+
+export const WARP_STONE_CONFIG = {
+  outcomeWeights: {
+    warped_implicit: 30,
+    warp_chaos: 20,
+    extra_socket: 15,
+    stat_surge: 10,
+    rarity_shift: 10,
+    double_warp: 5,
+    no_change: 10,
+  },
+  socketCaps: { ring: 2, amulet: 2, helmet: 4, boots: 4 },
+  statSurgeMultMin: 1.2,
+  statSurgeMultMax: 1.5,
+};
+
+export interface WarpImplicitDef {
+  name: string;
+  stat: string;
+  min: number;
+  max: number;
+}
+export const WARP_IMPLICITS: Record<string, WarpImplicitDef[]> = {
+  ring: [
+    { name: "of the Berserker", stat: 'meleeDmgPct', min: 10, max: 20 },
+    { name: "of Vitality", stat: 'hp', min: 20, max: 50 },
+    { name: "of Leeching", stat: 'lifeLeechPct', min: 1, max: 3 },
+    { name: "of Swiftness", stat: 'moveSpeedPct', min: 5, max: 10 },
+    { name: "of Evasion", stat: 'dodgePct', min: 5, max: 15 },
+    { name: "of Frostbite", stat: 'coldDmg', min: 5, max: 20 },
+  ],
+  amulet: [
+    { name: "of Omniscience", stat: 'int', min: 8, max: 15 },
+    { name: "of Treasure", stat: 'magicFindPct', min: 20, max: 40 },
+    { name: "of Recovery", stat: 'cooldownReductionPct', min: 10, max: 20 },
+    { name: "of the Deep", stat: 'manaPct', min: 8, max: 15 },
+    { name: "of Endurance", stat: 'hpRegen', min: 10, max: 30 },
+    { name: "of Longevity", stat: 'skillDurationPct', min: 15, max: 30 },
+  ],
+  helmet: [
+    { name: "of Explosions", stat: 'explodeOnKillPct', min: 10, max: 25 },
+    { name: "of Precision", stat: 'additionalProjectiles', min: 1, max: 1 },
+    { name: "of Clarity", stat: 'manaCostReductionPct', min: 8, max: 15 },
+    { name: "of Fortification", stat: 'fortifyOnHit', min: 5, max: 15 },
+    { name: "of Rage", stat: 'damagePct', min: 15, max: 30 },
+    { name: "of Bolts", stat: 'lightningDmg', min: 5, max: 20 },
+  ],
+  boots: [
+    { name: "of Surefooting", stat: 'dodgePct', min: 10, max: 20 },
+    { name: "of the Hunt", stat: 'attackSpeedPct', min: 8, max: 15 },
+    { name: "of Flames", stat: 'fireDmg', min: 5, max: 20 },
+    { name: "of the Gale", stat: 'moveSpeedPct', min: 8, max: 15 },
+  ],
+};

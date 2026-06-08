@@ -46,6 +46,13 @@ export function buildItemTooltip(item: GeneratedItem): Container {
   const baseLabel = addText(item.base.name, { fontSize: 10, fill: '#8a7a5a' });
   elems.push({ left: baseLabel });
   cy += 12;
+
+  // Warp implicit display (if present) — italic purple, above affixes
+  if (item.warpImplicit) {
+    elems.push({ left: addText(`Warped: ${item.warpImplicit.name} (+${item.warpImplicit.value})`, { fontSize: 10, fill: '#b060e0', fontStyle: 'italic' }) });
+    cy += 14;
+  }
+
   dividerYs.push(cy);
 
   const prefixes = item.affixes.filter(a => a.affix.type === 'prefix');
@@ -123,6 +130,26 @@ export function buildItemTooltip(item: GeneratedItem): Container {
     }
   }
 
+  // WARPED tag — shown on all warped items, after all mods
+  if (item.warped) {
+    cy += 2;
+    elems.push({ left: addText('WARPED', { fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#8b1a1a', fontWeight: 'bold' }) });
+    cy += 14;
+    if (item.warpOutcome) {
+      const outcomeLabels: Record<string, string> = {
+        warped_implicit: 'Outcome: Warped Implicit',
+        warp_chaos: 'Outcome: Warp Chaos',
+        extra_socket: 'Outcome: Extra Socket',
+        stat_surge: 'Outcome: Stat Surge',
+        rarity_shift: 'Outcome: Rarity Shift',
+        double_warp: 'Outcome: Double Warp',
+        no_change: 'Outcome: No Change',
+      };
+      elems.push({ left: addText(outcomeLabels[item.warpOutcome] || item.warpOutcome, { fontSize: 9, fill: '#8855aa', fontStyle: 'italic' }) });
+      cy += 12;
+    }
+  }
+
   cy += pad;
 
   let maxW = pad * 2;
@@ -194,6 +221,7 @@ export function buildOrbTooltip(orb: OrbInfo): Container {
     growth: 'Adds a random affix to a\nmagic item (max 4)',
     ascendance: 'Upgrades a normal item to\nrare with 4-6 affixes',
     purification: 'Removes all affixes from a\nmagic or rare item',
+    warp_stone: 'Warps an item, applying an\nunpredictable permanent effect.\nWarped items cannot be modified.',
   };
   const orbNames: Record<string, string> = {
     empowerment: 'Orb of Empowerment',
@@ -202,6 +230,7 @@ export function buildOrbTooltip(orb: OrbInfo): Container {
     growth: 'Orb of Growth',
     ascendance: 'Orb of Ascendance',
     purification: 'Orb of Purification',
+    warp_stone: 'Warp Stone',
   };
   const name = orbNames[orb.orbId] || orb.orbId;
   const c = new Container();

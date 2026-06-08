@@ -139,7 +139,7 @@ export class InventoryScreen {
               empowerment: 'Empower', flux: 'Flux',
               mutation: 'Mutate', growth: 'Growth',
               ascendance: 'Ascend', purification: 'Purify',
-              drilling: 'Drill', shattering: 'Shatter', preservation: 'Preserve',
+              drilling: 'Drill', shattering: 'Shatter', preservation: 'Preserve', warp_stone: 'Warp',
             };
             displayName = `${names[entry.orbId] || entry.orbId} x${entry.count}`;
             displayColor = 0x44dddd;
@@ -479,6 +479,7 @@ export class InventoryScreen {
       drilling: 'Re-rolls socket count on an\nitem (always different result)',
       shattering: 'Destroys a socketed jewel\nand empties the socket',
       preservation: 'Removes a socketed jewel\nand returns it to inventory',
+      warp_stone: 'Warps an item, applying an\nunpredictable permanent effect.\nWarped items cannot be modified.',
     };
     const orbNames: Record<string, string> = {
       empowerment: 'Orb of Empowerment',
@@ -490,6 +491,7 @@ export class InventoryScreen {
       drilling: 'Drilling Orb',
       shattering: 'Shattering Orb',
       preservation: 'Preservation Orb',
+      warp_stone: 'Warp Stone',
     };
     const name = orbNames[orb.orbId] || orb.orbId;
     this.tooltip = new Container();
@@ -575,7 +577,7 @@ export class InventoryScreen {
           displayName = entry.item.base.name;
           displayColor = getRarityColor(entry.item.rarity);
         } else if (entry.kind === 'orb') {
-          const names: Record<string, string> = { empowerment: 'Empower', flux: 'Flux', drilling: 'Drill', shattering: 'Shatter', preservation: 'Preserve' };
+          const names: Record<string, string> = { empowerment: 'Empower', flux: 'Flux', drilling: 'Drill', shattering: 'Shatter', preservation: 'Preserve', warp_stone: 'Warp' };
           displayName = `${names[entry.orbId] || entry.orbId} x${entry.count}`;
           displayColor = 0x44dddd;
         }

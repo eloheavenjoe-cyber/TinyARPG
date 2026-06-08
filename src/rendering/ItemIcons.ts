@@ -54,6 +54,7 @@ const ORB_ICONS: Record<string, { col: number; row: number }> = {
   drilling:      { col: 11, row: 1 },
   shattering:    { col: 12, row: 1 },
   preservation:  { col: 13, row: 1 },
+  warp_stone:    { col: 14, row: 1 },
 };
 
 export function loadItemIcons(): Promise<void> {

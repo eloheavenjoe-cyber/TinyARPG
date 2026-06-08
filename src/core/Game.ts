@@ -555,6 +555,9 @@ export class Game {
           ilvl: item.ilvl,
           levelReq: item.levelReq,
           socketSlots: item.socketSlots.length > 0 ? this.serializeSlots(item.socketSlots) : undefined,
+          warped: item.warped || false,
+          warpOutcome: item.warpOutcome || null,
+          warpImplicit: item.warpImplicit || null,
         },
       };
     });
@@ -585,6 +588,9 @@ export class Game {
         ilvl: item.ilvl,
         levelReq: item.levelReq,
         socketSlots: item.socketSlots.length > 0 ? this.serializeSlots(item.socketSlots) : undefined,
+        warped: item.warped || false,
+        warpOutcome: item.warpOutcome || null,
+        warpImplicit: item.warpImplicit || null,
       };
     }
     return result;
@@ -637,6 +643,9 @@ export class Game {
         : base.id === 'jewel' ? [] : Array.from({ length: maxSockets }, () => ({ jewel: null })),
       maxSockets,
       id: `restored_${data.baseId}_${Date.now()}`,
+      warped: data.warped || false,
+      warpOutcome: data.warpOutcome || null,
+      warpImplicit: data.warpImplicit || null,
     };
   }
 
@@ -3076,6 +3085,7 @@ export class Game {
           case 'growth': success = this.player.growItem(slot); break;
           case 'ascendance': success = this.player.ascendItem(slot); break;
           case 'purification': success = this.player.purifyItem(slot); break;
+          case 'warp_stone': success = this.player.warpItem(slot); break;
         }
         if (success) {
           const orbIdx = this.player.inventory.findIndex(
@@ -3103,6 +3113,7 @@ export class Game {
           case 'growth': success = this.player.growInventoryItem(gridIndex); break;
           case 'ascendance': success = this.player.ascendInventoryItem(gridIndex); break;
           case 'purification': success = this.player.purifyInventoryItem(gridIndex); break;
+          case 'warp_stone': success = this.player.warpInventoryItem(gridIndex); break;
         }
         if (success) {
           const orbIdx = this.player.inventory.findIndex(
@@ -3247,7 +3258,7 @@ export class Game {
       run: (args) => {
         if (!this.player) return 'No player';
         const orbId = args[0];
-        const valid = ['empowerment', 'flux', 'mutation', 'growth', 'ascendance', 'purification'];
+        const valid = ['empowerment', 'flux', 'mutation', 'growth', 'ascendance', 'purification', 'warp_stone'];
         if (!valid.includes(orbId)) return `Unknown orb: ${orbId}. Valid: ${valid.join(', ')}`;
         const count = parseInt(args[1]) || 1;
         this.player.pickupOrb(orbId, count);
