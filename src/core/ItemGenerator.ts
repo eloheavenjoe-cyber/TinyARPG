@@ -11,7 +11,7 @@ export interface GeneratedItem {
   affixes: { affix: ItemAffix; roll: number }[];
   uniqueId?: string;
   damageRoll: number;
-  computedName: string;
+  customDisplayName?: string;
   computedStats: Record<string, number>;
   ilvl: number;
   levelReq: number;
@@ -106,16 +106,14 @@ export function generateJewel(playerLevel?: number): GeneratedItem {
   const levelReq = highestTier * 4;
 
   const base: ItemBase = { id: 'jewel', name: 'Jewel', slot: 'ring', innateStats: {}, dropWeight: 0 };
-  const jewelName = rarity === 'rare' && affixCount >= 4
-    ? `Exquisite ${generateName(picked, 'Jewel')}`
-    : generateName(picked, 'Jewel');
+  const jewelDisplayName = generateItemName({ base, affixes: picked, uniqueId: undefined, customDisplayName: undefined });
 
   return {
     id: crypto.randomUUID(),
     base, rarity,
     affixes: picked,
     damageRoll: 0,
-    computedName: jewelName,
+    customDisplayName: rarity === 'rare' && affixCount >= 4 ? `Exquisite ${jewelDisplayName}` : jewelDisplayName,
     computedStats: stats,
     ilvl,
     levelReq,
@@ -135,10 +133,11 @@ function pickWeighted(bases: ItemBase[]): ItemBase {
   return bases[bases.length - 1];
 }
 
-function generateName(affixes: { affix: ItemAffix; roll: number }[], baseName: string): string {
-  const prefixes = affixes.filter(a => a.affix.type === 'prefix').map(a => a.affix.name);
-  const suffixes = affixes.filter(a => a.affix.type === 'suffix').map(a => a.affix.name);
-  return [...prefixes, baseName, ...suffixes].join(' ');
+export function generateItemName(item: Pick<GeneratedItem, 'base' | 'affixes' | 'uniqueId' | 'customDisplayName'>): string {
+  if (item.uniqueId && item.customDisplayName) return item.customDisplayName;
+  const prefixes = item.affixes.filter(a => a.affix.type === 'prefix').map(a => a.affix.name);
+  const suffixes = item.affixes.filter(a => a.affix.type === 'suffix').map(a => a.affix.name);
+  return [...prefixes, item.base.name, ...suffixes].join(' ');
 }
 
 export function generateItemDrop(playerLevel?: number, magicFind: number = 0): GeneratedItem {
@@ -170,7 +169,7 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
       })),
       uniqueId: unique.id,
       damageRoll: dr,
-      computedName: unique.name,
+      customDisplayName: unique.name,
       computedStats: stats,
       ilvl: playerLevel || 1,
       levelReq: 1,
@@ -222,7 +221,6 @@ export function generateItemDrop(playerLevel?: number, magicFind: number = 0): G
   const item: GeneratedItem = {
     id: crypto.randomUUID(),
     base, rarity, affixes: picked, damageRoll,
-    computedName: generateName(picked, base.name),
     computedStats: stats,
     ilvl,
     levelReq,
@@ -254,7 +252,7 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
     return {
       id: crypto.randomUUID(),
       base, rarity: 'unique', affixes: mappedAffixes,
-      uniqueId: unique.id, damageRoll: dr, computedName: unique.name,
+      uniqueId: unique.id, damageRoll: dr, customDisplayName: unique.name,
       computedStats: stats, ilvl: playerLevel, levelReq: 1,
       socketSlots: [],
       maxSockets: getMaxSockets(base),
@@ -297,7 +295,7 @@ export function generateVendorItem(playerLevel: number, weighting: { normal: num
 
   return {
     id: crypto.randomUUID(),
-    base, rarity, affixes, damageRoll, computedName: generateName(affixes, base.name), computedStats: stats,
+    base, rarity, affixes, damageRoll, computedStats: stats,
     ilvl, levelReq,
     socketSlots: [],
     maxSockets: getMaxSockets(base),
