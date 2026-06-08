@@ -50,6 +50,11 @@ export class Enemy {
   deaggroRange: number;
   aggroed = false;
   alwaysAggro = false;
+  spawnSource: string | null = null;
+  urnId: number = 0;
+  dropsLoot: boolean = true;
+  xpMultiplier: number = 1.0;
+  spawnAnimTimer: number = 0;
   rarity: MonsterRarity = 'normal';
   mods: MonsterMod[] = [];
   hastedMultiplier = 1;
@@ -102,6 +107,17 @@ export class Enemy {
 
   update(playerX: number, playerY: number, walls: Rect[], dt: number, enemies: Enemy[]) {
     if (!this.alive) return;
+
+    if (this.spawnAnimTimer > 0) {
+      this.spawnAnimTimer -= dt;
+      const t = 1 - this.spawnAnimTimer / 0.2;
+      const scale = Math.min(1, t * 5);
+      this.sprite.scale.set(scale);
+      if (this.spawnAnimTimer <= 0) {
+        this.sprite.scale.set(1);
+      }
+      return;
+    }
 
     const dx = playerX - this.x;
     const dy = playerY - this.y;
