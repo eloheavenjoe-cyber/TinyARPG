@@ -111,10 +111,11 @@ export class Enemy {
     if (this.spawnAnimTimer > 0) {
       this.spawnAnimTimer -= dt;
       const t = 1 - this.spawnAnimTimer / 0.2;
-      const scale = Math.min(1, t * 5);
+      const rarityScale = this.rarity === 'rare' ? 1.2 : this.rarity === 'magic' ? 1.1 : 1;
+      const scale = Math.min(1, t * 5) * rarityScale;
       this.sprite.scale.set(scale);
       if (this.spawnAnimTimer <= 0) {
-        this.sprite.scale.set(1);
+        this.sprite.scale.set(rarityScale);
       }
       return;
     }
