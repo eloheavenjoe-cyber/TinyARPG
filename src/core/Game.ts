@@ -1137,10 +1137,12 @@ export class Game {
     const decor = decorateRoom(template, zone.biome, tileConfig, roadBlock);
     for (const d of decor.decorations) { this.gameContainer.addChild(d.sprite); this.decorationSprites.push(d.sprite); }
     for (const ob of decor.obstacles) this.room.walls.push(ob);
-    for (const cp of decor.chests) {
-      const chest = new Chest(cp.x, cp.y);
-      this.chests.push(chest);
-      this.gameContainer.addChild(chest.container);
+    if (zone.id !== 'hub') {
+      for (const cp of decor.chests) {
+        const chest = new Chest(cp.x, cp.y);
+        this.chests.push(chest);
+        this.gameContainer.addChild(chest.container);
+      }
     }
     for (const bp of decor.breakables) {
       const brk = new Breakable(bp.x, bp.y);
@@ -1149,7 +1151,9 @@ export class Game {
     }
 
     // Cursed urns
-    this.spawnUrns(zone, template);
+    if (zone.id !== 'hub') {
+      this.spawnUrns(zone, template);
+    }
 
     // Cabin walls, spawn zones, and chests
     for (const c of template.cabins) {
