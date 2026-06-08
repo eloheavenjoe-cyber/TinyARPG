@@ -938,6 +938,9 @@ export class Game {
     this.chests = [];
     this.breakables = [];
     this.decorationSprites = [];
+    this.urnSpawnGroups.clear();
+    this.urnSpawnQueue = [];
+    this.urnStaggerTimer = 0;
     this.dash = null;
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();
@@ -1047,6 +1050,9 @@ export class Game {
     this.chests = [];
     this.breakables = [];
     this.urns = [];
+    this.urnSpawnGroups.clear();
+    this.urnSpawnQueue = [];
+    this.urnStaggerTimer = 0;
     if (this.secretBush) {
       try { this.gameContainer.removeChild(this.secretBush.container); } catch (_) {}
       try { this.secretBush.destroy(); } catch (_) {}
@@ -4308,6 +4314,9 @@ export class Game {
     this.chests = [];
     this.breakables = [];
     this.urns = [];
+    this.urnSpawnGroups.clear();
+    this.urnSpawnQueue = [];
+    this.urnStaggerTimer = 0;
     this.activeUrnOrb = null;
     this.decorationSprites = [];
     this.waveCooldown = 0;
