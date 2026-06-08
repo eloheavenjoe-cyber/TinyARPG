@@ -19,7 +19,7 @@ const RARE_PREFIXES = [
   'Foul', 'Unholy', 'Dark', 'Twisted', 'Corrupted',
 ];
 
-export type UrnState = 'idle' | 'opened';
+export type UrnState = 'idle' | 'active' | 'cleared';
 export type UrnRarity = 'normal' | 'magic' | 'rare';
 
 export class CursedUrn {
@@ -32,6 +32,8 @@ export class CursedUrn {
   container: PIXI.Container;
   isOpen = false;
   rareName?: string;
+  private static nextId = 1;
+  readonly id: number;
 
   private body: PIXI.Graphics;
   private lid: PIXI.Graphics;
@@ -44,6 +46,8 @@ export class CursedUrn {
   private smokeTimer = 0;
   private smokeParticles: { g: PIXI.Graphics; life: number; maxLife: number; xOff: number }[] = [];
   private tier3Texts: PIXI.Text[] = [];
+  private fadeTimer: number = 0;
+  private readonly FADE_DURATION: number = 1.2;
 
   constructor(
     x: number,
@@ -58,16 +62,19 @@ export class CursedUrn {
   ) {
     this.x = x;
     this.y = y;
+    this.id = CursedUrn.nextId++;
     this.type = opts?.type ?? rollUrnType();
     this.rarity = opts?.rarity ?? rollUrnRarity();
     this.curses = opts?.curses ?? this.generateCurses();
     this.rareName = opts?.rareName ?? (this.rarity === 'rare' ? this.generateRareName() : undefined);
-    if (opts?.preOpened) {
-      this.isOpen = true;
-      this.state = 'opened';
-    }
 
     this.container = new PIXI.Container();
+
+    if (opts?.preOpened) {
+      this.isOpen = true;
+      this.state = 'cleared';
+      this.container.alpha = 0;
+    }
     this.container.x = x;
     this.container.y = y;
 
@@ -356,14 +363,23 @@ export class CursedUrn {
       }
     }
 
-    if (!this.isOpen) {
-      this.smokeTimer += dt * 0.05;
-      if (this.smokeTimer > 1) {
-        this.smokeTimer = 0;
-        this.emitSmokeParticle();
+    if (this.state === 'cleared') {
+      this.fadeTimer += dt / 60;
+      this.container.alpha = Math.max(0, 1 - this.fadeTimer / this.FADE_DURATION);
+      if (this.fadeTimer >= this.FADE_DURATION) {
+        this.isOpen = true;
+        this.container.alpha = 0;
       }
-      this.updateSmokeParticles(dt);
     }
+
+    if (this.state !== 'idle') return;
+
+    this.smokeTimer += dt * 0.05;
+    if (this.smokeTimer > 1) {
+      this.smokeTimer = 0;
+      this.emitSmokeParticle();
+    }
+    this.updateSmokeParticles(dt);
   }
 
   private emitSmokeParticle() {
@@ -395,23 +411,15 @@ export class CursedUrn {
   }
 
   open(): CurseDef[] {
-    if (this.isOpen) return [];
-    this.isOpen = true;
-    this.state = 'opened';
-
+    if (this.state !== 'idle') return [];
+    this.state = 'active';
     this.lid.visible = false;
     this.panel.visible = false;
     this.interactLabel.visible = false;
     this.glow.clear();
-
-    for (const p of this.smokeParticles) {
-      this.container.removeChild(p.g);
-      p.g.destroy();
-    }
+    for (const p of this.smokeParticles) { p.g.destroy(); }
     this.smokeParticles = [];
-
     Logger.log('combat', `Urn opened: ${this.type.name} (${this.rarity}), ${this.curses.length} curses`);
-
     return this.curses;
   }
 
@@ -428,7 +436,7 @@ export class CursedUrn {
       y: this.y,
       rarity: this.rarity,
       curseIds: this.curses.map(c => c.id),
-      opened: this.isOpen,
+      opened: this.state === 'cleared' || this.isOpen,
       rareName: this.rareName,
     };
   }
