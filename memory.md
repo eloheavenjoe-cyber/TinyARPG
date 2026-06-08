@@ -1080,4 +1080,64 @@ Tier 4: #35, #43  → professional quality
 - Repulsion push under 40px is ignored by idle minions
 - `formationAngle` assigned once on first idle, persists across combat cycles
 
-**19 files changed across 3 commits, 19 design/plan files also created**
+**19 files changed across 3 commits, 19 design/plan files also created
+
+### Phase 22 — Cursed Urns League Mechanic (completed 2026-06-09)
+
+**New Files (3):**
+- `src/core/CurseMods.ts` — 14 curses across 3 tiers, weighted no-duplicate selection
+- `src/core/UrnConfig.ts` — 5 urn types (Reliquary/Miser/Casket/Alchemist/Vault), rarity/spawn config
+- `src/entities/CursedUrn.ts` — Procedural Graphics urn (3× chest size, 72×60px), world-space info panel, smoke VFX, E-key interaction, currency upgrades
+
+**Urn Types & Visuals:**
+- Reliquary of Arms (gunmetal, iron banding, sword motif) → Weapons & Armour loot
+- Miser's Coffer (tarnished gold, coin reliefs) → Currency & Crafting loot
+- Casket of Adornments (deep violet, gem inlays) → Rings/Amulets/Jewellery loot
+- Alchemist's Vessel (sickly green, bubbles) → Consumables loot
+- Vault of the Forgotten (bone white, rune carvings) → Mixed Rare Items loot
+
+**Rarity System (60/30/10):**
+- Normal (white, 1 curse, standard loot)
+- Magic (blue, 2 curses, +1 item)
+- Rare (gold, 3-4 curses, generated name, significantly boosted loot)
+
+**14 Curses (3 tiers):**
+- Tier 1: Sluggish (-30% move 25s), Drained (-25% mana regen 30s), Rattled (-20% dodge 30s), Blurred (reduced vision 20s)
+- Tier 2: Bleeding (5 HP/s DoT 20s), Weakened (-35% dmg dealt 25s), Brittle (+40% dmg taken 20s), Flask-Cursed (no flasks 15s), Chilled (-50% atk speed 15s)
+- Tier 3: No Regeneration (30s), Marked (aggro all enemies), Shattered Flask (clear potions), Soul Taxed (-20% HP), Hexed (-30% all res 25s)
+
+**World-Space Panel:**
+- Below-urn info panel (enemy nameplate pattern), shows name (rarity-colored), loot category (muted gold), ◈ curse mods (crimson, tier-3 pulsing)
+- Panel fades in/out on proximity, updates live on currency apply
+
+**Currency Upgrades:**
+- Mutation (normal→magic, +1 curse), Ascendance (normal→rare, 3-4 curses)
+- Growth (magic reroll all), Empowerment (magic→rare, +1 curse)
+- Orb targeting via right-click in inventory → activeOrb → E-key while near urn
+
+**Save/Load:**
+- Opened urns serialized per zone (`SerializedUrn[]` in `SaveData.zone.urns`)
+- Restored on load, closed urns regenerated fresh
+
+### Bug Fix Batch 1 — Minimap, Soul Vault, Summoner Gating (completed 2026-06-09)
+
+**Fix 1 — Minimap Readability:**
+- Removed `cursor: crosshair` from canvas CSS (was rendering unintended X/cross over minimap)
+- Lightened background from `0x05030a` (near-black) to `0x14100c` (warm dark brown, 0.75 alpha)
+- Reduced vignette from 8 heavy layers to 4 subtle ones, removed edge bars
+- Adjusted wall color to `0x1a1612` for clear contrast against floor
+- Chests/urns: unified pale blue `0x88ccff` dots, radius 2→3 for visibility
+- Enemies: radius 2→3, alpha 0.75→0.85
+- Player: added soft white outer glow, radius 3→4
+- Added door/exit white pulsing dots
+
+**Fix 2 — Soul Vault Toggle:**
+- Root cause: V-key dedup via `lastKeys` caused permanent deadlock — `handleSkillKeys()` never runs when vault is open, so `KeyV` stayed in `lastKeys` forever
+- Replaced `!lastKeys.has('KeyV')` with proper `wasVKeyDown` debounce flag
+- Added soul vault to Escape priority chain as highest-priority close target
+
+**Fix 3 — Summoner Gating:**
+- Soul vault screen creation gated to `classType === 'summoner'`
+- V key handler gated to `classType === 'summoner'`
+- Soul drops on enemy kill gated to `classType === 'summoner'`
+- Right-click soul capture gated to `classType === 'summoner'`
