@@ -971,5 +971,25 @@ Tier 4: #35, #43  → professional quality
 
 **Files changed:** 7 files, +298 lines (+17 in follow-up fix)
 
+### Phase 20 — Dynamic Item Names, Live Tooltips & Corruption Styling (completed 2026-06-09)
 
+**Fix 1 — Dynamic Item Naming:**
+- Extracted `generateItemName(item)` as exported pure function from `ItemGenerator.ts` — deterministic name from affixes on every read
+- `GeneratedItem.computedName: string` → `customDisplayName?: string` (only set for uniques and Exquisite jewels)
+- All display reads use `generateItemName(item)`: Tooltip.ts, InventoryScreen.ts, ItemDrop.ts, Game.ts serialize/deserialize
+- Backward-compatible: `customDisplayName` is optional, old saves deserialize gracefully
 
+**Fix 2 — Live Tooltip Reactivity:**
+- Identity guard replaced from reference check to ID-based (`tooltipItemId`), prevents per-frame rebuild while allowing mutation-triggered refresh
+- `forceRefreshTooltip()` public method on InventoryScreen
+- All 5 mutation callbacks in Game.ts (craft orb, craft orb grid, socket, drill, unsocket) call `forceRefreshTooltip()` after `update()`
+
+**Fix 3 — Corruption Zone Visual Identity:**
+- New corruption section in tooltips (both Tooltip.ts shared and InventoryScreen.ts inline): purple header `#9966cc`, `⬡` glyph prefix, italic purple `#b060e0` stats
+- Purple tinted background `rgba(80,0,120,0.15)` behind corruption rows
+- Purple multi-line gradient divider above corruption zone
+- CORRUPTED tag: crimson `#8b1a1a`, Cinzel bold with letter spacing
+- Hidden entirely on non-warped items (`if (item.warped)` guard)
+- Old "WARPED" tag and placement above affixes removed
+
+**Files:** 5 source files (+148/−56), 7 implementation commits + plan file
