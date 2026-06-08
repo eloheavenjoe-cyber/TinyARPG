@@ -7,12 +7,15 @@ const PAD = 6;
 export class Minimap {
   container: Container;
   private gfx: Graphics;
+  private staticGfx: Graphics;
   private bgGfx: Graphics;
   private borderGfx: Graphics;
   private vignette: Graphics;
   private targetAlpha = 1;
   private currentAlpha = 1;
   private pulseTimer = 0;
+  /* PERF: track wall count to only redraw static layer on room change */
+  private lastWallCount = -1;
 
   constructor() {
     this.container = new Container();
@@ -28,7 +31,11 @@ export class Minimap {
     this.bgGfx.endFill();
     this.container.addChild(this.bgGfx);
 
-    // Map content layer
+    // Static map layer (walls — only redrawn on room change)
+    this.staticGfx = new Graphics();
+    this.container.addChild(this.staticGfx);
+
+    // Dynamic map layer (player, enemies, chests, breakables)
     this.gfx = new Graphics();
     this.container.addChild(this.gfx);
 
@@ -101,6 +108,10 @@ export class Minimap {
 
   update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[]) {
     this.currentAlpha += (this.targetAlpha - this.currentAlpha) * 0.1;
+    /* PERF: snap alpha when converged to skip redundant assignment */
+    if (Math.abs(this.currentAlpha - this.targetAlpha) < 0.005) {
+      this.currentAlpha = this.targetAlpha;
+    }
     this.container.alpha = this.currentAlpha;
 
     this.pulseTimer += 0.05;
@@ -111,12 +122,17 @@ export class Minimap {
     const sx = MINIMAP_W / ROOM_WIDTH;
     const sy = MINIMAP_H / ROOM_HEIGHT;
 
-    // Draw walls
-    g.beginFill(0x2a2a44, 0.65);
-    for (const wall of walls) {
-      g.drawRect(wall.x * sx, wall.y * sy, wall.width * sx, wall.height * sy);
+    /* PERF: only redraw static walls when room changes (wall count changes) */
+    if (walls.length !== this.lastWallCount) {
+      this.lastWallCount = walls.length;
+      const sg = this.staticGfx;
+      sg.clear();
+      sg.beginFill(0x2a2a44, 0.65);
+      for (const wall of walls) {
+        sg.drawRect(wall.x * sx, wall.y * sy, wall.width * sx, wall.height * sy);
+      }
+      sg.endFill();
     }
-    g.endFill();
 
     // Draw chests
     g.beginFill(0xc8963e, 0.75);

@@ -11,6 +11,8 @@ export class CharacterScreen {
   private readonly PANEL_H = 650;
   private readonly SCREEN_W: number;
   private readonly SCREEN_H: number;
+  /* PERF: dirty-flag skips full rebuild when displayed values haven't changed */
+  private lastSnapshot = '';
 
   constructor(screenW: number, screenH: number, player: Player) {
     this.player = player;
@@ -293,6 +295,16 @@ export class CharacterScreen {
   }
 
   update() {
+    /* PERF: only rebuild when displayed values actually change */
+    const s = this.player.computedStats;
+    let skillSnap = '';
+    for (let i = 0; i < 6; i++) {
+      const sk = this.player.skills.getSkill(i);
+      skillSnap += sk ? `${sk.id},` : 'empty,';
+    }
+    const snap = `${this.player.attrs.str},${this.player.attrs.dex},${this.player.attrs.int},${this.player.unspentAttrPoints}|${s.meleeDmgMult},${s.projectileDmgMult},${s.attackSpeedMult},${s.maxHp},${s.maxMana},${s.damageReduction},${s.dodgePct},${s.moveSpeedMult},${s.cooldownReductionPct}|${skillSnap}`;
+    if (snap === this.lastSnapshot) return;
+    this.lastSnapshot = snap;
     this.rebuild();
   }
 

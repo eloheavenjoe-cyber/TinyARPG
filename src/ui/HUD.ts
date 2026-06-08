@@ -53,6 +53,27 @@ export class HUD {
 
   private pulseTimer = 0;
 
+  /* PERF: cached DOM reference — never query inside game loop */
+  private vignetteEl: HTMLElement | null = null;
+  /* PERF: dirty flags prevent redundant gradient redraws */
+  private lastDrawnHpPct = -1;
+  private lastDrawnMpPct = -1;
+  /* PERF: dirty flags prevent redundant text assignments */
+  private lastHpText = '';
+  private lastMpText = '';
+  private lastGoldText = '';
+  private lastLevelText = '';
+  private lastPassiveVis = false;
+  private lastSubVis = false;
+  private lastPassiveText = '';
+  private lastSubText = '';
+  private lastXpPct = -1;
+  private lastXpLabel = '';
+  private lastVignetteOpacity = -1;
+  /* PERF: pre-allocated buff text objects to avoid destroy/create per frame */
+  private buffTexts: Text[] = [];
+  private readonly MAX_BUFFS = 4;
+
   onPassiveClick?: () => void;
   onSubTreeClick?: () => void;
 
@@ -241,6 +262,9 @@ export class HUD {
       this.zoneText,
       this.pContainer, this.kContainer,
     );
+
+    /* PERF: cache DOM reference once instead of getElementById every frame */
+    this.vignetteEl = document.getElementById('low-hp-vignette');
   }
 
   private drawChamferedRect(g: Graphics, x: number, y: number, w: number, h: number, c: number) {
@@ -344,17 +368,23 @@ export class HUD {
     const hpTarget = player.maxHealth > 0 ? player.health / player.maxHealth : 1;
     if (hpTarget >= 0) {
       this.hpDisplayed += (hpTarget - this.hpDisplayed) * Math.min(1, 0.15 * dt);
+      /* PERF: snap to target when lerp converges to prevent perpetual micro-delta */
+      if (Math.abs(this.hpDisplayed - hpTarget) < 0.001) this.hpDisplayed = hpTarget;
     }
     const hpPct = Math.max(0, Math.min(1, this.hpDisplayed));
-    this.hpFill.clear();
-    this.hpFill.beginFill(0xcc2200);
-    this.drawGradientBar(this.hpFill, 0, 0, (this.BAR_W - 4) * hpPct, barH - 4, [
-      { pos: 0, color: 0x6b0000 },
-      { pos: 0.4, color: 0x992200 },
-      { pos: 0.7, color: 0xbb3300 },
-      { pos: 1, color: 0xcc2200 },
-    ]);
-    this.hpFill.endFill();
+
+    /* PERF: only redraw HP gradient when visible pct changes by >0.5% */
+    const hpDrawPct = Math.round(hpPct * 200) / 200;
+    if (Math.abs(hpDrawPct - this.lastDrawnHpPct) > 0.005 || this.lastDrawnHpPct < 0) {
+      this.lastDrawnHpPct = hpDrawPct;
+      this.hpFill.clear();
+      this.drawGradientBar(this.hpFill, 0, 0, (this.BAR_W - 4) * hpPct, barH - 4, [
+        { pos: 0, color: 0x6b0000 },
+        { pos: 0.4, color: 0x992200 },
+        { pos: 0.7, color: 0xbb3300 },
+        { pos: 1, color: 0xcc2200 },
+      ]);
+    }
 
     // Low-health pulse on fill
     let pulseAlpha = 1;
@@ -378,25 +408,39 @@ export class HUD {
       this.hpShimmer.beginFill(0xffddbb, shimmerAlpha);
       this.hpShimmer.drawRect(0, 0, (this.BAR_W - 4) * hpPct, barH - 4);
       this.hpShimmer.endFill();
-    } else {
+    }
+    /* PERF: skip shimmer clear when already empty */
+    else if (this.hpShimmer.alpha > 0) {
       this.hpShimmer.clear();
     }
 
-    this.hpLabel.text = `${Math.ceil(player.health)} / ${player.maxHealth}`;
+    /* PERF: only set HP text when value changes */
+    const hpStr = `${Math.ceil(player.health)} / ${player.maxHealth}`;
+    if (hpStr !== this.lastHpText) {
+      this.lastHpText = hpStr;
+      this.hpLabel.text = hpStr;
+    }
 
     // --- MP bar ---
     const mpTarget = player.maxMana > 0 ? player.mana / player.maxMana : 1;
     if (mpTarget >= 0) {
       this.mpDisplayed += (mpTarget - this.mpDisplayed) * Math.min(1, 0.15 * dt);
+      if (Math.abs(this.mpDisplayed - mpTarget) < 0.001) this.mpDisplayed = mpTarget;
     }
     const mpPct = Math.max(0, Math.min(1, this.mpDisplayed));
-    this.mpFill.clear();
-    this.drawGradientBar(this.mpFill, 0, 0, (this.BAR_W - 4) * mpPct, mpH - 4, [
-      { pos: 0, color: 0x1a0a4e },
-      { pos: 0.3, color: 0x2a1577 },
-      { pos: 0.6, color: 0x4422aa },
-      { pos: 1, color: 0x5555bb },
-    ]);
+
+    /* PERF: only redraw MP gradient when visible pct changes by >0.5% */
+    const mpDrawPct = Math.round(mpPct * 200) / 200;
+    if (Math.abs(mpDrawPct - this.lastDrawnMpPct) > 0.005 || this.lastDrawnMpPct < 0) {
+      this.lastDrawnMpPct = mpDrawPct;
+      this.mpFill.clear();
+      this.drawGradientBar(this.mpFill, 0, 0, (this.BAR_W - 4) * mpPct, mpH - 4, [
+        { pos: 0, color: 0x1a0a4e },
+        { pos: 0.3, color: 0x2a1577 },
+        { pos: 0.6, color: 0x4422aa },
+        { pos: 1, color: 0x5555bb },
+      ]);
+    }
     this.mpFill.alpha = this.mpDisplayed > 0 ? 1 : 0;
 
     // MP shimmer on change
@@ -411,50 +455,111 @@ export class HUD {
       this.mpShimmer.beginFill(0xbbddff, shimmerAlpha);
       this.mpShimmer.drawRect(0, 0, (this.BAR_W - 4) * mpPct, mpH - 4);
       this.mpShimmer.endFill();
-    } else {
+    }
+    /* PERF: skip shimmer clear when already empty */
+    else if (this.mpShimmer.alpha > 0) {
       this.mpShimmer.clear();
     }
 
-    this.mpLabel.text = `${Math.ceil(player.mana)} / ${player.maxMana}`;
+    /* PERF: only set MP text when value changes */
+    const mpStr = `${Math.ceil(player.mana)} / ${player.maxMana}`;
+    if (mpStr !== this.lastMpText) {
+      this.lastMpText = mpStr;
+      this.mpLabel.text = mpStr;
+    }
 
     // --- Right side ---
-    this.goldText.text = `${player.gold} Gold`;
-    this.levelText.text = `Lv ${player.level}`;
-    this.pContainer.visible = player.passivePoints > 0;
-    this.kContainer.visible = player.skillSubPoints > 0;
-    this.pBadgeText.text = player.passivePoints > 0 ? `${player.passivePoints}` : '';
-    this.kBadgeText.text = player.skillSubPoints > 0 ? `${player.skillSubPoints}` : '';
+    const goldStr = `${player.gold} Gold`;
+    if (goldStr !== this.lastGoldText) {
+      this.lastGoldText = goldStr;
+      this.goldText.text = goldStr;
+    }
+    const lvlStr = `Lv ${player.level}`;
+    if (lvlStr !== this.lastLevelText) {
+      this.lastLevelText = lvlStr;
+      this.levelText.text = lvlStr;
+    }
+
+    const pVis = player.passivePoints > 0;
+    if (pVis !== this.lastPassiveVis) {
+      this.lastPassiveVis = pVis;
+      this.pContainer.visible = pVis;
+    }
+    const kVis = player.skillSubPoints > 0;
+    if (kVis !== this.lastSubVis) {
+      this.lastSubVis = kVis;
+      this.kContainer.visible = kVis;
+    }
+
+    const pTxt = player.passivePoints > 0 ? `${player.passivePoints}` : '';
+    if (pTxt !== this.lastPassiveText) {
+      this.lastPassiveText = pTxt;
+      this.pBadgeText.text = pTxt;
+    }
+    const kTxt = player.skillSubPoints > 0 ? `${player.skillSubPoints}` : '';
+    if (kTxt !== this.lastSubText) {
+      this.lastSubText = kTxt;
+      this.kBadgeText.text = kTxt;
+    }
 
     // XP bar
     const xpPct = player.xpToNext > 0 ? player.xp / player.xpToNext : 0;
-    this.xpFill.clear();
-    if (xpPct > 0) {
-      this.xpFill.beginFill(0x7bb8d4, 0.8);
-      this.xpFill.drawRoundedRect(0, 0, 158 * Math.min(1, xpPct), 6, 1);
-      this.xpFill.endFill();
+    /* PERF: only redraw XP fill when percentage changes */
+    const xpRounded = Math.round(xpPct * 100);
+    if (xpRounded !== this.lastXpPct) {
+      this.lastXpPct = xpRounded;
+      this.xpFill.clear();
+      if (xpPct > 0) {
+        this.xpFill.beginFill(0x7bb8d4, 0.8);
+        this.xpFill.drawRoundedRect(0, 0, 158 * Math.min(1, xpPct), 6, 1);
+        this.xpFill.endFill();
+      }
     }
-    this.xpLabel.text = xpPct > 0 ? `${Math.floor(xpPct * 100)}%` : '';
+    const xpLbl = xpPct > 0 ? `${Math.floor(xpPct * 100)}%` : '';
+    if (xpLbl !== this.lastXpLabel) {
+      this.lastXpLabel = xpLbl;
+      this.xpLabel.text = xpLbl;
+    }
 
     // Buff display
-    this.buffContainer.removeChildren();
-    let bx = 0;
-    const buffList = this.getActiveBuffs(player);
-    for (const buff of buffList.slice(0, 4)) {
-      const b = new Text(`◈ ${buff.name} ${buff.remaining.toFixed(1)}s`, new TextStyle({
-        fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: buff.color,
-        stroke: '#000000', strokeThickness: 2,
-      }));
-      b.x = bx;
-      b.y = 0;
-      this.buffContainer.addChild(b);
-      bx += b.width + 10;
+    /* PERF: update buff text in-place instead of destroy/create per frame */
+    const buffList = this.getActiveBuffs(player).slice(0, this.MAX_BUFFS);
+    for (let i = 0; i < this.MAX_BUFFS; i++) {
+      if (i < buffList.length) {
+        const buff = buffList[i];
+        const txt = `◈ ${buff.name} ${buff.remaining.toFixed(1)}s`;
+        if (!this.buffTexts[i]) {
+          this.buffTexts[i] = new Text('', new TextStyle({
+            fontFamily: 'MedievalSharp, serif', fontSize: 11,
+            fill: buff.color, stroke: '#000000', strokeThickness: 2,
+          }));
+          this.buffContainer.addChild(this.buffTexts[i]);
+        }
+        if (this.buffTexts[i].text !== txt || this.buffTexts[i].style.fill !== buff.color) {
+          this.buffTexts[i].text = txt;
+          (this.buffTexts[i].style as TextStyle).fill = buff.color;
+        }
+        let bx = 0;
+        for (let j = 0; j < i; j++) {
+          bx += this.buffTexts[j].width + 10;
+        }
+        this.buffTexts[i].x = bx;
+        this.buffTexts[i].y = 0;
+        this.buffTexts[i].visible = true;
+      } else if (this.buffTexts[i]) {
+        this.buffTexts[i].visible = false;
+      }
     }
 
     // Low-HP screen vignette
-    const vignette = document.getElementById('low-hp-vignette');
-    if (vignette) {
+    /* PERF: use cached DOM ref, only write opacity when value changes */
+    if (this.vignetteEl) {
       const targetOpacity = hpPct < 0.3 ? (0.3 + 0.4 * Math.sin(this.pulseTimer * 2)) : 0;
-      vignette.style.opacity = `${targetOpacity}`;
+      const rounded = Math.round(targetOpacity * 100);
+      if (rounded !== this.lastVignetteOpacity) {
+        this.lastVignetteOpacity = rounded;
+        this.vignetteEl.style.opacity = `${targetOpacity}`;
+      }
     }
   }
 

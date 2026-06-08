@@ -154,6 +154,11 @@ export class Game {
   private vendorStock: VendorStockItem[] = [];
   private stashTabs: StashTab[] = this.getDefaultStashTabs();
   private interactPrompt?: Text;
+  /* PERF: track last zone name to skip redundant text assignments */
+  private lastZoneName = '';
+  /* PERF: track last player position to skip redundant prompt position updates */
+  private lastPromptPlayerX = -9999;
+  private lastPromptPlayerY = -9999;
   private wasEKeyDown = false;
   private secretBush: SecretBush | null = null;
   private bushRevealed: boolean = false;
@@ -231,6 +236,10 @@ export class Game {
     barFill.destroy();
 
     this.app.ticker.add((dt) => this.update(dt));
+    /* PERF: pause game loop when tab is hidden to save CPU/GPU */
+    document.addEventListener('visibilitychange', () => {
+      this.app.ticker.started = !document.hidden;
+    });
     this.showMainMenu();
   }
 
@@ -1911,17 +1920,22 @@ export class Game {
     const nearVendor = this.zoneManager.zoneId === 'hub' && Math.hypot(this.player.x - 2900, this.player.y - 1380) < 150;
     if (nearVendor && !this.vendorOpen && !this.stashOpen && !this.inventoryOpen && !this.treeOpen) {
       if (!this.interactPrompt) {
-        this.interactPrompt = new Text('Press E to trade', new TextStyle({
+        this.interactPrompt = new Text('', new TextStyle({
           fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#f0c060',
           stroke: '#000', strokeThickness: 2,
         }));
         this.interactPrompt.anchor.set(0.5);
-        this.interactPrompt.x = this.player.x;
-        this.interactPrompt.y = this.player.y - 40;
         this.gameContainer!.addChild(this.interactPrompt);
       }
-      this.interactPrompt.x = this.player.x;
-      this.interactPrompt.y = this.player.y - 40;
+      this.interactPrompt.text = 'Press E to trade';
+      /* PERF: only update prompt position when player moves */
+      if (Math.abs(this.player.x - this.lastPromptPlayerX) > 2 || Math.abs(this.player.y - this.lastPromptPlayerY) > 2) {
+        this.interactPrompt.x = this.player.x;
+        this.interactPrompt.y = this.player.y - 40;
+        this.lastPromptPlayerX = this.player.x;
+        this.lastPromptPlayerY = this.player.y;
+      }
+      this.interactPrompt.visible = true;
       if (this.input.isKeyDown('KeyE') && !this.wasEKeyDown) {
         this.wasEKeyDown = true;
         this.openVendor();
@@ -1932,17 +1946,22 @@ export class Game {
     const nearStash = this.zoneManager.zoneId === 'hub' && Math.hypot(this.player.x - 3500, this.player.y - 1380) < 150;
     if (nearStash && !this.stashOpen && !this.vendorOpen && !this.inventoryOpen && !this.treeOpen) {
       if (!this.interactPrompt) {
-        this.interactPrompt = new Text('Press E to access stash', new TextStyle({
+        this.interactPrompt = new Text('', new TextStyle({
           fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#f0c060',
           stroke: '#000', strokeThickness: 2,
         }));
         this.interactPrompt.anchor.set(0.5);
-        this.interactPrompt.x = this.player.x;
-        this.interactPrompt.y = this.player.y - 40;
         this.gameContainer!.addChild(this.interactPrompt);
       }
-      this.interactPrompt.x = this.player.x;
-      this.interactPrompt.y = this.player.y - 40;
+      this.interactPrompt.text = 'Press E to access stash';
+      /* PERF: only update prompt position when player moves */
+      if (Math.abs(this.player.x - this.lastPromptPlayerX) > 2 || Math.abs(this.player.y - this.lastPromptPlayerY) > 2) {
+        this.interactPrompt.x = this.player.x;
+        this.interactPrompt.y = this.player.y - 40;
+        this.lastPromptPlayerX = this.player.x;
+        this.lastPromptPlayerY = this.player.y;
+      }
+      this.interactPrompt.visible = true;
       if (this.input.isKeyDown('KeyE') && !this.wasEKeyDown) {
         this.wasEKeyDown = true;
         this.openStash();
@@ -1951,9 +1970,7 @@ export class Game {
 
     // Hide interact prompt if not near any NPC
     if (!nearVendor && !nearStash && this.interactPrompt && !this.vendorOpen && !this.stashOpen) {
-      this.gameContainer!.removeChild(this.interactPrompt);
-      this.interactPrompt.destroy();
-      this.interactPrompt = undefined;
+      this.interactPrompt.visible = false;
     }
 
     // Update projectiles
@@ -2436,7 +2453,12 @@ export class Game {
 
     this.tryPickupItems();
     this.hud?.update(this.player, dt);
-    this.hud?.setZoneName(this.zoneManager.state?.config?.name ?? '');
+    /* PERF: only set zone name when it changes */
+    const zoneName = this.zoneManager.state?.config?.name ?? '';
+    if (zoneName !== this.lastZoneName) {
+      this.lastZoneName = zoneName;
+      this.hud?.setZoneName(zoneName);
+    }
     this.skillBar?.update(this.player.skills);
     if (!this.player.alive) this.showDeathScreen();
   }

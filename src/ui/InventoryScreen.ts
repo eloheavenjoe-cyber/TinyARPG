@@ -17,6 +17,26 @@ const COLORS = {
   textStat: '#f0c060',
 };
 
+/* PERF: cache TextStyle objects keyed by fill color to prevent 30+ allocations per frame */
+const slotStyleCache = new Map<number, TextStyle>();
+function getSlotStyle(fill: number): TextStyle {
+  let s = slotStyleCache.get(fill);
+  if (!s) {
+    s = new TextStyle({ fontFamily: 'MedievalSharp, serif', fontSize: 9, fill });
+    slotStyleCache.set(fill, s);
+  }
+  return s;
+}
+const equipSlotStyleCache = new Map<number, TextStyle>();
+function getEquipSlotStyle(fill: number): TextStyle {
+  let s = equipSlotStyleCache.get(fill);
+  if (!s) {
+    s = new TextStyle({ fontFamily: 'MedievalSharp, serif', fontSize: 8, fill });
+    equipSlotStyleCache.set(fill, s);
+  }
+  return s;
+}
+
 function getRarityColor(rarity: string): number {
   const colors: Record<string, number> = {
     normal: 0xffffff, magic: 0x4488ff, rare: 0xffcc00, unique: 0xff6600,
@@ -52,6 +72,8 @@ export class InventoryScreen {
   private onUnsocketOrb: (orbId: string, slot: Slot, socketIndex: number) => void = () => {};
   private activeSocketJewel: number | null = null;
   private draggingJewel: { gridIndex: number; icon: Sprite } | null = null;
+  /* PERF: prevent tooltip rebuild when hovering same item */
+  private lastTooltipItem: any = null;
   onSocketJewelCallback(cb: (slot: Slot, gridIndex: number) => void) { this.onSocketJewel = cb; }
   onDrillOrbCallback(cb: (slot: Slot) => void) { this.onDrillOrb = cb; }
   onUnsocketOrbCallback(cb: (orbId: string, slot: Slot, socketIndex: number) => void) { this.onUnsocketOrb = cb; }
@@ -287,6 +309,9 @@ export class InventoryScreen {
   }
 
   private showTooltip(item: GeneratedItem, x: number, y: number) {
+    /* PERF: identity guard — skip full tooltip rebuild when hovering the same item */
+    if (item === this.lastTooltipItem && this.tooltip) return;
+    this.lastTooltipItem = item;
     if (this.tooltip) this.container.removeChild(this.tooltip);
     this.tooltip = new Container();
 
@@ -440,6 +465,9 @@ export class InventoryScreen {
   }
 
   private showOrbTooltip(orb: OrbInfo) {
+    /* PERF: skip rebuild when hovering the same orb */
+    if (orb === this.lastTooltipItem && this.tooltip) return;
+    this.lastTooltipItem = orb;
     if (this.tooltip) this.container.removeChild(this.tooltip);
     const descriptions: Record<string, string> = {
       empowerment: 'Adds a random affix to a\nrare item',
@@ -567,9 +595,8 @@ export class InventoryScreen {
       slot.bg.drawRoundedRect(0, 0, 58, 58, 4);
       slot.bg.endFill();
       slot.item.text = displayName;
-      slot.item.style = new TextStyle({
-        fontFamily: 'MedievalSharp, serif', fontSize: 9, fill: displayColor,
-      });
+      /* PERF: reuse cached TextStyle instead of allocating new one per slot per frame */
+      slot.item.style = getSlotStyle(displayColor);
 
       // Set icon
       if (entry && isItemIconsLoaded()) {
@@ -600,10 +627,8 @@ export class InventoryScreen {
       esd.bg.drawRoundedRect(-esd.w / 2, -esd.h / 2, esd.w, esd.h, 4);
       esd.bg.endFill();
       esd.item.text = item ? '' : '';
-      esd.item.style = new TextStyle({
-        fontFamily: 'MedievalSharp, serif', fontSize: 8,
-        fill: COLORS.text,
-      });
+      /* PERF: reuse cached TextStyle instead of allocating new one per equip slot per frame */
+      esd.item.style = getEquipSlotStyle(COLORS.text);
       if (item && isItemIconsLoaded()) {
         const key = `${item.base.id}_${item.rarity}`;
         const tex = getItemTexture(key);

@@ -11,6 +11,9 @@ export class EscapeMenu {
   private saveToastTimer = 0;
   private toastText?: Text;
   private appearTimer = 0;
+  /* PERF: pre-created TextStyles to avoid allocation per hover event */
+  private btnNormalStyle: TextStyle;
+  private btnHoverStyle: TextStyle;
 
   constructor(screenWidth: number, screenHeight: number) {
     this.container = new Container();
@@ -23,6 +26,16 @@ export class EscapeMenu {
     this.container.addChild(overlay);
 
     this.panel = new Container();
+
+    /* PERF: pre-create button text styles to avoid allocation per hover */
+    this.btnNormalStyle = new TextStyle({
+      fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#e8dcc8',
+      stroke: '#000', strokeThickness: 1,
+    });
+    this.btnHoverStyle = new TextStyle({
+      fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#f0c060',
+      stroke: '#000', strokeThickness: 1,
+    });
 
     // Outer gold glow
     const glow = new Graphics();
@@ -88,10 +101,7 @@ export class EscapeMenu {
       btnBg.moveTo(-80 + 6, -18 + 1);
       btnBg.lineTo(80 - 6, -18 + 1);
 
-      const btnText = new Text(cfg.label, new TextStyle({
-        fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#e8dcc8',
-        stroke: '#000', strokeThickness: 1,
-      }));
+      const btnText = new Text(cfg.label, this.btnNormalStyle);
       btnText.anchor.set(0.5);
       btn.addChild(btnBg, btnText);
       btn.y = -110 + i * 55;
@@ -102,16 +112,10 @@ export class EscapeMenu {
         cb?.();
       });
       btn.on('pointerover', () => {
-        btnText.style = new TextStyle({
-          fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#f0c060',
-          stroke: '#000', strokeThickness: 1,
-        });
+        btnText.style = this.btnHoverStyle;
       });
       btn.on('pointerout', () => {
-        btnText.style = new TextStyle({
-          fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#e8dcc8',
-          stroke: '#000', strokeThickness: 1,
-        });
+        btnText.style = this.btnNormalStyle;
       });
       this.panel.addChild(btn);
     }
@@ -162,6 +166,9 @@ export class EscapeMenu {
   }
 
   update() {
+    /* PERF: skip when menu is not visible */
+    if (!this.container.visible) return;
+
     // Panel appear animation
     if (this.appearTimer < 1) {
       this.appearTimer = Math.min(1, this.appearTimer + 0.08);

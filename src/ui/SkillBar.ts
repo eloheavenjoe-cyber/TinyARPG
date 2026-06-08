@@ -101,6 +101,9 @@ export class SkillBar {
     g.closePath();
   }
 
+  private lastGlowAlphas: number[] = [-1, -1, -1, -1, -1, -1];
+  private lastSkillIds: (string | null)[] = [null, null, null, null, null, null];
+
   update(skills: SkillManager) {
     this.pulseTimer += 0.03;
 
@@ -109,30 +112,44 @@ export class SkillBar {
       const slot = this.slots[i];
 
       if (!skill) {
-        slot.name.text = '';
-        slot.fill.clear();
-        slot.cdText.text = '';
-        slot.glow.alpha = 0;
+        if (this.lastSkillIds[i] !== null) {
+          slot.name.text = '';
+          slot.fill.clear();
+          slot.cdText.text = '';
+          slot.glow.alpha = 0;
+          this.lastSkillIds[i] = null;
+        }
         continue;
       }
 
-      slot.name.text = skill.name;
-      slot.key.text = `${i + 1}`;
+      /* PERF: only set name/key when skill changes (rare), not every frame */
+      if (skill.id !== this.lastSkillIds[i]) {
+        slot.name.text = skill.name;
+        slot.key.text = `${i + 1}`;
+        this.lastSkillIds[i] = skill.id;
+      }
 
       // Pulse glow on slotted skill
       const glowAlpha = 0.2 + 0.15 * Math.sin(this.pulseTimer + i * 0.8);
       slot.glow.alpha = glowAlpha;
-      slot.glow.lineStyle(2, 0xc8963e, glowAlpha);
-      this.drawChamferedShape(slot.glow, -3, -3, SLOT_W + 6, SLOT_H + 6, CHAMFER + 2);
+      /* PERF: only redraw glow geometry when alpha changes perceptibly */
+      if (Math.abs(glowAlpha - this.lastGlowAlphas[i]) > 0.02) {
+        this.lastGlowAlphas[i] = glowAlpha;
+        slot.glow.clear();
+        slot.glow.lineStyle(2, 0xc8963e, glowAlpha);
+        this.drawChamferedShape(slot.glow, -3, -3, SLOT_W + 6, SLOT_H + 6, CHAMFER + 2);
+      }
 
       const cdRatio = skills.cooldownRatio(skill.id);
       slot.fill.clear();
-      slot.cdText.text = '';
-
+      /* PERF: only set cdText when transitioning, not every frame */
+      const wasOnCd = slot.cdText.text !== '';
       if (cdRatio > 0) {
-        const remaining = skills.cooldownRemaining(skill.id);
-        const secs = Math.ceil(remaining / 60);
-        slot.cdText.text = secs > 0 ? `${secs}` : '';
+        if (!wasOnCd) {
+          const remaining = skills.cooldownRemaining(skill.id);
+          const secs = Math.ceil(remaining / 60);
+          slot.cdText.text = secs > 0 ? `${secs}` : '';
+        }
 
         // Dark overlay sweep
         slot.fill.beginFill(0x000000, 0.55);
@@ -151,6 +168,8 @@ export class SkillBar {
           SLOT_W / 2 + Math.cos(shimmerAngle) * SLOT_H / 2,
           SLOT_H / 2 + Math.sin(shimmerAngle) * SLOT_H / 2,
         );
+      } else if (wasOnCd) {
+        slot.cdText.text = '';
       }
     }
   }
