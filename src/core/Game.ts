@@ -51,6 +51,7 @@ import { StashScreen } from '../ui/StashScreen';
 import { SoulVaultScreen } from '../ui/SoulVaultScreen';
 import { generateVendorStock, VendorStockItem, calculateSellPrice } from '../core/VendorManager';
 import { StashTab } from '../core/SaveManager';
+import { getRandomMods } from './MonsterMods';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -99,6 +100,15 @@ interface CapturedSoul {
   captureLevel: number;
 }
 
+interface UrnSpawnGroup {
+  urnId: number;
+  totalSpawned: number;
+  totalKilled: number;
+  lootDropped: boolean;
+  urnX: number;
+  urnY: number;
+}
+
 export class Game {
   private app: Application;
   private input: InputManager;
@@ -125,6 +135,9 @@ export class Game {
   private breakables: Breakable[] = [];
   private urns: CursedUrn[] = [];
   private activeUrnOrb: string | null = null;
+  private urnSpawnGroups: Map<number, UrnSpawnGroup> = new Map();
+  private urnSpawnQueue: { enemy: Enemy; urnId: number }[] = [];
+  private urnStaggerTimer: number = 0;
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
   private modGfx: Graphics[] = [];
@@ -1710,6 +1723,22 @@ export class Game {
     }
     this.frameCount++;
 
+    // Process urn enemy spawn queue (staggered)
+    if (this.urnSpawnQueue.length > 0) {
+      this.urnStaggerTimer -= dt;
+      if (this.urnStaggerTimer <= 0) {
+        const next = this.urnSpawnQueue.shift()!;
+        this.enemies.push(next.enemy);
+        this.gameContainer!.addChild(next.enemy.sprite);
+        if (next.enemy.nameplate) {
+          this.gameContainer!.addChild(next.enemy.nameplate);
+        }
+        this.urnStaggerTimer = this.urnSpawnQueue.length > 0
+          ? 0.8 / this.urnSpawnQueue.length * 60
+          : 0;
+      }
+    }
+
     // Clean up per-frame mod VFX
     for (const g of this.modGfx) {
       try { if (g.parent) this.gameContainer!.removeChild(g); } catch (_) {}
@@ -2114,6 +2143,7 @@ export class Game {
     for (const urn of this.urns) {
       if (urn.isOpen) continue;
       urn.update(dt, this.player.x, this.player.y, this.frameCount);
+      if (urn.state !== 'idle') continue;
 
       const urnDist = Math.hypot(this.player.x - urn.x, this.player.y - urn.y);
       if (urnDist < 48 && interactKey) {
@@ -2134,7 +2164,7 @@ export class Game {
             // Open VFX: dark energy burst
             this.vfxUrnOpen(urn.x, urn.y, urn.type.bgColor);
           }
-          this.spawnUrnLoot(urn.x, urn.y, urn);
+          this.spawnUrnEnemies(urn);
           this.saveGame();
         }
         this.wasEKeyDown = true;
@@ -3449,6 +3479,117 @@ export class Game {
         this.itemDrops.push(pending[i]);
         this.gameContainer!.addChild(pending[i].container);
       }
+    }
+  }
+
+  private spawnUrnEnemies(urn: CursedUrn) {
+    const zone = this.zoneManager.state?.config;
+    if (!zone) return;
+
+    const pool = zone.enemyPool;
+    if (pool.length === 0) return;
+
+    const rarity = urn.rarity;
+    let minCount: number, maxCount: number;
+    if (rarity === 'rare') { minCount = 9; maxCount = 10; }
+    else if (rarity === 'magic') { minCount = 7; maxCount = 8; }
+    else { minCount = 6; maxCount = 7; }
+
+    const totalCount = minCount + Math.floor(Math.random() * (maxCount - minCount + 1));
+    const hpMult = this.zoneManager.getHpMult(zone);
+    const dmgMult = this.zoneManager.getDmgMult(zone);
+
+    const group: UrnSpawnGroup = {
+      urnId: urn.id,
+      totalSpawned: totalCount,
+      totalKilled: 0,
+      lootDropped: false,
+      urnX: urn.x,
+      urnY: urn.y,
+    };
+    this.urnSpawnGroups.set(urn.id, group);
+
+    const innerRadius = 80;
+    const outerRadius = 200;
+    const angleStep = (Math.PI * 2) / totalCount;
+
+    for (let i = 0; i < totalCount; i++) {
+      let type: EnemyType;
+      if (rarity === 'normal') {
+        type = pool[Math.floor(Math.random() * pool.length)];
+      } else if (rarity === 'magic' && i >= totalCount - 2) {
+        type = pool[Math.floor(Math.random() * pool.length)];
+      } else if (rarity === 'rare' && i === 0) {
+        type = pool[Math.floor(Math.random() * pool.length)];
+      } else {
+        type = pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      const baseAngle = angleStep * i + (Math.random() - 0.5) * 0.3;
+      const radius = innerRadius + Math.random() * (outerRadius - innerRadius);
+      let ex = urn.x + Math.cos(baseAngle) * radius;
+      let ey = urn.y + Math.sin(baseAngle) * radius;
+
+      const enemyRect = { x: ex - 20, y: ey - 20, width: 40, height: 40 };
+
+      if (this.room?.walls) {
+        let wallBlocked = false;
+        for (const wall of this.room.walls) {
+          if (rectsOverlap(enemyRect, wall)) { wallBlocked = true; break; }
+        }
+        if (wallBlocked) {
+          let found = false;
+          for (let r = radius + 20; r <= outerRadius + 80; r += 20) {
+            ex = urn.x + Math.cos(baseAngle) * r;
+            ey = urn.y + Math.sin(baseAngle) * r;
+            enemyRect.x = ex - 20;
+            enemyRect.y = ey - 20;
+            let clear = true;
+            for (const wall of this.room.walls) {
+              if (rectsOverlap(enemyRect, wall)) { clear = false; break; }
+            }
+            if (clear) { found = true; break; }
+          }
+          if (!found) continue;
+        }
+      }
+
+      if (this.player) {
+        const playerDist = Math.hypot(this.player.x - ex, this.player.y - ey);
+        if (playerDist < 60) {
+          let found = false;
+          for (let r = Math.max(innerRadius, playerDist + 80); r <= outerRadius + 80; r += 20) {
+            const nx = urn.x + Math.cos(baseAngle) * r;
+            const ny = urn.y + Math.sin(baseAngle) * r;
+            const nd = Math.hypot(this.player.x - nx, this.player.y - ny);
+            if (nd >= 60) { ex = nx; ey = ny; found = true; break; }
+          }
+          if (!found) continue;
+        }
+      }
+
+      ex = Math.max(64, Math.min(ROOM_WIDTH - 64, ex));
+      ey = Math.max(64, Math.min(ROOM_HEIGHT - 64, ey));
+
+      const enemy = new Enemy(ex, ey, type);
+      enemy.maxHealth = Math.round(enemy.maxHealth * hpMult);
+      enemy.health = enemy.maxHealth;
+      enemy.damage = Math.round(enemy.damage * dmgMult);
+      enemy.spawnSource = 'cursed_urn';
+      enemy.urnId = urn.id;
+      enemy.dropsLoot = false;
+      enemy.xpMultiplier = 0.5;
+      enemy.alwaysAggro = true;
+      enemy.spawnAnimTimer = 0.2;
+      enemy.sprite.scale.set(0);
+
+      if (rarity === 'magic' && i >= totalCount - 2) {
+        enemy.applyRarity('magic', getRandomMods(2));
+      } else if (rarity === 'rare' && i === 0) {
+        enemy.applyRarity('rare', getRandomMods(3));
+      }
+
+      this.urnSpawnQueue.push({ enemy, urnId: urn.id });
     }
   }
 
