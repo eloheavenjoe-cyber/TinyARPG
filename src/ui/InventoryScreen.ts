@@ -60,6 +60,8 @@ export class InventoryScreen {
   private mouseX = 0;
   private mouseY = 0;
   private equipment: Record<Slot, GeneratedItem | null>;
+  private tooltipCorrStartY: number | undefined;
+  private tooltipCorrEndY: number | undefined;
   private activeOrb: string | null = null;
   private craftMessage: string | null = null;
   private craftMessageTimer = 0;
@@ -407,6 +409,39 @@ export class InventoryScreen {
       }
     }
 
+    // Corruption zone — only for warped items
+    if (item.warped) {
+      cy += 2;
+      this.tooltipCorrStartY = cy;
+      elems.push({ left: addText('Corruption', { fontSize: 10, fill: '#9966cc', fontStyle: 'italic' }) });
+      cy += 14;
+
+      if (item.warpImplicit) {
+        const left = addText(`\u2B21 ${item.warpImplicit.name}`, { fontSize: 11, fill: '#b060e0', fontStyle: 'italic' }, 6);
+        const right = addText(`+${item.warpImplicit.value}`, { fontSize: 11, fill: '#c080f0' });
+        elems.push({ left, right });
+        cy += lineH;
+      }
+
+      cy += 4;
+
+      elems.push({ left: addText('CORRUPTED', { fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#8b1a1a', fontWeight: 'bold', letterSpacing: 2 }) });
+      cy += 14;
+
+      if (item.warpOutcome) {
+        const outcomeLabels: Record<string, string> = {
+          warped_implicit: 'Warped Implicit', warp_chaos: 'Warp Chaos',
+          extra_socket: 'Extra Socket', stat_surge: 'Stat Surge',
+          rarity_shift: 'Rarity Shift', double_warp: 'Double Warp',
+          no_change: 'No Change',
+        };
+        elems.push({ left: addText(outcomeLabels[item.warpOutcome] || item.warpOutcome, { fontSize: 9, fill: '#8855aa', fontStyle: 'italic' }) });
+        cy += 12;
+      }
+
+      this.tooltipCorrEndY = cy;
+    }
+
     // Level requirement
     if (item.levelReq > 1) {
       cy += 2;
@@ -443,6 +478,27 @@ export class InventoryScreen {
     bg.drawRoundedRect(0, 0, maxW, cy, 4);
     bg.endFill();
     this.tooltip.addChild(bg);
+
+    // Purple-tinted background behind corruption zone
+    if (this.tooltipCorrStartY !== undefined && this.tooltipCorrEndY !== undefined) {
+      const corrBg = new Graphics();
+      corrBg.beginFill(0x500078, 0.15);
+      corrBg.drawRoundedRect(pad, this.tooltipCorrStartY, maxW - pad * 2, this.tooltipCorrEndY - this.tooltipCorrStartY + 4, 3);
+      corrBg.endFill();
+      this.tooltip.addChild(corrBg);
+
+      // Purple gradient divider
+      const grad = new Graphics();
+      grad.lineStyle(1, 0xb060e0, 0.6);
+      grad.moveTo(pad, this.tooltipCorrStartY);
+      grad.lineTo(maxW - pad, this.tooltipCorrStartY);
+      grad.lineStyle(1, 0xb060e0, 0.15);
+      grad.moveTo(pad, this.tooltipCorrStartY - 2);
+      grad.lineTo(maxW - pad, this.tooltipCorrStartY - 2);
+      grad.moveTo(pad, this.tooltipCorrStartY + 2);
+      grad.lineTo(maxW - pad, this.tooltipCorrStartY + 2);
+      this.tooltip.addChild(grad);
+    }
 
     // Add all text in order
     for (const e of elems) {
