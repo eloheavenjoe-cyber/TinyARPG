@@ -333,8 +333,8 @@ export class CursedUrn {
 
   update(dt: number, playerX: number, playerY: number, gameTime: number) {
     const dist = Math.hypot(playerX - this.x, playerY - this.y);
-    const inRange = dist < PANEL_SHOW_RANGE && !this.isOpen;
-    const inInteract = dist < INTERACT_RANGE && !this.isOpen;
+    const inRange = dist < PANEL_SHOW_RANGE && this.state === 'idle';
+    const inInteract = dist < INTERACT_RANGE && this.state === 'idle';
 
     const fadeSpeed = dt * 0.004;
     if (inRange) {
