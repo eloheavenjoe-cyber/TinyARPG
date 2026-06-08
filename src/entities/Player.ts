@@ -163,8 +163,6 @@ export class Player {
   private warpItemInternal(item: GeneratedItem): boolean {
     if (item.warped) return false;
     if (item.uniqueId) return false;
-    const { slot } = item.base;
-    if (slot === 'weapon' || slot === 'body') return false;
 
     item.warped = true;
     const outcome = this.rollWarpOutcome(item);

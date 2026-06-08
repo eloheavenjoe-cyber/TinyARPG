@@ -329,7 +329,7 @@ export const WARP_STONE_CONFIG = {
     double_warp: 5,
     no_change: 10,
   },
-  socketCaps: { ring: 2, amulet: 2, helmet: 4, boots: 4 },
+  socketCaps: { ring: 2, amulet: 2, helmet: 4, boots: 4, weapon: 6, body: 6 },
   statSurgeMultMin: 1.2,
   statSurgeMultMax: 1.5,
 };
@@ -370,5 +370,21 @@ export const WARP_IMPLICITS: Record<string, WarpImplicitDef[]> = {
     { name: "of the Hunt", stat: 'attackSpeedPct', min: 8, max: 15 },
     { name: "of Flames", stat: 'fireDmg', min: 5, max: 20 },
     { name: "of the Gale", stat: 'moveSpeedPct', min: 8, max: 15 },
+  ],
+  weapon: [
+    { name: "of Carnage", stat: 'meleeDmgPct', min: 15, max: 30 },
+    { name: "of the Storm", stat: 'lightningDmg', min: 8, max: 25 },
+    { name: "of the Pyre", stat: 'fireDmg', min: 8, max: 25 },
+    { name: "of Frost", stat: 'coldDmg', min: 8, max: 25 },
+    { name: "of the Reaper", stat: 'cullingStrikePct', min: 5, max: 15 },
+    { name: "of Haste", stat: 'attackSpeedPct', min: 10, max: 20 },
+  ],
+  body: [
+    { name: "of the Colossus", stat: 'hp', min: 30, max: 80 },
+    { name: "of Stone", stat: 'armor', min: 15, max: 40 },
+    { name: "of Iron Skin", stat: 'damageReduction', min: 5, max: 15 },
+    { name: "of Fortification", stat: 'fortifyOnHit', min: 10, max: 25 },
+    { name: "of Leeching", stat: 'lifeLeechPct', min: 2, max: 5 },
+    { name: "of Vitality", stat: 'hpPct', min: 5, max: 15 },
   ],
 };
