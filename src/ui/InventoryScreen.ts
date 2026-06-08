@@ -308,6 +308,7 @@ export class InventoryScreen {
   }
 
   private showTooltip(item: GeneratedItem, x: number, y: number) {
+    if (this.tooltipItemId === item.id && this.tooltip) return;
     this.tooltipItemId = item.id;
     if (this.tooltip) this.container.removeChild(this.tooltip);
     this.tooltip = new Container();
@@ -458,13 +459,12 @@ export class InventoryScreen {
     if (this.tooltip) {
       this.container.removeChild(this.tooltip);
       this.tooltip = undefined;
+      this.tooltipItemId = null;
     }
   }
 
   forceRefreshTooltip() {
-    if (this.tooltip) {
-      this.hideTooltip();
-    }
+    this.hideTooltip();
   }
 
   private showOrbTooltip(orb: OrbInfo) {
