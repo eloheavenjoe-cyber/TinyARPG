@@ -13,6 +13,7 @@ import { Logger } from '../core/Logger';
 import { Rect, resolveCollision } from '../world/Room';
 import { Enemy } from './Enemy';
 import { Projectile } from './Projectile';
+import { CurseDef, CurseInstance } from '../core/CurseMods';
 
 export interface OrbInfo {
   kind: 'orb';
@@ -72,6 +73,16 @@ export class Player {
   facingAngle = 0;
   private channeling = false;
   private channelTimer = 0;
+  activeCurses: CurseInstance[] = [];
+  curseMoveSpeedMult = 1;
+  curseManaRegenMult = 1;
+  curseDamageDealtMult = 1;
+  curseDamageTakenMult = 1;
+  curseAttackSpeedMult = 1;
+  flaskDisabled = false;
+  regenDisabled = false;
+  curseAllResistancePct = 0;
+  onCurseExpired?: (curseId: string) => void;
 
   private _computedStats = computeStats(this.passiveTree, this.attrs, 100, 50);
 
@@ -688,8 +699,8 @@ export class Player {
 
       const speedMult = this.skills.moveSpeedBonus();
       const slowMult = this.slowTimer > 0 ? 0.5 : 1;
-      this.x += dx * this.speed * speedMult * slowMult * dt;
-      this.y += dy * this.speed * slowMult * dt;
+      this.x += dx * this.speed * speedMult * slowMult * this.curseMoveSpeedMult * dt;
+      this.y += dy * this.speed * slowMult * this.curseMoveSpeedMult * dt;
 
       const bounds = this.getBounds();
       const resolved = resolveCollision(bounds, walls);
@@ -745,10 +756,13 @@ export class Player {
 
     if (this.fortifyTimer > 0) this.fortifyTimer -= dt;
 
-    const regenMult = 1 + ((this._computedStats.manaRegenPct || 0) / 100);
-    const regen = (this.baseManaRegen + this.skills.manaRegenBonus()) * regenMult;
-    this.mana = Math.min(this.maxMana, this.mana + regen * (dt / 60));
+    if (!this.regenDisabled) {
+      const regenMult = this.curseManaRegenMult * (1 + ((this._computedStats.manaRegenPct || 0) / 100));
+      const regen = (this.baseManaRegen + this.skills.manaRegenBonus()) * regenMult;
+      this.mana = Math.min(this.maxMana, this.mana + regen * (dt / 60));
+    }
 
+    this.updateCurses(dt);
     this.updateSprite();
   }
 
@@ -767,6 +781,7 @@ export class Player {
     const fortifyReduction = this.fortifyTimer > 0 ? (this._computedStats.fortifyOnHit || 0) / 100 : 0;
     const reduction = Math.min(0.5, skillReduction + treeReduction + fortifyReduction);
     let finalDmg = reduction > 0 ? Math.round(amount * (1 - reduction)) : amount;
+    finalDmg = Math.round(finalDmg * this.curseDamageTakenMult);
 
     if (this.classType === 'monk') {
       const stanceReduction = this.skills.stanceDamageReductionBonus();
@@ -840,6 +855,86 @@ export class Player {
   startChannel(skillId: string, duration: number) {
     this.channeling = true;
     this.channelTimer = duration;
+  }
+
+  applyCurses(curses: CurseDef[]) {
+    for (const def of curses) {
+      this.activeCurses.push({ def, remaining: def.duration });
+      this.applyCurseEffect(def);
+    }
+    this.recalcStats();
+  }
+
+  private applyCurseEffect(def: CurseDef) {
+    switch (def.statEffect) {
+      case 'moveSpeedPct': this.curseMoveSpeedMult = 1 + def.statValue / 100; break;
+      case 'manaRegenPct': this.curseManaRegenMult = 1 + def.statValue / 100; break;
+      case 'damageDealtMult': this.curseDamageDealtMult = 1 + def.statValue / 100; break;
+      case 'damageTakenMult': this.curseDamageTakenMult = 1 + def.statValue / 100; break;
+      case 'attackSpeedPct': this.curseAttackSpeedMult = 1 + def.statValue / 100; break;
+      case 'allResistancePct': this.curseAllResistancePct = def.statValue; break;
+      case 'bleedDps': break;
+      case 'flaskDisabled': this.flaskDisabled = true; break;
+      case 'regenDisabled': this.regenDisabled = true; break;
+      case 'soulTax': this.health = Math.max(1, this.health - Math.floor(this.health * def.statValue / 100)); break;
+      case 'shatterFlask':
+        for (let i = 0; i < this.inventory.length; i++) {
+          const s = this.inventory[i];
+          if (s && s.kind === 'orb' && (s.orbId === 'health_potion' || s.orbId === 'mana_potion')) {
+            this.inventory[i] = null;
+          }
+        }
+        break;
+      case 'marked': break;
+    }
+  }
+
+  private revertCurseEffect(def: CurseDef) {
+    switch (def.statEffect) {
+      case 'moveSpeedPct': this.curseMoveSpeedMult = 1; break;
+      case 'manaRegenPct': this.curseManaRegenMult = 1; break;
+      case 'damageDealtMult': this.curseDamageDealtMult = 1; break;
+      case 'damageTakenMult': this.curseDamageTakenMult = 1; break;
+      case 'attackSpeedPct': this.curseAttackSpeedMult = 1; break;
+      case 'allResistancePct': this.curseAllResistancePct = 0; break;
+      case 'bleedDps': break;
+      case 'flaskDisabled': this.flaskDisabled = false; break;
+      case 'regenDisabled': this.regenDisabled = false; break;
+      case 'marked': break;
+    }
+  }
+
+  updateCurses(dt: number) {
+    if (this.activeCurses.length === 0) return;
+    for (let i = this.activeCurses.length - 1; i >= 0; i--) {
+      const curse = this.activeCurses[i];
+      if (curse.remaining > 0) {
+        curse.remaining -= dt / 60;
+        if (curse.def.statEffect === 'bleedDps' && curse.remaining > 0) {
+          this.health = Math.max(0, this.health - (curse.def.statValue / 60) * dt);
+        }
+      }
+      if (curse.remaining <= 0) {
+        this.revertCurseEffect(curse.def);
+        this.onCurseExpired?.(curse.def.id);
+        this.activeCurses.splice(i, 1);
+      }
+    }
+    if (this.activeCurses.length === 0) {
+      this.curseMoveSpeedMult = 1;
+      this.curseManaRegenMult = 1;
+      this.curseDamageDealtMult = 1;
+      this.curseDamageTakenMult = 1;
+      this.curseAttackSpeedMult = 1;
+      this.flaskDisabled = false;
+      this.regenDisabled = false;
+      this.curseAllResistancePct = 0;
+    }
+    this.recalcStats();
+  }
+
+  getActiveCurses(): CurseInstance[] {
+    return this.activeCurses;
   }
 
   useMainAbility(enemies: Enemy[]): boolean {
@@ -1103,7 +1198,7 @@ export class Player {
 
     const baseDmg = 20;
     const statBonus = 1 + primaryStat * 0.01;
-    let damage = Math.round(baseDmg * mult * statBonus);
+    let damage = Math.round(baseDmg * mult * statBonus * this.curseDamageDealtMult);
 
     const coldDmg = this._computedStats.coldDmg || 0;
     const lightningDmg = this._computedStats.lightningDmg || 0;
@@ -1115,13 +1210,13 @@ export class Player {
   getAttackCooldown(): number {
     const skill = this.skills.mainAbility;
     if (!skill) return this.fallbackAttackCooldown;
-    const mult = this.skills.attackSpeedMult() * this._computedStats.attackSpeedMult;
+    const mult = this.skills.attackSpeedMult() * this._computedStats.attackSpeedMult * this.curseAttackSpeedMult;
     const cdr = (this._computedStats.cooldownReductionPct || 0) / 100;
     return Math.max(5, Math.round((skill.cooldown * (1 - cdr)) / mult));
   }
 
   getSkillCooldown(skill: SkillDef): number {
-    const mult = this.skills.attackSpeedMult() * this._computedStats.attackSpeedMult;
+    const mult = this.skills.attackSpeedMult() * this._computedStats.attackSpeedMult * this.curseAttackSpeedMult;
     const cdr = (this._computedStats.cooldownReductionPct || 0) / 100;
     return Math.max(5, Math.round((skill.cooldown * (1 - cdr)) / mult));
   }

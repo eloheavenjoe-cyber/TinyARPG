@@ -78,6 +78,8 @@ export class InventoryScreen {
   onSocketJewelCallback(cb: (slot: Slot, gridIndex: number) => void) { this.onSocketJewel = cb; }
   onDrillOrbCallback(cb: (slot: Slot) => void) { this.onDrillOrb = cb; }
   onUnsocketOrbCallback(cb: (orbId: string, slot: Slot, socketIndex: number) => void) { this.onUnsocketOrb = cb; }
+  onUrnOrbSelect?: (orbId: string | null) => void;
+
   onCraftOrbCallback(cb: (orbId: string, slot: Slot) => boolean) { this.onCraftOrb = cb; }
   onCraftOrbGridCallback(cb: (orbId: string, gridIndex: number) => boolean) { this.onCraftOrbGrid = cb; }
   onConsumePortalScrollCallback(cb: () => void) { this.onConsumePortalScroll = cb; }
@@ -821,6 +823,7 @@ export class InventoryScreen {
           this.activeOrb = this.activeOrb === entry.orbId ? null : entry.orbId;
           this.selectedIndex = this.activeOrb ? g.index : -1;
           this.activeSocketJewel = null;
+          this.onUrnOrbSelect?.(this.activeOrb);
         } else if (entry && entry.kind === 'equip' && entry.item.base.id === 'jewel') {
           this.activeSocketJewel = this.activeSocketJewel === g.index ? null : g.index;
           this.activeOrb = null;

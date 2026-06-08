@@ -106,7 +106,7 @@ export class Minimap {
     this.container.addChild(this.borderGfx);
   }
 
-  update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[]) {
+  update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[], urns?: { x: number; y: number; isOpen: boolean }[]) {
     this.currentAlpha += (this.targetAlpha - this.currentAlpha) * 0.1;
     /* PERF: snap alpha when converged to skip redundant assignment */
     if (Math.abs(this.currentAlpha - this.targetAlpha) < 0.005) {
@@ -151,6 +151,17 @@ export class Minimap {
       }
     }
     g.endFill();
+
+    // Draw cursed urns
+    if (urns) {
+      g.beginFill(0xcc44ff, 0.6);
+      for (const u of urns) {
+        if (!u.isOpen) {
+          g.drawCircle(u.x * sx, u.y * sy, 3);
+        }
+      }
+      g.endFill();
+    }
 
     // Draw enemies
     g.beginFill(0xcc2200, 0.75);

@@ -22,6 +22,9 @@ import { BiomeId } from './ZoneConfig';
 import { Chest } from '../entities/Chest';
 import { Breakable } from '../entities/Breakable';
 import { SecretBush } from '../entities/SecretBush';
+import { CursedUrn, UrnRarity } from '../entities/CursedUrn';
+import * as UrnConfig from './UrnConfig';
+import { rollCurses, CurseDef } from './CurseMods';
 import { ClassType } from './SkillDefs';
 import { PassiveTreeScreen } from '../ui/PassiveTreeScreen';
 import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
@@ -120,6 +123,8 @@ export class Game {
   private decorationSprites: Container[] = [];
   private chests: Chest[] = [];
   private breakables: Breakable[] = [];
+  private urns: CursedUrn[] = [];
+  private activeUrnOrb: string | null = null;
   private combatText: CombatTextManager = new CombatTextManager();
   private vfx: VfxEffect[] = [];
   private modGfx: Graphics[] = [];
@@ -331,6 +336,12 @@ export class Game {
     this.gameContainer.addChild(this.room.container);
     this.player = new Player(ROOM_WIDTH / 2, ROOM_HEIGHT / 2, classType);
     this.player.skills.selectMainAbility(abilityId);
+    this.player.onCurseExpired = (curseId: string) => {
+      Logger.log('combat', `Curse expired: ${curseId}`);
+      if (curseId === 'marked') {
+        for (const e of this.enemies) { e.alwaysAggro = false; }
+      }
+    };
     this.gameContainer.addChild(this.player.sprite);
     this.gameContainer.addChild(this.combatText.container);
     this.hud = new HUD();
@@ -490,6 +501,19 @@ export class Game {
     this.zoneManager.transitionTo(data.zone.currentZoneId, data.zone.currentRoomIndex);
     this.buildCurrentZoneRoom();
 
+    // Restore opened urns
+    if (data.zone.urns) {
+      for (const uData of data.zone.urns) {
+        if (uData.opened) {
+          const type = UrnConfig.URN_TYPES.find(t => t.id === uData.id) || UrnConfig.rollUrnType();
+          const preOpened = { type, rarity: uData.rarity as UrnRarity, preOpened: true, rareName: uData.rareName };
+          const urn = new CursedUrn(uData.x, uData.y, preOpened);
+          this.urns.push(urn);
+          this.gameContainer!.addChild(urn.container);
+        }
+      }
+    }
+
     Logger.log('game', `Loaded save slot ${slotIndex}: ${data.playerName} level ${data.level}`);
     this.currentSaveData = data;
     // Deserialize stash slots from serialized format to live InventorySlot
@@ -523,6 +547,7 @@ export class Game {
         currentRoomIndex: this.zoneManager.roomIndex,
         completedZoneIds: [...this.zoneManager.completedZoneIds],
         cryptJackpotClaimed: this.cryptJackpotClaimed || undefined,
+        urns: this.urns.filter(u => u.isOpen).map(u => u.serialize()),
       },
       player: {
         x: p.x, y: p.y,
@@ -996,6 +1021,7 @@ export class Game {
     for (const s of this.decorationSprites) { try { this.gameContainer.removeChild(s); } catch (_) {} try { s.destroy(); } catch (_) {} }
     for (const c of this.chests) { try { this.gameContainer.removeChild(c.container); } catch (_) {} try { c.destroy(); } catch (_) {} }
     for (const b of this.breakables) { try { this.gameContainer.removeChild(b.container); } catch (_) {} try { b.destroy(); } catch (_) {} }
+    for (const u of this.urns) { try { this.gameContainer.removeChild(u.container); } catch (_) {} try { u.destroy(); } catch (_) {} }
     for (const m of this.minions) m.destroy();
     this.enemies = [];
     this.minions = [];
@@ -1004,6 +1030,7 @@ export class Game {
     this.decorationSprites = [];
     this.chests = [];
     this.breakables = [];
+    this.urns = [];
     if (this.secretBush) {
       try { this.gameContainer.removeChild(this.secretBush.container); } catch (_) {}
       try { this.secretBush.destroy(); } catch (_) {}
@@ -1098,6 +1125,9 @@ export class Game {
       this.breakables.push(brk);
       this.gameContainer.addChild(brk.container);
     }
+
+    // Cursed urns
+    this.spawnUrns(zone, template);
 
     // Cabin walls, spawn zones, and chests
     for (const c of template.cabins) {
@@ -1420,6 +1450,57 @@ export class Game {
     }
   }
 
+  private spawnUrns(zone: { id: string; biome: any; enemyCount?: number | { min: number; max: number } }, template: { walls: { x: number; y: number; width: number; height: number }[]; spawnZones: { x: number; y: number; width: number; height: number }[]; doors: { rect: { x: number; y: number; width: number; height: number } }[]; portals: { rect: { x: number; y: number; width: number; height: number } }[] }) {
+    const count = UrnConfig.URN_SPAWN_CONFIG.minPerZone + Math.floor(Math.random() * (UrnConfig.URN_SPAWN_CONFIG.maxPerZone - UrnConfig.URN_SPAWN_CONFIG.minPerZone + 1));
+    let rareCount = 0;
+    for (let i = 0; i < count; i++) {
+      const rarity = UrnConfig.rollUrnRarity();
+      if (rarity === 'rare' && rareCount >= UrnConfig.URN_SPAWN_CONFIG.maxRarePerZone) continue;
+      if (rarity === 'rare') rareCount++;
+
+      const type = UrnConfig.rollUrnType();
+
+      // Find valid position via rejection sampling
+      const margin = 80;
+      let placed = false;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const x = 64 + Math.random() * (ROOM_WIDTH - 128);
+        const y = 64 + Math.random() * (ROOM_HEIGHT - 128);
+        const urnRect = { x: x - 30, y: y - 36, width: 60, height: 72 };
+
+        let blocked = false;
+        for (const wall of this.room?.walls ?? []) {
+          if (rectsOverlap(urnRect, wall)) { blocked = true; break; }
+        }
+        if (blocked) continue;
+        for (const door of template.doors) {
+          if (rectsOverlap(urnRect, door.rect)) { blocked = true; break; }
+        }
+        if (blocked) continue;
+        for (const portal of template.portals) {
+          if (rectsOverlap(urnRect, portal.rect)) { blocked = true; break; }
+        }
+        if (blocked) continue;
+        for (const chest of this.chests) {
+          if (rectsOverlap(urnRect, { x: chest.x - 14, y: chest.y - 10, width: 28, height: 20 })) { blocked = true; break; }
+        }
+        if (blocked) continue;
+
+        // Check if spawn was already restored from save
+        const existing = this.urns.find(u => Math.abs(u.x - x) < 10 && Math.abs(u.y - y) < 10);
+        if (existing) { blocked = true; break; }
+        if (blocked) continue;
+
+        const urn = new CursedUrn(x, y, { type, rarity });
+        this.urns.push(urn);
+        this.gameContainer!.addChild(urn.container);
+        placed = true;
+        Logger.log('system', `Cursed Urn spawned: ${type.name} (${rarity}) at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+        break;
+      }
+    }
+  }
+
   private spawnBreakableLoot(bx: number, by: number) {
     for (const drop of createRandomLoot(bx, by, 0.5)) {
       this.itemDrops.push(drop);
@@ -1681,7 +1762,7 @@ export class Game {
     }
 
     // HP regen from passive tree
-    if (this.player.health < this.player.maxHealth) {
+    if (!this.player.regenDisabled && this.player.health < this.player.maxHealth) {
       const hpRegen = this.player.computedStats.hpRegen || 0;
       if (hpRegen > 0) {
         this.player.health = Math.min(this.player.maxHealth, this.player.health + hpRegen * (dt / 60));
@@ -1853,7 +1934,7 @@ export class Game {
 
     // Update minimap
     if (this.minimap && this.room) {
-      this.minimap.update(this.player.x, this.player.y, this.room.walls, this.enemies, this.chests, this.breakables);
+      this.minimap.update(this.player.x, this.player.y, this.room.walls, this.enemies, this.chests, this.breakables, this.urns);
     }
 
     // Recall portal drawing and collision
@@ -2023,6 +2104,38 @@ export class Game {
           this.cryptJackpotClaimed = true;
         }
         this.spawnChestLoot(chest.x, chest.y);
+      }
+    }
+
+    // Cursed Urn interaction
+    for (const urn of this.urns) {
+      if (urn.isOpen) continue;
+      urn.update(dt, this.player.x, this.player.y, this.frameCount);
+
+      const urnDist = Math.hypot(this.player.x - urn.x, this.player.y - urn.y);
+      if (urnDist < 48 && interactKey) {
+        // Check if player is using an orb on the urn
+        if (this.activeUrnOrb) {
+          this.applyUrnCurrency(urn, this.activeUrnOrb);
+        } else {
+          // Open urn
+          const curses = urn.open();
+          if (curses.length > 0) {
+            this.player?.applyCurses(curses);
+            // Apply marked curse: aggro all enemies
+            if (curses.some(c => c.statEffect === 'marked')) {
+              for (const e of this.enemies) { e.alwaysAggro = true; }
+            }
+            // Soul Tax: handled in applyCurseEffect
+            // Shattered Flask: handled in applyCurseEffect
+            // Open VFX: dark energy burst
+            this.vfxUrnOpen(urn.x, urn.y, urn.type.bgColor);
+          }
+          this.spawnUrnLoot(urn.x, urn.y, urn);
+          this.saveGame();
+        }
+        this.wasEKeyDown = true;
+        break;
       }
     }
 
@@ -3255,6 +3368,191 @@ export class Game {
     }
   }
 
+  private spawnUrnLoot(x: number, y: number, urn: CursedUrn) {
+    const rarityMult = urn.rarity === 'rare' ? 3 : urn.rarity === 'magic' ? 2 : 1;
+    const iq = 1 + ((this.player?.computedStats.itemQuantityPct || 0) / 100) * rarityMult;
+    const mf = this.player?.computedStats.magicFindPct || 0;
+    const pending: ItemDrop[] = [];
+
+    switch (urn.type.id) {
+      case 'reliquary': {
+        // Weapons & Armour — equip items
+        for (let i = 0; i < 1 + rarityMult; i++) {
+          if (Math.random() < 0.6 * iq) {
+            const gen = generateItemDrop(this.player?.level, mf);
+            pending.push(createItemDrop(x, y, gen));
+          }
+        }
+        break;
+      }
+      case 'miser': {
+        // Currency & Crafting — gold + orbs
+        for (const drop of createRandomLoot(x, y, 3 * iq * rarityMult)) {
+          pending.push(drop);
+        }
+        for (let i = 0; i < rarityMult; i++) {
+          if (Math.random() < 0.5) {
+            const orb = generateOrbDrop();
+            pending.push(createOrbDrop(x, y, orb.orbId, orb.name));
+          }
+        }
+        break;
+      }
+      case 'adornments': {
+        // Rings, Amulets & Jewellery
+        const slotPool = ['ring', 'ring2', 'amulet'];
+        for (let i = 0; i < 1 + rarityMult; i++) {
+          if (Math.random() < 0.5) {
+            const gen = generateItemDrop(this.player?.level, mf);
+            gen.base = ITEM_BASES.find(b => b.id === slotPool[Math.floor(Math.random() * slotPool.length)])!;
+            pending.push(createItemDrop(x, y, gen));
+          }
+        }
+        if (Math.random() < 0.3) {
+          const jewel = generateJewel(this.player?.level);
+          pending.push(createJewelDrop(x, y, jewel));
+        }
+        break;
+      }
+      case 'alchemist': {
+        // Flasks & Consumables — potions + scrolls
+        for (const drop of createRandomLoot(x, y, 5 * iq * rarityMult)) {
+          pending.push(drop);
+        }
+        break;
+      }
+      case 'forgotten': {
+        // Mixed Rare Items — high chance of equipment
+        for (let i = 0; i < 2 + rarityMult; i++) {
+          if (Math.random() < 0.7) {
+            const gen = generateItemDrop(this.player?.level, mf);
+            gen.rarity = 'rare';
+            pending.push(createItemDrop(x, y, gen));
+          }
+        }
+        break;
+      }
+    }
+
+    // Spread drops vertically
+    const spacing = 25;
+    if (pending.length > 0) {
+      const startY = y - ((pending.length - 1) * spacing) / 2;
+      for (let i = 0; i < pending.length; i++) {
+        pending[i].y = startY + i * spacing;
+        pending[i].container.y = pending[i].y;
+        this.itemDrops.push(pending[i]);
+        this.gameContainer!.addChild(pending[i].container);
+      }
+    }
+  }
+
+  private vfxUrnOpen(x: number, y: number, color: number) {
+    // Dark energy burst
+    this.addVfx((g, t) => {
+      const r = 20 + 60 * t;
+      const alpha = Math.max(0, 1 - t * 1.2);
+      g.beginFill(color, alpha * 0.3);
+      g.drawCircle(0, 0, r);
+      g.endFill();
+      g.lineStyle(3, 0x000000, alpha * 0.5);
+      g.drawCircle(0, 0, r);
+      // Rising particles
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 + t * 3;
+        const pr = 10 + 15 * t;
+        g.beginFill(color, alpha * 0.4);
+        g.drawCircle(Math.cos(a) * pr, Math.sin(a) * pr - 30 * t, 4 * (1 - t));
+        g.endFill();
+      }
+    }, 20).position.set(x, y);
+
+    // Rarity-colored ring expansion
+    const rarityColors: Record<string, number> = { normal: 0xffffff, magic: 0x4488ff, rare: 0xffcc00 };
+    const ringColor = rarityColors[(this?.urns?.find(u => u.x === x && u.y === y)?.rarity) || 'normal'] || 0xffffff;
+    this.vfxRing(x, y, ringColor, 80);
+  }
+
+  private applyUrnCurrency(urn: CursedUrn, orbId: string) {
+    if (urn.isOpen || !this.player) return;
+
+    const rarityColors: Record<string, number> = { normal: 0xffffff, magic: 0x4488ff, rare: 0xffcc00 };
+    let success = false;
+    let newRarity: UrnRarity = urn.rarity;
+    let newCurses: CurseDef[] | null = null;
+
+    switch (orbId) {
+      case 'mutation': {
+        if (urn.rarity === 'normal') {
+          newRarity = 'magic';
+          const extra = rollCurses(1, 1, 2);
+          newCurses = [...urn.curses, ...extra];
+          success = true;
+        }
+        break;
+      }
+      case 'ascendance': {
+        if (urn.rarity === 'normal') {
+          newRarity = 'rare';
+          const extra = rollCurses(3 + Math.floor(Math.random() * 2), 1, 3, true);
+          newCurses = extra;
+          success = true;
+        }
+        break;
+      }
+      case 'growth': {
+        if (urn.rarity === 'magic') {
+          newCurses = rollCurses(2, 1, 3);
+          success = true;
+        }
+        break;
+      }
+      case 'empowerment': {
+        if (urn.rarity === 'magic') {
+          newRarity = 'rare';
+          const extra = rollCurses(1, 1, 3);
+          newCurses = [...urn.curses, ...extra];
+          success = true;
+        }
+        break;
+      }
+    }
+
+    if (!success) return;
+
+    // Consume the orb from inventory
+    const orbIdx = this.player.inventory.findIndex(
+      s => s !== null && s.kind === 'orb' && s.orbId === orbId
+    );
+    if (orbIdx < 0) return;
+    const orbSlot = this.player.inventory[orbIdx] as any;
+    orbSlot.count--;
+    if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
+
+    // Apply the upgrade to the urn
+    urn.rarity = newRarity;
+    if (newCurses) urn.curses = newCurses;
+    if (newRarity === 'rare') {
+      const prefixes = ['Virulent', 'Wretched', 'Cursed', 'Blighted', 'Sanguine', 'Foul', 'Unholy', 'Dark', 'Twisted', 'Corrupted'];
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      urn.rareName = `${prefix} ${urn.type.name}`;
+    }
+    // Rebuild visuals to reflect new rarity
+    urn['buildVisuals']();
+
+    this.activeUrnOrb = null;
+    Logger.log('combat', `Urn upgraded with ${orbId}: ${urn.type.name} (${newRarity})`);
+
+    // Flash effect
+    const flashColor = rarityColors[newRarity] || 0xffffff;
+    this.addVfx((g, t) => {
+      const alpha = Math.max(0, 1 - t * 3);
+      g.beginFill(flashColor, alpha * 0.4);
+      g.drawCircle(0, 0, 40);
+      g.endFill();
+    }, 10).position.set(urn.x, urn.y);
+  }
+
   private tryPickupItems() {
     if (!this.player) return;
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
@@ -3511,6 +3809,9 @@ export class Game {
           this.inventoryScreen?.forceRefreshTooltip();
         }
       });
+      this.inventoryScreen.onUrnOrbSelect = (orbId: string | null) => {
+        this.activeUrnOrb = orbId;
+      };
       this.inventoryScreen.onConsumePortalScrollCallback(() => {
         if (!this.player || !this.gameContainer) return;
         const idx = this.player.inventory.findIndex(
@@ -3860,6 +4161,8 @@ export class Game {
     this.chillZones = [];
     this.chests = [];
     this.breakables = [];
+    this.urns = [];
+    this.activeUrnOrb = null;
     this.decorationSprites = [];
     this.waveCooldown = 0;
     this.zoneManager = new ZoneManager();

@@ -1,5 +1,6 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Player } from '../entities/Player';
+import { CurseInstance } from '../core/CurseMods';
 import { Logger } from '../core/Logger';
 
 const SCREEN_W = 1920;
@@ -39,6 +40,9 @@ export class HUD {
   private xpLabel: Text;
   private zoneText: Text;
   private buffContainer: Container = new Container();
+  private curseContainer: Container = new Container();
+  private curseTexts: Text[] = [];
+  private readonly MAX_CURSES = 6;
   private pContainer: Container;
   private pBadgeText: Text;
   private kContainer: Container;
@@ -217,6 +221,9 @@ export class HUD {
     this.buffContainer.x = rightX;
     this.buffContainer.y = xpY + 14;
 
+    this.curseContainer.x = 18;
+    this.curseContainer.y = panelY + 8;
+
     // Gold ruled line between left and right sections
     this.lineDecor = new Graphics();
     this.lineDecor.lineStyle(1, 0xc8963e, 0.15);
@@ -259,6 +266,7 @@ export class HUD {
       this.goldText, this.levelText,
       this.xpBg, this.xpFill, this.xpLabel,
       this.buffContainer,
+      this.curseContainer,
       this.zoneText,
       this.pContainer, this.kContainer,
     );
@@ -548,6 +556,48 @@ export class HUD {
         this.buffTexts[i].visible = true;
       } else if (this.buffTexts[i]) {
         this.buffTexts[i].visible = false;
+      }
+    }
+
+    // Curse display
+    const curses = player.getActiveCurses();
+    const curseCount = Math.min(curses.length, this.MAX_CURSES);
+    for (let i = 0; i < this.MAX_CURSES; i++) {
+      if (i < curseCount) {
+        const curse = curses[i];
+        const remaining = Math.ceil(curse.remaining);
+        const txt = `◈ ${curse.def.name} ${remaining}s`;
+        if (!this.curseTexts[i]) {
+          this.curseTexts[i] = new Text('', new TextStyle({
+            fontFamily: 'MedievalSharp, serif', fontSize: 9,
+            fill: curse.def.tier === 3 ? '#cc2200' : '#8b1a1a',
+            stroke: '#000000', strokeThickness: 1,
+          }));
+          this.curseContainer.addChild(this.curseTexts[i]);
+        }
+        if (this.curseTexts[i].text !== txt) {
+          this.curseTexts[i].text = txt;
+        }
+        const curseColor = curse.def.tier === 3 ? '#cc2200' : '#8b1a1a';
+        if (this.curseTexts[i].style.fill !== curseColor) {
+          (this.curseTexts[i].style as TextStyle).fill = curseColor;
+        }
+        // Tier 3 pulse
+        if (curse.def.tier === 3) {
+          const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.005);
+          this.curseTexts[i].alpha = pulse;
+        } else {
+          this.curseTexts[i].alpha = 1;
+        }
+        let cx = 0;
+        for (let j = 0; j < i; j++) {
+          cx += this.curseTexts[j].width + 8;
+        }
+        this.curseTexts[i].x = cx;
+        this.curseTexts[i].y = 0;
+        this.curseTexts[i].visible = true;
+      } else if (this.curseTexts[i]) {
+        this.curseTexts[i].visible = false;
       }
     }
 

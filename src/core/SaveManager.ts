@@ -44,6 +44,16 @@ export interface SerializedStashTab {
   slots: (SerializedInventorySlot | null)[];
 }
 
+export interface SerializedUrn {
+  id: string;
+  x: number;
+  y: number;
+  rarity: 'normal' | 'magic' | 'rare';
+  curseIds: string[];
+  opened: boolean;
+  rareName?: string;
+}
+
 export interface CapturedSoul {
   enemyType: string;
   name: string;
@@ -64,6 +74,7 @@ export interface SaveData {
     currentRoomIndex: number;
     completedZoneIds: string[];
     cryptJackpotClaimed?: boolean;
+    urns?: SerializedUrn[];
   };
   player: {
     x: number;
