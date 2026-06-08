@@ -177,7 +177,7 @@ export class Game {
 
   async start() {
     const loadingText = new Text('Loading...', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 28, fill: '#aaaacc',
+      fontFamily: 'Cinzel, serif', fontSize: 28, fill: '#c8963e',
     }));
     loadingText.anchor.set(0.5);
     loadingText.x = SCREEN_WIDTH / 2;
@@ -1912,7 +1912,7 @@ export class Game {
     if (nearVendor && !this.vendorOpen && !this.stashOpen && !this.inventoryOpen && !this.treeOpen) {
       if (!this.interactPrompt) {
         this.interactPrompt = new Text('Press E to trade', new TextStyle({
-          fontFamily: 'monospace', fontSize: 14, fill: '#ffff88',
+          fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#f0c060',
           stroke: '#000', strokeThickness: 2,
         }));
         this.interactPrompt.anchor.set(0.5);
@@ -1933,7 +1933,7 @@ export class Game {
     if (nearStash && !this.stashOpen && !this.vendorOpen && !this.inventoryOpen && !this.treeOpen) {
       if (!this.interactPrompt) {
         this.interactPrompt = new Text('Press E to access stash', new TextStyle({
-          fontFamily: 'monospace', fontSize: 14, fill: '#ffff88',
+          fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#f0c060',
           stroke: '#000', strokeThickness: 2,
         }));
         this.interactPrompt.anchor.set(0.5);

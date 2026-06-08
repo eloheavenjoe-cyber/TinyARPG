@@ -25,7 +25,7 @@ export class AbilitySelect {
 
     if (classType === 'monk') {
       const title = new Text('Monk — All Techniques Available', new TextStyle({
-        fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
+        fontFamily: 'Cinzel, serif', fontSize: 36, fill: '#f0c060',
         stroke: '#000', strokeThickness: 3, letterSpacing: 3,
       }));
       title.anchor.set(0.5);
@@ -46,7 +46,7 @@ export class AbilitySelect {
       const lineGap = 40;
       for (let i = 0; i < infoLines.length; i++) {
         const line = new Text(infoLines[i], new TextStyle({
-          fontFamily: 'monospace', fontSize: 18, fill: '#888899',
+          fontFamily: 'MedievalSharp, serif', fontSize: 18, fill: '#6b4c1e',
         }));
         line.anchor.set(0.5);
         line.x = screenWidth / 2;
@@ -66,7 +66,7 @@ export class AbilitySelect {
       btn.y = btnY;
 
       const btnLabel = new Text('Begin Journey', new TextStyle({
-        fontFamily: 'Georgia, serif', fontSize: 22, fill: '#c0a060',
+        fontFamily: 'Cinzel, serif', fontSize: 22, fill: '#f0c060',
         stroke: '#000', strokeThickness: 1,
       }));
       btnLabel.anchor.set(0.5);
@@ -78,7 +78,7 @@ export class AbilitySelect {
     } else {
       const titleText = `${classType === 'warrior' ? 'Warrior' : 'Ranger'} - Choose Your Main Ability`;
       const title = new Text(titleText, new TextStyle({
-        fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
+        fontFamily: 'Cinzel, serif', fontSize: 36, fill: '#f0c060',
         stroke: '#000', strokeThickness: 3, letterSpacing: 3,
       }));
       title.anchor.set(0.5);
@@ -96,28 +96,28 @@ export class AbilitySelect {
         const btnY = y;
 
         const btn = new Graphics();
-        btn.beginFill(0x1a1a2e);
+        btn.beginFill(0x0a0810);
         btn.drawRoundedRect(0, 0, 500, 80, 6);
         btn.endFill();
-        btn.lineStyle(1, 0x5a4a2a);
+        btn.lineStyle(1, 0x6b4c1e);
         btn.drawRoundedRect(0, 0, 500, 80, 6);
         btn.x = btnX;
         btn.y = btnY;
 
         const name = new Text(skill.name, new TextStyle({
-          fontFamily: 'Georgia, serif', fontSize: 22, fill: '#c0a060',
+          fontFamily: 'Cinzel, serif', fontSize: 22, fill: '#f0c060',
         }));
         name.x = btnX + 20;
         name.y = btnY + 8;
 
         const desc = new Text(skill.description, new TextStyle({
-          fontFamily: 'monospace', fontSize: 13, fill: '#888899',
+          fontFamily: 'MedievalSharp, serif', fontSize: 13, fill: '#6b4c1e',
         }));
         desc.x = btnX + 20;
         desc.y = btnY + 42;
 
         const cost = new Text(`${skill.manaCost} MP`, new TextStyle({
-          fontFamily: 'monospace', fontSize: 12, fill: '#4488ff',
+          fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#4488ff',
         }));
         cost.anchor.set(1, 0);
         cost.x = btnX + 480;

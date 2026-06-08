@@ -51,7 +51,7 @@ export class StashScreen {
     this.container.addChild(bg);
 
     const title = new Text('Stash', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 32, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 32, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3, letterSpacing: 4,
     }));
     title.anchor.set(0.5, 0);
@@ -61,7 +61,7 @@ export class StashScreen {
 
     // Column headers
     const invLabel = new Text('Inventory', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 18, fill: '#aaaacc',
+      fontFamily: 'Cinzel, serif', fontSize: 18, fill: '#aaaacc',
     }));
     invLabel.anchor.set(0.5, 0);
     invLabel.x = screenWidth * 0.2;
@@ -69,7 +69,7 @@ export class StashScreen {
     this.container.addChild(invLabel);
 
     const stashLabel = new Text('Stash', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 18, fill: '#aaaacc',
+      fontFamily: 'Cinzel, serif', fontSize: 18, fill: '#aaaacc',
     }));
     stashLabel.anchor.set(0.5, 0);
     stashLabel.x = screenWidth * 0.6;
@@ -86,7 +86,7 @@ export class StashScreen {
     this.renderInventoryGrid(screenWidth);
 
     const closeHint = new Text('Press ESC to close', new TextStyle({
-      fontFamily: 'monospace', fontSize: 12, fill: '#4a4a5a',
+      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#4a4a5a',
     }));
     closeHint.anchor.set(0.5);
     closeHint.x = screenWidth / 2;
@@ -95,7 +95,7 @@ export class StashScreen {
 
     // Message text
     this.messageText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 14, fill: '#ffcc44',
+      fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#ffcc44',
       stroke: '#000', strokeThickness: 2,
     }));
     this.messageText.anchor.set(0.5);
@@ -119,7 +119,7 @@ export class StashScreen {
       bg.lineStyle(1, i === this.activeTab ? 0x6a4a2a : 0x3a3a4a);
       bg.drawRoundedRect(0, 0, 70, 24, 4);
       const txt = new Text(this.tabs[i]?.name || `Stash ${i + 1}`, new TextStyle({
-        fontFamily: 'monospace', fontSize: 11, fill: '#c0a060',
+        fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#f0c060',
       }));
       txt.anchor.set(0.5);
       txt.x = 35;
@@ -218,14 +218,14 @@ export class StashScreen {
       bg.drawRect(0, 0, SLOT, SLOT);
       bg.endFill();
     } else if (slot.kind === 'orb') {
-      bg.beginFill(0x1a1a2e);
+      bg.beginFill(0x0a0810);
       bg.drawRect(0, 0, SLOT, SLOT);
       bg.endFill();
       bg.lineStyle(1, 0x44aacc);
       bg.drawRect(0, 0, SLOT, SLOT);
     } else {
       const rarityColors: Record<string, number> = { normal: 0x444444, magic: 0x4444cc, rare: 0xcc8844, unique: 0xcc4444 };
-      bg.beginFill(0x1a1a2e);
+      bg.beginFill(0x0a0810);
       bg.drawRect(0, 0, SLOT, SLOT);
       bg.endFill();
       bg.lineStyle(2, rarityColors[slot.item.rarity] || 0x444444);

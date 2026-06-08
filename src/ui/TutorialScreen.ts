@@ -27,7 +27,7 @@ export class TutorialScreen {
     this.bg.endFill();
 
     this.titleText = new Text('', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 22, fill: '#ffd700',
+      fontFamily: 'Cinzel, serif', fontSize: 22, fill: '#ffd700',
       stroke: '#000', strokeThickness: 2,
     }));
     this.titleText.anchor.set(0.5);
@@ -35,7 +35,7 @@ export class TutorialScreen {
     this.titleText.y = panelY + padTop;
 
     this.detailText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 14, fill: '#ccccdd',
+      fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#e8dcc8',
       stroke: '#000', strokeThickness: 1,
     }));
     this.detailText.anchor.set(0.5);

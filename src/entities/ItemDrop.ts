@@ -57,7 +57,7 @@ export class ItemDrop {
     this.container = new Container();
 
     this.text = new Text(item.name, new TextStyle({
-      fontFamily: 'monospace',
+      fontFamily: 'MedievalSharp, serif',
       fontSize: 13,
       fill: item.color,
       stroke: 0x000000,

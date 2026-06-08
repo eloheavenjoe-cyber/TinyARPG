@@ -154,7 +154,7 @@ export class ClassSelect {
     this.container.addChild(bg);
 
     const title = new Text('Choose Your Class', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 36, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3, letterSpacing: 3,
     }));
     title.anchor.set(0.5);
@@ -200,7 +200,7 @@ export class ClassSelect {
       icon.alpha = disabled ? 0.4 : 1;
 
       const name = new Text(cls.label, new TextStyle({
-        fontFamily: 'Georgia, serif', fontSize: 24, fill: disabled ? '#665544' : '#c0a060',
+        fontFamily: 'Cinzel, serif', fontSize: 24, fill: disabled ? '#665544' : '#c0a060',
         stroke: '#000', strokeThickness: 1,
       }));
       name.anchor.set(0.5, 0);
@@ -209,7 +209,7 @@ export class ClassSelect {
       name.alpha = disabled ? 0.5 : 1;
 
       const desc = new Text(cls.description, new TextStyle({
-        fontFamily: 'monospace', fontSize: 12, fill: disabled ? '#555555' : '#888899',
+        fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: disabled ? '#555555' : '#6b4c1e',
         wordWrap: true, wordWrapWidth: 260,
       }));
       desc.anchor.set(0.5, 0);

@@ -20,7 +20,7 @@ export class HubTip {
     const py = screenHeight / 2 - panelH / 2;
 
     const panel = new Graphics();
-    panel.beginFill(0x1a1a28, 0.95);
+    panel.beginFill(0x0a0810, 0.95);
     panel.drawRoundedRect(0, 0, panelW, panelH, 8);
     panel.endFill();
     panel.lineStyle(1, 0x8a7a3a, 0.6);
@@ -30,7 +30,7 @@ export class HubTip {
     this.container.addChild(panel);
 
     const title = new Text('Welcome to Town', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 20, fill: '#ddaa55',
+      fontFamily: 'Cinzel, serif', fontSize: 20, fill: '#f0c060',
       stroke: '#000', strokeThickness: 2,
     }));
     title.anchor.set(0.5);
@@ -39,7 +39,7 @@ export class HubTip {
     this.container.addChild(title);
 
     const body = new Text('Portals to new zones are to the left and right of town.', new TextStyle({
-      fontFamily: 'monospace', fontSize: 14, fill: '#ccccdd',
+      fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#e8dcc8',
       stroke: '#000', strokeThickness: 1,
     }));
     body.anchor.set(0.5);
@@ -48,7 +48,7 @@ export class HubTip {
     this.container.addChild(body);
 
     const hint = new Text('Press X to close', new TextStyle({
-      fontFamily: 'monospace', fontSize: 12, fill: '#888899',
+      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#6b4c1e',
       stroke: '#000', strokeThickness: 1,
     }));
     hint.anchor.set(0.5);

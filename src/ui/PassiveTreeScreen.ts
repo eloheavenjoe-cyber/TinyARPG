@@ -39,7 +39,7 @@ export class PassiveTreeScreen {
     this.container.addChild(bg);
 
     const header = new Text('Passive Skill Tree', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 28, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 28, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3,
     }));
     header.anchor.set(0.5, 0);
@@ -48,7 +48,7 @@ export class PassiveTreeScreen {
     this.container.addChild(header);
 
     this.pointsText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 18, fill: '#ffdd88',
+      fontFamily: 'MedievalSharp, serif', fontSize: 18, fill: '#f0c060',
       stroke: '#000', strokeThickness: 2,
     }));
     this.pointsText.x = 30;
@@ -56,7 +56,7 @@ export class PassiveTreeScreen {
     this.container.addChild(this.pointsText);
 
     const closeHint = new Text('Press P to close', new TextStyle({
-      fontFamily: 'monospace', fontSize: 12, fill: '#555566',
+      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#6b4c1e',
     }));
     closeHint.anchor.set(1, 0);
     closeHint.x = screenWidth - 20;
@@ -85,7 +85,7 @@ export class PassiveTreeScreen {
       this.container.addChild(fill);
 
       const label = new Text('', new TextStyle({
-        fontFamily: 'monospace', fontSize: 9, fill: '#aaaacc',
+        fontFamily: 'MedievalSharp, serif', fontSize: 9, fill: '#aaaacc',
         align: 'center',
       }));
       label.anchor.set(0.5);
@@ -97,7 +97,7 @@ export class PassiveTreeScreen {
     }
 
     this.infoText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 13, fill: '#ccccdd',
+      fontFamily: 'MedievalSharp, serif', fontSize: 13, fill: '#e8dcc8',
       wordWrap: true, wordWrapWidth: 300,
     }));
     this.infoText.x = screenWidth - 340;
@@ -117,7 +117,7 @@ export class PassiveTreeScreen {
     const btnW = 160;
 
     const panelBg = new Graphics();
-    panelBg.beginFill(0x0c0c1a, 0.9);
+    panelBg.beginFill(0x0a0810, 0.9);
     panelBg.drawRoundedRect(20, attrPanelY - 10, screenWidth - 40, attrPanelH + 20, 6);
     panelBg.endFill();
     this.container.addChild(panelBg);
@@ -138,7 +138,7 @@ export class PassiveTreeScreen {
       this.attrBtns.push({ bg: btn, stat });
 
       const labelTxt = new Text(`${label}: ${this.attrs[stat]}`, new TextStyle({
-        fontFamily: 'monospace', fontSize: 18, fill: color,
+        fontFamily: 'MedievalSharp, serif', fontSize: 18, fill: color,
         stroke: '#000', strokeThickness: 2,
       }));
       labelTxt.x = bx + 10;
@@ -147,7 +147,7 @@ export class PassiveTreeScreen {
       this.attrTexts[stat] = labelTxt;
 
       const hint = new Text('+', new TextStyle({
-        fontFamily: 'monospace', fontSize: 22, fill: '#ffffff',
+        fontFamily: 'MedievalSharp, serif', fontSize: 22, fill: '#e8dcc8',
         stroke: '#000', strokeThickness: 2,
       }));
       hint.x = bx + btnW - 28;
@@ -161,7 +161,7 @@ export class PassiveTreeScreen {
 
   private makeAttrText(label: string, value: number, color: number, x: number, y: number): Text {
     return new Text(`${label}: ${value}`, new TextStyle({
-      fontFamily: 'monospace', fontSize: 16, fill: color, stroke: '#000', strokeThickness: 2,
+      fontFamily: 'MedievalSharp, serif', fontSize: 16, fill: color, stroke: '#000', strokeThickness: 2,
     }));
   }
 

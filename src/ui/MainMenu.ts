@@ -46,9 +46,9 @@ export class MainMenu {
     this.container.addChild(accent);
 
     const title = new Text('TinyARPG', new TextStyle({
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'Cinzel, serif',
       fontSize: 80,
-      fill: ['#d4b87a', '#8a6a30'],
+      fill: ['#f0c060', '#8a6a30'],
       stroke: '#000',
       strokeThickness: 6,
       letterSpacing: 10,
@@ -59,9 +59,9 @@ export class MainMenu {
     this.container.addChild(title);
 
     const subtitle = new Text('A Tiny Action RPG', new TextStyle({
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'MedievalSharp, serif',
       fontSize: 18,
-      fill: '#a0a0b0',
+      fill: '#c8b89a',
       stroke: '#000',
       strokeThickness: 3,
       letterSpacing: 6,
@@ -78,29 +78,43 @@ export class MainMenu {
     Logger.log('ui', 'Main menu created');
   }
 
+  private drawChamferedRect(g: Graphics, x: number, y: number, w: number, h: number, c: number) {
+    if (c <= 0) { g.drawRect(x, y, w, h); return; }
+    g.moveTo(x + c, y);
+    g.lineTo(x + w - c, y);
+    g.lineTo(x + w, y + c);
+    g.lineTo(x + w, y + h - c);
+    g.lineTo(x + w - c, y + h);
+    g.lineTo(x + c, y + h);
+    g.lineTo(x, y + h - c);
+    g.lineTo(x, y + c);
+    g.closePath();
+  }
+
   private createButton(x: number, y: number, label: string, cb: Callback): Container {
     const btn = new Container();
 
     const btnBg = new Graphics();
-    btnBg.beginFill(0x1a1a2a, 0.7);
-    btnBg.drawRoundedRect(-110, -22, 220, 44, 6);
+    btnBg.beginFill(0x0a0805, 0.8);
+    this.drawChamferedRect(btnBg, -110, -22, 220, 44, 6);
     btnBg.endFill();
-
-    const btnBorder = new Graphics();
-    btnBorder.lineStyle(1, 0x8a7a5a, 0.6);
-    btnBorder.drawRoundedRect(-110, -22, 220, 44, 6);
+    btnBg.lineStyle(1, 0x6b4c1e, 0.6);
+    this.drawChamferedRect(btnBg, -110, -22, 220, 44, 6);
+    btnBg.lineStyle(1, 0xc8963e, 0.2);
+    btnBg.moveTo(-110 + 8, -22 + 1);
+    btnBg.lineTo(110 - 8, -22 + 1);
 
     const btnText = new Text(label, new TextStyle({
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'Cinzel, serif',
       fontSize: 18,
-      fill: '#d4b87a',
+      fill: '#e8dcc8',
       stroke: '#000',
       strokeThickness: 2,
       letterSpacing: 3,
     }));
     btnText.anchor.set(0.5);
 
-    btn.addChild(btnBg, btnBorder, btnText);
+    btn.addChild(btnBg, btnText);
     btn.x = x;
     btn.y = y;
     btn.eventMode = 'static';
@@ -108,6 +122,18 @@ export class MainMenu {
     btn.on('pointerdown', () => {
       Logger.log('ui', `${label} button clicked`);
       cb();
+    });
+    btn.on('pointerover', () => {
+      btnText.style = new TextStyle({
+        fontFamily: 'Cinzel, serif', fontSize: 18, fill: '#f0c060',
+        stroke: '#000', strokeThickness: 2, letterSpacing: 3,
+      });
+    });
+    btn.on('pointerout', () => {
+      btnText.style = new TextStyle({
+        fontFamily: 'Cinzel, serif', fontSize: 18, fill: '#e8dcc8',
+        stroke: '#000', strokeThickness: 2, letterSpacing: 3,
+      });
     });
     this.container.addChild(btn);
     return btn;

@@ -28,7 +28,7 @@ export class CombatTextManager {
     const size = Math.min(22, Math.max(14, 12 + Math.floor(num / 10)));
 
     const t = new Text(`${amount}`, new TextStyle({
-      fontFamily: 'monospace',
+      fontFamily: 'Uncial Antiqua, serif',
       fontSize: size,
       fill: finalColor,
       stroke: 0x000000,

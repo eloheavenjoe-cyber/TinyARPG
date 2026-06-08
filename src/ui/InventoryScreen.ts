@@ -6,15 +6,15 @@ import { InventorySlot, OrbInfo, EquipSlot } from '../entities/Player';
 import { getItemTexture, isItemIconsLoaded } from '../rendering/ItemIcons';
 
 const COLORS = {
-  bg: 0x0c0c1a,
-  panel: 0x141428,
-  slotBg: 0x1a1a30,
-  slotBorder: 0x2a2a44,
-  slotHover: 0x3a3a55,
+  bg: 0x0a0810,
+  panel: 0x0a0810,
+  slotBg: 0x0a0805,
+  slotBorder: 0x6b4c1e,
+  slotHover: 0x1a1410,
   selected: 0x5588cc,
-  text: 0xccccdd,
-  textDim: 0x555566,
-  textStat: '#ffdd88',
+  text: 0xe8dcc8,
+  textDim: 0x6b4c1e,
+  textStat: '#f0c060',
 };
 
 function getRarityColor(rarity: string): number {
@@ -75,7 +75,7 @@ export class InventoryScreen {
     this.container.addChild(bg);
 
     const title = new Text('Inventory', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 24, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 24, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3,
     }));
     title.anchor.set(0.5, 0);
@@ -84,7 +84,7 @@ export class InventoryScreen {
     this.container.addChild(title);
 
     const hint = new Text('I: Close', new TextStyle({
-      fontFamily: 'monospace', fontSize: 12, fill: '#555566',
+      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#8a7a5a',
     }));
     hint.anchor.set(1, 0);
     hint.x = screenW - 20;
@@ -134,7 +134,7 @@ export class InventoryScreen {
         this.container.addChild(g);
 
         const txt = new Text(displayName, new TextStyle({
-          fontFamily: 'monospace', fontSize: 9, fill: displayColor,
+          fontFamily: 'MedievalSharp, serif', fontSize: 9, fill: displayColor,
         }));
         txt.anchor.set(0.5);
         txt.x = sx + slotSize / 2;
@@ -193,7 +193,7 @@ export class InventoryScreen {
       this.container.addChild(g);
 
       const labelTxt = new Text(ds.label, new TextStyle({
-        fontFamily: 'monospace', fontSize: 9, fill: COLORS.textDim,
+        fontFamily: 'Cinzel, serif', fontSize: 9, fill: COLORS.textDim,
       }));
       labelTxt.anchor.set(0.5, 0);
       labelTxt.x = sx;
@@ -201,8 +201,8 @@ export class InventoryScreen {
       this.container.addChild(labelTxt);
 
       const itemTxt = new Text('', new TextStyle({
-        fontFamily: 'monospace', fontSize: 8,
-        fill: COLORS.textDim,
+        fontFamily: 'MedievalSharp, serif', fontSize: 8,
+        fill: COLORS.text,
       }));
       itemTxt.anchor.set(0.5);
       itemTxt.x = sx;
@@ -238,7 +238,7 @@ export class InventoryScreen {
     this.container.addChild(bagBg);
 
     const bagTitle = new Text('Bag', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 16, fill: '#7a6a3a',
+      fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#7a6a3a',
     }));
     bagTitle.anchor.set(0.5, 0);
     bagTitle.x = bagPanelX + 90;
@@ -246,7 +246,7 @@ export class InventoryScreen {
     this.container.addChild(bagTitle);
 
     const bagHint = new Text('Coming soon', new TextStyle({
-      fontFamily: 'monospace', fontSize: 10, fill: COLORS.textDim,
+      fontFamily: 'MedievalSharp, serif', fontSize: 10, fill: COLORS.textDim,
     }));
     bagHint.anchor.set(0.5, 0);
     bagHint.x = bagPanelX + 90;
@@ -254,7 +254,7 @@ export class InventoryScreen {
     this.container.addChild(bagHint);
 
     this.craftMessageText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 14, fill: '#ffdd88',
+      fontFamily: 'Cinzel, serif', fontSize: 14, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3,
     }));
     this.craftMessageText.anchor.set(0.5, 0);
@@ -299,7 +299,7 @@ export class InventoryScreen {
     let cy = pad;
 
     const addText = (text: string, overrides: Partial<TextStyle>, xOff = 0): Text => {
-      const t = new Text(text, new TextStyle({ fontFamily: 'monospace', ...overrides }));
+      const t = new Text(text, new TextStyle({ fontFamily: 'MedievalSharp, serif', ...overrides }));
       t.x = pad + xOff;
       t.y = cy;
       return t;
@@ -466,7 +466,7 @@ export class InventoryScreen {
     const name = orbNames[orb.orbId] || orb.orbId;
     this.tooltip = new Container();
     const txt = new Text(`${name} (${orb.count})\n${descriptions[orb.orbId] || ''}`, new TextStyle({
-      fontFamily: 'monospace', fontSize: 11, fill: 0x44dddd, lineHeight: 16,
+      fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: 0x44dddd, lineHeight: 16,
     }));
     const pad = 8;
     const bg = new Graphics();
@@ -568,7 +568,7 @@ export class InventoryScreen {
       slot.bg.endFill();
       slot.item.text = displayName;
       slot.item.style = new TextStyle({
-        fontFamily: 'monospace', fontSize: 9, fill: displayColor,
+        fontFamily: 'MedievalSharp, serif', fontSize: 9, fill: displayColor,
       });
 
       // Set icon
@@ -601,8 +601,8 @@ export class InventoryScreen {
       esd.bg.endFill();
       esd.item.text = item ? '' : '';
       esd.item.style = new TextStyle({
-        fontFamily: 'monospace', fontSize: 8,
-        fill: COLORS.textDim,
+        fontFamily: 'MedievalSharp, serif', fontSize: 8,
+        fill: COLORS.text,
       });
       if (item && isItemIconsLoaded()) {
         const key = `${item.base.id}_${item.rarity}`;

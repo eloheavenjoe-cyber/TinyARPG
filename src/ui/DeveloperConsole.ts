@@ -25,25 +25,27 @@ export class DeveloperConsole {
     this.container.id = 'dev-console';
     this.container.style.cssText = `
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.75); z-index: 9999;
-      display: none; flex-direction: column; font-family: monospace;
-      pointer-events: auto;
+      background: rgba(10, 8, 5, 0.92); z-index: 9999;
+      display: none; flex-direction: column; font-family: 'MedievalSharp', monospace;
+      pointer-events: auto; backdrop-filter: blur(4px);
     `;
 
     this.output = document.createElement('div');
     this.output.style.cssText = `
       flex: 1; overflow-y: auto; padding: 10px 14px;
-      color: #ccc; font-size: 14px; line-height: 1.5;
+      color: #e8dcc8; font-size: 14px; line-height: 1.6;
       white-space: pre-wrap;
     `;
     this.container.appendChild(this.output);
 
     this.input = document.createElement('input');
     this.input.style.cssText = `
-      width: 100%; padding: 10px 14px; font-size: 15px;
-      background: #1a1a2a; color: #ffdd88; border: none;
-      border-top: 1px solid #333; outline: none; font-family: monospace;
+      width: 100%; padding: 12px 14px; font-size: 15px;
+      background: #0a0805; color: #f0c060; border: none;
+      border-top: 1px solid #6b4c1e; outline: none;
+      font-family: 'MedievalSharp', monospace;
       box-sizing: border-box;
+      caret-color: #c8963e;
     `;
     this.input.placeholder = 'Type /help for commands...';
     this.container.appendChild(this.input);
@@ -93,7 +95,7 @@ export class DeveloperConsole {
     this.visible = true;
     this.container.style.display = 'flex';
     this.input.focus();
-    this.print('[Dev Console] Type /help for commands');
+    this.print('[ Dev Console ]', '#f0c060');
   }
 
   hide() {
@@ -112,7 +114,7 @@ export class DeveloperConsole {
     const cmdName = parts[0].toLowerCase();
     const args = parts.slice(1).map(a => a.replace(/^["']|["']$/g, ''));
 
-    this.print(`> ${text}`, '#ffdd88');
+    this.print(`> ${text}`, '#f0c060');
 
     let result: string;
     const cmd = this.commands.get(cmdName);
@@ -137,11 +139,11 @@ export class DeveloperConsole {
     if (matches.length === 1) {
       this.input.value = '/' + matches[0] + ' ';
     } else if (matches.length > 1) {
-      this.print(matches.map(m => `  /${m}`).join('\n'), '#888');
+      this.print(matches.map(m => `  /${m}`).join('\n'), '#8a7a5a');
     }
   }
 
-  private print(msg: string, color = '#ccccdd') {
+  private print(msg: string, color = '#e8dcc8') {
     const line = document.createElement('div');
     line.style.color = color;
     line.textContent = msg;

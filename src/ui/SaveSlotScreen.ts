@@ -24,7 +24,7 @@ export class SaveSlotScreen {
     this.container.addChild(bg);
 
     const title = new Text(mode === 'load' ? 'Load Game' : 'Select Save Slot', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 36, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3, letterSpacing: 4,
     }));
     title.anchor.set(0.5, 0);
@@ -37,13 +37,13 @@ export class SaveSlotScreen {
     // Back button
     const backBtn = new Container();
     const backBg = new Graphics();
-    backBg.beginFill(0x2a2a3a);
+    backBg.beginFill(0x0a0805);
     backBg.drawRoundedRect(-60, -18, 120, 36, 4);
     backBg.endFill();
-    backBg.lineStyle(1, 0x5a4a2a);
+    backBg.lineStyle(1, 0x6b4c1e);
     backBg.drawRoundedRect(-60, -18, 120, 36, 4);
     const backText = new Text('Back', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 18, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 18, fill: '#f0c060',
     }));
     backText.anchor.set(0.5);
     backBtn.addChild(backBg, backText);
@@ -75,12 +75,12 @@ export class SaveSlotScreen {
       cardBg.beginFill(isOccupied ? 0x1a1a2e : 0x111122);
       cardBg.drawRoundedRect(0, 0, slotWidth, slotHeight, 6);
       cardBg.endFill();
-      cardBg.lineStyle(1, isOccupied ? 0x5a4a2a : 0x2a2a3a);
+      cardBg.lineStyle(1, isOccupied ? 0x6b4c1e : 0x2a2a3a);
       cardBg.drawRoundedRect(0, 0, slotWidth, slotHeight, 6);
       card.addChild(cardBg);
 
       const slotNum = new Text(`Slot ${i + 1}`, new TextStyle({
-        fontFamily: 'Georgia, serif', fontSize: 16, fill: isOccupied ? '#c0a060' : '#4a4a5a',
+        fontFamily: 'Cinzel, serif', fontSize: 16, fill: isOccupied ? '#c0a060' : '#4a4a5a',
       }));
       slotNum.x = 15;
       slotNum.y = 10;
@@ -88,28 +88,28 @@ export class SaveSlotScreen {
 
       if (isOccupied && meta) {
         const cls = new Text(`${meta.playerName}  (${meta.classType})`, new TextStyle({
-          fontFamily: 'Georgia, serif', fontSize: 14, fill: '#aaaacc',
+          fontFamily: 'Cinzel, serif', fontSize: 14, fill: '#aaaacc',
         }));
         cls.x = 15;
         cls.y = 35;
         card.addChild(cls);
 
         const lvl = new Text(`Level ${meta.level}`, new TextStyle({
-          fontFamily: 'monospace', fontSize: 13, fill: '#6a6a7a',
+          fontFamily: 'MedievalSharp, serif', fontSize: 13, fill: '#6a6a7a',
         }));
         lvl.x = 15;
         lvl.y = 58;
         card.addChild(lvl);
 
         const zone = new Text(meta.zoneName, new TextStyle({
-          fontFamily: 'monospace', fontSize: 12, fill: '#4a4a5a',
+          fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#4a4a5a',
         }));
         zone.x = slotWidth - 200;
         zone.y = 58;
         card.addChild(zone);
 
         const time = new Text(new Date(meta.timestamp).toLocaleString(), new TextStyle({
-          fontFamily: 'monospace', fontSize: 11, fill: '#3a3a4a',
+          fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#3a3a4a',
         }));
         time.x = 15;
         time.y = 75;
@@ -124,7 +124,7 @@ export class SaveSlotScreen {
         delBg.lineStyle(1, 0x6a2a2a);
         delBg.drawRoundedRect(-14, -14, 28, 28, 4);
         const delText = new Text('X', new TextStyle({
-          fontFamily: 'monospace', fontSize: 14, fill: '#cc6666',
+          fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#cc6666',
         }));
         delText.anchor.set(0.5);
         delBtn.addChild(delBg, delText);
@@ -145,7 +145,7 @@ export class SaveSlotScreen {
         card.on('pointerdown', () => this.onSelect?.(slotIdx));
       } else {
         const emptyText = new Text('Empty Slot', new TextStyle({
-          fontFamily: 'Georgia, serif', fontSize: 16, fill: '#3a3a4a', fontStyle: 'italic',
+          fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#3a3a4a', fontStyle: 'italic',
         }));
         emptyText.anchor.set(0.5);
         emptyText.x = slotWidth / 2;
@@ -174,14 +174,14 @@ export class SaveSlotScreen {
 
     const confirmBox = new Container();
     const box = new Graphics();
-    box.beginFill(0x1a1a2e, 0.95);
+    box.beginFill(0x0a0810, 0.95);
     box.drawRoundedRect(-160, -60, 320, 120, 6);
     box.endFill();
-    box.lineStyle(1, 0x5a4a2a);
+    box.lineStyle(1, 0x6b4c1e);
     box.drawRoundedRect(-160, -60, 320, 120, 6);
 
     const msg = new Text('Delete this save?', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 18, fill: '#cc6666',
+      fontFamily: 'Cinzel, serif', fontSize: 18, fill: '#cc6666',
     }));
     msg.anchor.set(0.5);
     msg.y = -25;
@@ -196,7 +196,7 @@ export class SaveSlotScreen {
     yesBg.lineStyle(1, 0x6a2a2a);
     yesBg.drawRoundedRect(-40, -14, 80, 28, 4);
     const yesText = new Text('Delete', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 14, fill: '#cc6666',
+      fontFamily: 'Cinzel, serif', fontSize: 14, fill: '#cc6666',
     }));
     yesText.anchor.set(0.5);
     yesBtn.addChild(yesBg, yesText);
@@ -215,13 +215,13 @@ export class SaveSlotScreen {
     // Cancel button
     const noBtn = new Container();
     const noBg = new Graphics();
-    noBg.beginFill(0x2a2a3a);
+    noBg.beginFill(0x0a0805);
     noBg.drawRoundedRect(-40, -14, 80, 28, 4);
     noBg.endFill();
-    noBg.lineStyle(1, 0x5a4a2a);
+    noBg.lineStyle(1, 0x6b4c1e);
     noBg.drawRoundedRect(-40, -14, 80, 28, 4);
     const noText = new Text('Cancel', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 14, fill: '#aaaacc',
+      fontFamily: 'Cinzel, serif', fontSize: 14, fill: '#aaaacc',
     }));
     noText.anchor.set(0.5);
     noBtn.addChild(noBg, noText);
@@ -253,7 +253,7 @@ export class SaveSlotScreen {
     this.container.addChild(bg);
 
     const title = new Text('Load Game', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 36, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 36, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3, letterSpacing: 4,
     }));
     title.anchor.set(0.5, 0);
@@ -265,13 +265,13 @@ export class SaveSlotScreen {
 
     const backBtn = new Container();
     const backBg = new Graphics();
-    backBg.beginFill(0x2a2a3a);
+    backBg.beginFill(0x0a0805);
     backBg.drawRoundedRect(-60, -18, 120, 36, 4);
     backBg.endFill();
-    backBg.lineStyle(1, 0x5a4a2a);
+    backBg.lineStyle(1, 0x6b4c1e);
     backBg.drawRoundedRect(-60, -18, 120, 36, 4);
     const backText = new Text('Back', new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 18, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 18, fill: '#f0c060',
     }));
     backText.anchor.set(0.5);
     backBtn.addChild(backBg, backText);

@@ -296,7 +296,7 @@ export class Room {
       // Label
       const labelText = door.targetZone === 'hub' ? 'Enter Town' : '\u25B6 Exit ' + door.targetZone;
       const label = new Text(labelText, new TextStyle({
-        fontFamily: 'monospace', fontSize: 14, fill: '#ffff88',
+        fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#f0c060',
       }));
       label.anchor.set(0.5, 1);
       label.x = cx;
@@ -318,7 +318,7 @@ export class Room {
       g.drawCircle(cx, cy, r * 0.6);
       this.container.addChild(g);
       // Label
-      const label = new Text(portal.label, { fontFamily: 'monospace', fontSize: 13, fill: 0xcc88ff });
+      const label = new Text(portal.label, { fontFamily: 'Cinzel, serif', fontSize: 13, fill: 0xc8963e });
       label.anchor.set(0.5, 0);
       label.x = cx;
       label.y = cy + r + 6;
@@ -338,7 +338,7 @@ export class Room {
         g.drawRect(cx - 2, cy - r - 18, 4, 4);
         g.endFill();
         const lockLabel = new Text('Locked', {
-          fontFamily: 'monospace', fontSize: 11, fill: '#666677',
+          fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#6b4c1e',
         });
         lockLabel.anchor.set(0.5);
         lockLabel.x = cx;
@@ -393,7 +393,7 @@ export class Room {
       g.endFill();
       this.container.addChild(g);
       // Label
-      const label = new Text(b.label, { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff });
+      const label = new Text(b.label, { fontFamily: 'Cinzel, serif', fontSize: 14, fill: 0xf0c060 });
       label.anchor.set(0.5, 1);
       label.x = b.x + b.width / 2;
       label.y = b.y - 44;
@@ -455,7 +455,7 @@ export class Room {
     for (const npc of this.npcs) {
       const cx = npc.x;
       const cy = npc.y;
-      const label = new Text(npc.label, { fontFamily: 'monospace', fontSize: 12, fill: 0xffff88 });
+      const label = new Text(npc.label, { fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: 0xc8963e });
       label.anchor.set(0.5, 0);
       label.x = cx;
       label.y = cy + 16;

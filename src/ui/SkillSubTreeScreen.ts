@@ -33,7 +33,7 @@ export class SkillSubTreeScreen {
     this.container.addChild(bg);
 
     this.headerText = new Text(`Skill Tree — ${tree.abilityId}`, new TextStyle({
-      fontFamily: 'Georgia, serif', fontSize: 28, fill: '#c0a060',
+      fontFamily: 'Cinzel, serif', fontSize: 28, fill: '#f0c060',
       stroke: '#000', strokeThickness: 3,
     }));
     this.headerText.anchor.set(0.5, 0);
@@ -42,7 +42,7 @@ export class SkillSubTreeScreen {
     this.container.addChild(this.headerText);
 
     this.pointsText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 18, fill: '#ffdd88',
+      fontFamily: 'MedievalSharp, serif', fontSize: 18, fill: '#f0c060',
       stroke: '#000', strokeThickness: 2,
     }));
     this.pointsText.x = 30;
@@ -50,7 +50,7 @@ export class SkillSubTreeScreen {
     this.container.addChild(this.pointsText);
 
     const closeHint = new Text('Press K to close', new TextStyle({
-      fontFamily: 'monospace', fontSize: 12, fill: '#555566',
+      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#6b4c1e',
     }));
     closeHint.anchor.set(1, 0);
     closeHint.x = screenWidth - 20;
@@ -78,7 +78,7 @@ export class SkillSubTreeScreen {
       this.container.addChild(fill);
 
       const label = new Text('', new TextStyle({
-        fontFamily: 'monospace', fontSize: 9, fill: '#aaaacc',
+        fontFamily: 'MedievalSharp, serif', fontSize: 9, fill: '#aaaacc',
         align: 'center',
       }));
       label.anchor.set(0.5);
@@ -90,7 +90,7 @@ export class SkillSubTreeScreen {
     }
 
     this.infoText = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 13, fill: '#ccccdd',
+      fontFamily: 'MedievalSharp, serif', fontSize: 13, fill: '#e8dcc8',
       wordWrap: true, wordWrapWidth: 300,
     }));
     this.infoText.x = screenWidth - 340;

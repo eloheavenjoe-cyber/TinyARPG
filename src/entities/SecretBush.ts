@@ -39,7 +39,7 @@ export class SecretBush {
     this.container.addChild(this.glowOverlay);
 
     this.interactLabel = new Text('', new TextStyle({
-      fontFamily: 'monospace', fontSize: 11, fill: '#ffff88',
+      fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#f0c060',
     }));
     this.interactLabel.anchor.set(0.5, 0);
     this.interactLabel.y = -24;

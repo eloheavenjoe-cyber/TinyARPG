@@ -466,8 +466,8 @@ export class Enemy {
 
     // Name
     const nameText = new Text(this.getDisplayName(), new TextStyle({
-      fontFamily: 'monospace', fontSize: 10, fontWeight: 'bold',
-      fill: '#ffffff',
+      fontFamily: 'MedievalSharp, serif', fontSize: 10, fontWeight: 'bold',
+      fill: '#e8dcc8',
       stroke: '#000000', strokeThickness: 2,
     }));
     nameText.anchor.set(0.5, 0);
@@ -477,7 +477,7 @@ export class Enemy {
     // Mod text — single line, colored by rarity (blue=magic, yellow=rare)
     if (mods.length > 0) {
       const modText = new Text(mods.map(m => m.name).join(' | '), new TextStyle({
-        fontFamily: 'monospace', fontSize: 9,
+        fontFamily: 'MedievalSharp, serif', fontSize: 9,
         fill: RARITY_COLORS[rarity],
         stroke: '#000000', strokeThickness: 2,
       }));
