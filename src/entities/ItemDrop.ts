@@ -1,6 +1,6 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Logger } from '../core/Logger';
-import { GeneratedItem } from '../core/ItemGenerator';
+import { GeneratedItem, generateItemName } from '../core/ItemGenerator';
 
 export interface ConsumableItem {
   type: 'gold' | 'healthPotion' | 'manaPotion' | 'portalScroll';
@@ -120,7 +120,7 @@ export function createJewelDrop(x: number, y: number, generated: GeneratedItem):
   const color = generated.affixes.length >= 4 ? 0xff8800 : (rarityColors[generated.rarity] || 0xffffff);
   return new ItemDrop(x, y, {
     type: 'jewel',
-    name: generated.computedName,
+    name: generateItemName(generated),
     color,
     generated,
   });
@@ -131,7 +131,7 @@ export function createItemDrop(x: number, y: number, generated: GeneratedItem): 
     ? ` (${generated.socketSlots.length})` : '';
   return new ItemDrop(x, y, {
     type: 'item',
-    name: `${generated.computedName}${socketSuffix}`,
+    name: `${generateItemName(generated)}${socketSuffix}`,
     color: RARITY_COLORS[generated.rarity] || 0xffffff,
     generated,
   });

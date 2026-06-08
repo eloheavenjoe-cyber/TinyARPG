@@ -1,7 +1,7 @@
 import { Container, Graphics, Text, TextStyle, Sprite } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Slot } from '../core/ItemDefs';
-import { GeneratedItem } from '../core/ItemGenerator';
+import { GeneratedItem, generateItemName } from '../core/ItemGenerator';
 import { InventorySlot, OrbInfo, EquipSlot } from '../entities/Player';
 import { getItemTexture, isItemIconsLoaded } from '../rendering/ItemIcons';
 
@@ -331,7 +331,7 @@ export class InventoryScreen {
     };
 
     // Header
-    elems.push({ left: addText(item.computedName, { fontSize: 14, fontWeight: 'bold', fill: rarityColor }) });
+    elems.push({ left: addText(generateItemName(item), { fontSize: 14, fontWeight: 'bold', fill: rarityColor }) });
     cy += 20;
 
     // Base type
@@ -375,7 +375,7 @@ export class InventoryScreen {
       for (const s of item.socketSlots) {
         if (!s.jewel) continue;
         const jewelColor = getRarityColor(s.jewel.rarity);
-        elems.push({ left: addText(s.jewel.computedName, { fontSize: 11, fill: jewelColor }, 6) });
+        elems.push({ left: addText(generateItemName(s.jewel), { fontSize: 11, fill: jewelColor }, 6) });
         cy += lineH;
         for (const a of s.jewel.affixes) {
           const left = addText(`  ◇ ${a.affix.name}`, { fontSize: 10, fill: '#8899aa' }, 6);

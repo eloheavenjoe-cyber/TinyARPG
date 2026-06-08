@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { GeneratedItem } from '../core/ItemGenerator';
+import { GeneratedItem, generateItemName } from '../core/ItemGenerator';
 import { OrbInfo } from '../entities/Player';
 
 function getRarityColor(rarity: string): number {
@@ -39,7 +39,7 @@ export function buildItemTooltip(item: GeneratedItem): Container {
   };
 
   // Item name — Cinzel bold at rarity color
-  elems.push({ left: addText(item.computedName, { fontFamily: 'Cinzel, serif', fontSize: 14, fontWeight: 'bold', fill: rarityColor }) });
+  elems.push({ left: addText(generateItemName(item), { fontFamily: 'Cinzel, serif', fontSize: 14, fontWeight: 'bold', fill: rarityColor }) });
   cy += 20;
 
   // Base type line
@@ -118,7 +118,7 @@ export function buildItemTooltip(item: GeneratedItem): Container {
         }
         const jewel = slot.jewel;
         const jColor = getRarityColor(jewel.rarity);
-        elems.push({ left: addText(`⬠ ${jewel.computedName}`, { fontSize: 10, fill: jColor, fontWeight: 'bold' }, 6) });
+        elems.push({ left: addText(`⬠ ${generateItemName(jewel)}`, { fontSize: 10, fill: jColor, fontWeight: 'bold' }, 6) });
         cy += 14;
         for (const aff of jewel.affixes) {
           const left = addText(`  ${aff.affix.name}`, { fontSize: 10, fill: '#88aacc' }, 6);

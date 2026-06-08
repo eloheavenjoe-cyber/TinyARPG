@@ -20,7 +20,7 @@ export interface SerializedItem {
   affixes: { affixId: string; roll: number }[];
   uniqueId?: string;
   damageRoll: number;
-  computedName: string;
+  customDisplayName?: string;
   ilvl: number;
   levelReq: number;
   socketSlots?: { jewel: SerializedItem | null }[];
