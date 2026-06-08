@@ -5,6 +5,10 @@ import { Sprites } from '../rendering/Sprites';
 
 export type MinionType = 'skeleton_warrior' | 'skeleton_mage' | 'spectre';
 
+const ARRIVAL_THRESHOLD = 20;
+const REENGAGE_THRESHOLD = 40;
+const GOLDEN_ANGLE = 2.39996;
+
 export class Minion {
   x: number;
   y: number;
@@ -26,6 +30,10 @@ export class Minion {
   private wobblePhase: number;
   private width = 28;
   private height = 28;
+  private static nextId = 0;
+  private readonly minionId: number;
+  private formationAngle = -1;
+  private isIdleArrived = false;
 
   constructor(x: number, y: number, type: MinionType, hp: number, dmg: number, spd: number, lifetime = -1) {
     this.x = x;
@@ -37,6 +45,7 @@ export class Minion {
     this.speed = spd;
     this.lifetime = lifetime;
     this.wobblePhase = Math.random() * Math.PI * 2;
+    this.minionId = Minion.nextId++;
 
     this.sprite = new AnimatedSprite([Sprites.summoner]);
     this.sprite.anchor.set(0.5);
@@ -93,6 +102,8 @@ export class Minion {
     }
 
     if (nearestEnemy && nearestDist <= 600) {
+      this.isIdleArrived = false;
+
       const dx = nearestEnemy.x - this.x;
       const dy = nearestEnemy.y - this.y;
       const dist = nearestDist;
@@ -137,17 +148,35 @@ export class Minion {
         }
       }
     } else {
-      const targetX = playerX;
-      const targetY = playerY + 80;
+      if (this.formationAngle < 0) {
+        this.formationAngle = (this.minionId * GOLDEN_ANGLE) % (Math.PI * 2);
+      }
+
+      const radius = this.type === 'skeleton_warrior' ? 50
+        : this.type === 'skeleton_mage' ? 90
+        : 65;
+
+      const targetX = playerX + Math.cos(this.formationAngle) * radius;
+      const targetY = playerY + Math.sin(this.formationAngle) * radius;
 
       const tdx = targetX - this.x;
       const tdy = targetY - this.y;
       const tDist = Math.sqrt(tdx * tdx + tdy * tdy);
 
-      if (tDist > 10) {
-        const moveX = (tdx / tDist) * this.speed * dt;
-        const moveY = (tdy / tDist) * this.speed * dt;
-        this.applyMovement(moveX, moveY, dt);
+      if (this.isIdleArrived) {
+        if (tDist > REENGAGE_THRESHOLD) {
+          this.isIdleArrived = false;
+        }
+      }
+
+      if (!this.isIdleArrived) {
+        if (tDist > ARRIVAL_THRESHOLD) {
+          const moveX = (tdx / tDist) * this.speed * dt;
+          const moveY = (tdy / tDist) * this.speed * dt;
+          this.applyMovement(moveX, moveY, dt);
+        } else {
+          this.isIdleArrived = true;
+        }
       }
     }
 
