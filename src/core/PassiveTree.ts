@@ -9,6 +9,7 @@ export interface NodeEffects {
   damageReduction?: number; cooldownReductionPct?: number;
   skillDurationPct?: number; critChancePct?: number; critDmgPct?: number;
   manaCostReductionPct?: number; stunResist?: number;
+  minionDmgPct?: number; minionHpPct?: number;
 }
 
 export interface PassiveNode {
@@ -69,6 +70,12 @@ const TREE_DATA: PassiveNode[] = [
   { id: 'cdr_5', name: 'Temporal', description: '+4% cooldown reduction', type: 'small', x: 700, y: 275, connections: ['mana_25', 'chronomancer'], effects: { cooldownReductionPct: 4 } },
   { id: 'chronomancer', name: 'Chronomancer', description: '-10% cooldowns, +10% skill duration', type: 'notable', x: 640, y: 220, connections: ['skill_dur_2', 'cdr_5', 'archmage'], effects: { cooldownReductionPct: 10, skillDurationPct: 10 } },
   { id: 'archmage', name: 'Archmage', description: '+40% maximum mana, -20% mana cost of skills', type: 'keystone', x: 640, y: 115, connections: ['chronomancer'], effects: { manaPct: 40, manaCostReductionPct: 20 } },
+
+  // MINION BRANCH (from archmage)
+  { id: 'minion_dmg_5', name: 'Bone Lord', description: '+5% minion damage', type: 'small', x: 720, y: 150, connections: ['archmage', 'minion_dmg_10'], effects: { minionDmgPct: 5 } },
+  { id: 'minion_dmg_10', name: 'Necrotic Power', description: '+10% minion damage', type: 'small', x: 800, y: 150, connections: ['minion_dmg_5', 'minion_notable'], effects: { minionDmgPct: 10 } },
+  { id: 'minion_notable', name: 'Soul Weaver', description: '+15% minion damage, +10% minion life', type: 'notable', x: 880, y: 150, connections: ['minion_dmg_10', 'minion_hp_10'], effects: { minionDmgPct: 15, minionHpPct: 10 } },
+  { id: 'minion_hp_10', name: 'Bone Plating', description: '+10% minion life', type: 'small', x: 960, y: 150, connections: ['minion_notable'], effects: { minionHpPct: 10 } },
 ];
 
 export class PassiveTree {

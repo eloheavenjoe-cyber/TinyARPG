@@ -2,6 +2,7 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { InputManager } from '../core/InputManager';
 import { Logger } from '../core/Logger';
 import { WARRIOR_MAIN, RANGER_MAIN, MONK_MAIN, SkillDef, ClassType } from '../core/SkillDefs';
+import { SUMMONER_MAIN } from '../core/SummonerSkillDefs';
 
 type PickCallback = (id: string) => void;
 
@@ -15,7 +16,10 @@ export class AbilitySelect {
     this.classType = classType;
     this.container = new Container();
 
-    const mainSkills = classType === 'monk' ? MONK_MAIN : classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
+    const mainSkills = classType === 'monk' ? MONK_MAIN
+      : classType === 'warrior' ? WARRIOR_MAIN
+      : classType === 'ranger' ? RANGER_MAIN
+      : SUMMONER_MAIN;
 
     const bg = new Graphics();
     bg.beginFill(0x0a0a1a);

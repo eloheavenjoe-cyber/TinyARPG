@@ -258,6 +258,8 @@ export class CharacterScreen {
       if (et === 'dash') { badgeText = '[Dash]'; badgeColor = '#88aadd'; }
       else if (['buff', 'debuff', 'passive'].includes(et)) { badgeText = '[Buff]'; badgeColor = '#66cc88'; }
       else if (['projectile', 'projectile_spread', 'projectile_pierce', 'aoe_target'].includes(et)) { badgeText = '[Projectile]'; badgeColor = '#ddaa44'; }
+      else if (et === 'summon') { badgeText = '[Summon]'; badgeColor = '#8844cc'; }
+      else if (et === 'channel') { badgeText = '[Channel]'; badgeColor = '#66ccff'; }
 
       const badge = new Text(badgeText, new TextStyle({
         fontFamily: 'Cinzel, serif', fontSize: 10, fill: badgeColor,

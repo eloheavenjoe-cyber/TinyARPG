@@ -65,6 +65,7 @@ export function computeStats(
     allResistancePct: 0,
     critDmgPct: 0,
     minionDmgPct: 0,
+    minionHpPct: 0,
     onslaughtOnKillPct: 0,
     bleedChancePct: 0,
     dmgPerPassivePct: 0,
@@ -96,6 +97,7 @@ export function computeStats(
     else if (key === 'allResistancePct') base.damageReduction = Math.min(50, (base.damageReduction || 0) + val);
     else if (key === 'critDmgPct') base.critDmgPct = (base.critDmgPct || 0) + val;
     else if (key === 'minionDmgPct') base.minionDmgPct = (base.minionDmgPct || 0) + val;
+    else if (key === 'minionHpPct') base.minionHpPct = (base.minionHpPct || 0) + val;
     else if (key === 'onslaughtOnKillPct') base.onslaughtOnKillPct = (base.onslaughtOnKillPct || 0) + val;
     else if (key === 'bleedChancePct') base.bleedChancePct = Math.min(100, (base.bleedChancePct || 0) + val);
     else if (key === 'dmgPerPassivePct') base.dmgPerPassivePct = (base.dmgPerPassivePct || 0) + val;

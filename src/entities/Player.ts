@@ -4,7 +4,7 @@ import { InputManager } from '../core/InputManager';
 import { createWarriorSprite, createRangerSprite, createMonkSprite, playMonkAnimation, MonkAnimName, isMonkLoaded, playAnimation, isLoaded } from '../rendering/SpriteAnimator';
 import { SkillManager } from '../core/SkillManager';
 import { SkillDef, ClassType } from '../core/SkillDefs';
-import { SkillSubTree, RANGER_SUB_TREES } from '../core/SkillSubTree';
+import { SkillSubTree, RANGER_SUB_TREES, SUMMONER_SUB_TREES } from '../core/SkillSubTree';
 import { PassiveTree } from '../core/PassiveTree';
 import { computeStats } from '../core/StatSystem';
 import { Slot, AFFIXES } from '../core/ItemDefs';
@@ -88,7 +88,9 @@ export class Player {
       this.sprite = createMonkSprite();
       this.sprite.scale.set(1.125);
     } else {
-      const tex = classType === 'ranger' ? Sprites.ranger : Sprites.player;
+      const tex = classType === 'ranger' ? Sprites.ranger
+        : classType === 'summoner' ? Sprites.summoner
+        : Sprites.player;
       const s = new AnimatedSprite([tex]);
       s.anchor.set(0.5);
       this.sprite = s;
@@ -96,6 +98,11 @@ export class Player {
     this.skills = new SkillManager(classType);
     if (classType === 'ranger') {
       for (const [id, data] of Object.entries(RANGER_SUB_TREES)) {
+        this.skillSubTrees.set(id, new SkillSubTree(id, data));
+      }
+    }
+    if (classType === 'summoner') {
+      for (const [id, data] of Object.entries(SUMMONER_SUB_TREES)) {
         this.skillSubTrees.set(id, new SkillSubTree(id, data));
       }
     }
@@ -637,7 +644,7 @@ export class Player {
       this.level++;
       this.passivePoints++;
       this.unspentAttrPoints += 3;
-      if (this.level % 4 === 0 && this.classType === 'ranger') this.skillSubPoints++;
+      if (this.level % 4 === 0 && (this.classType === 'ranger' || this.classType === 'summoner')) this.skillSubPoints++;
       leveled = true;
       this.recalcStats();
       Logger.log('combat', `Level up! Now level ${this.level} (${this.passivePoints} passive, ${this.unspentAttrPoints} attr points)`);
@@ -1077,11 +1084,13 @@ export class Player {
     let primaryStat = 0;
     if (this.classType === 'warrior') primaryStat = this.attrs.str;
     else if (this.classType === 'ranger') primaryStat = this.attrs.dex;
-    else if (this.classType === 'monk') primaryStat = this.attrs.int;
+    else primaryStat = this.attrs.int;
 
     if (this.classType === 'warrior' || this.classType === 'monk') {
       mult *= this._computedStats.meleeDmgMult;
     } else if (this.classType === 'ranger') {
+      mult *= this._computedStats.projectileDmgMult;
+    } else {
       mult *= this._computedStats.projectileDmgMult;
     }
 

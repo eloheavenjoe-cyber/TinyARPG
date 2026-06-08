@@ -44,6 +44,15 @@ export interface SerializedStashTab {
   slots: (SerializedInventorySlot | null)[];
 }
 
+export interface CapturedSoul {
+  enemyType: string;
+  name: string;
+  baseHp: number;
+  baseDamage: number;
+  baseSpeed: number;
+  captureLevel: number;
+}
+
 export interface SaveData {
   version: number;
   timestamp: number;
@@ -78,6 +87,8 @@ export interface SaveData {
     };
     skillSubTrees?: Record<string, string[]>;
     skillSubPoints?: number;
+    soulVault?: CapturedSoul[];
+    activeSpectre?: CapturedSoul | null;
   };
   stashData?: {
     tabs: SerializedStashTab[];

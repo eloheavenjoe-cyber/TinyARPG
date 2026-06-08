@@ -1,4 +1,4 @@
-export type ClassType = 'warrior' | 'ranger' | 'monk';
+export type ClassType = 'warrior' | 'ranger' | 'monk' | 'summoner';
 
 export interface SkillDef {
   id: string;
@@ -10,7 +10,7 @@ export interface SkillDef {
   cooldown: number;
   range: number;
   damageMult: number;
-  effectType: 'cone' | 'single' | 'aoe_self' | 'dash' | 'buff' | 'debuff' | 'passive' | 'projectile' | 'projectile_spread' | 'projectile_pierce' | 'aoe_target';
+  effectType: 'cone' | 'single' | 'aoe_self' | 'dash' | 'buff' | 'debuff' | 'passive' | 'projectile' | 'projectile_spread' | 'projectile_pierce' | 'aoe_target' | 'summon' | 'channel';
   angle?: number;
   radius?: number;
   duration?: number;
@@ -270,8 +270,11 @@ export const MONK_SUPPORT: SkillDef[] = [
 
 export const MONK_DEFAULT_SUPPORT_IDS: string[] = [];
 
+import { SUMMONER_MAIN, SUMMONER_SUPPORT } from './SummonerSkillDefs';
+
 export const ALL_SKILLS: SkillDef[] = [
   ...WARRIOR_MAIN, ...WARRIOR_SUPPORT,
   ...RANGER_MAIN, ...RANGER_SUPPORT,
   ...MONK_MAIN, ...MONK_SUPPORT,
+  ...SUMMONER_MAIN, ...SUMMONER_SUPPORT,
 ];

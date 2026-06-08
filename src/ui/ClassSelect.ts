@@ -111,6 +111,32 @@ function drawMonkSilhouette(g: Graphics) {
   g.endFill();
 }
 
+function drawSummonerIcon(g: Graphics) {
+  // Body (robe)
+  g.beginFill(0x3a2060);
+  g.drawRoundedRect(28, 48, 44, 64, 4);
+  g.endFill();
+  // Hood
+  g.beginFill(0x4a2870);
+  g.drawEllipse(50, 44, 22, 28);
+  g.endFill();
+  // Raised arms
+  g.beginFill(0x2a1850);
+  g.drawRoundedRect(14, 52, 12, 36, 3);
+  g.drawRoundedRect(74, 52, 12, 36, 3);
+  g.endFill();
+  // Glowing eyes
+  g.beginFill(0x8844cc);
+  g.drawCircle(44, 40, 3);
+  g.drawCircle(56, 40, 3);
+  g.endFill();
+  // Spectral wisps at sides
+  g.beginFill(0x6a4a90, 0.5);
+  g.drawEllipse(22, 80, 8, 16);
+  g.drawEllipse(78, 80, 8, 16);
+  g.endFill();
+}
+
 const CLASSES: ClassOption[] = [
   {
     classType: 'warrior',
@@ -135,6 +161,14 @@ const CLASSES: ClassOption[] = [
     color: 0x2e1a1a,
     borderColor: 0xc06020,
     drawIcon: drawMonkSilhouette,
+  },
+  {
+    classType: 'summoner',
+    label: 'Summoner',
+    description: 'Commands undead minions and harnesses the souls of fallen enemies.',
+    color: 0x1a1a2e,
+    borderColor: 0x8844cc,
+    drawIcon: drawSummonerIcon,
   },
 ];
 

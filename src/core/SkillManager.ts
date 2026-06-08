@@ -1,4 +1,5 @@
 import { SkillDef, ClassType, WARRIOR_MAIN, WARRIOR_SUPPORT, RANGER_MAIN, RANGER_SUPPORT, DEFAULT_SUPPORT_IDS, RANGER_DEFAULT_SUPPORT_IDS, MONK_MAIN, MONK_SUPPORT } from './SkillDefs';
+import { SUMMONER_MAIN, SUMMONER_SUPPORT, SUMMONER_DEFAULT_SUPPORT_IDS } from './SummonerSkillDefs';
 import { Logger } from './Logger';
 
 export type StanceId = 'tiger' | 'tortoise' | 'crane';
@@ -34,9 +35,16 @@ export class SkillManager {
       return;
     }
 
-    const mainSkills = classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
-    const supportSkills = classType === 'warrior' ? WARRIOR_SUPPORT : RANGER_SUPPORT;
-    const defaultSupportIds = classType === 'warrior' ? DEFAULT_SUPPORT_IDS : RANGER_DEFAULT_SUPPORT_IDS;
+    let mainSkills: SkillDef[];
+    let supportSkills: SkillDef[];
+    let defaultSupportIds: string[];
+    if (classType === 'warrior') {
+      mainSkills = WARRIOR_MAIN; supportSkills = WARRIOR_SUPPORT; defaultSupportIds = DEFAULT_SUPPORT_IDS;
+    } else if (classType === 'ranger') {
+      mainSkills = RANGER_MAIN; supportSkills = RANGER_SUPPORT; defaultSupportIds = RANGER_DEFAULT_SUPPORT_IDS;
+    } else {
+      mainSkills = SUMMONER_MAIN; supportSkills = SUMMONER_SUPPORT; defaultSupportIds = SUMMONER_DEFAULT_SUPPORT_IDS;
+    }
     this.allSkills = [...mainSkills, ...supportSkills];
     const supports = defaultSupportIds
       .map(id => supportSkills.find(s => s.id === id)!)
@@ -46,7 +54,10 @@ export class SkillManager {
 
   selectMainAbility(id: string) {
     const isMonk = this.classType === 'monk';
-    const mainSkills = isMonk ? MONK_MAIN : this.classType === 'warrior' ? WARRIOR_MAIN : RANGER_MAIN;
+    const mainSkills = isMonk ? MONK_MAIN
+      : this.classType === 'warrior' ? WARRIOR_MAIN
+      : this.classType === 'ranger' ? RANGER_MAIN
+      : SUMMONER_MAIN;
     const skill = mainSkills.find(s => s.id === id);
     if (!skill) return;
     this.mainAbility = skill;

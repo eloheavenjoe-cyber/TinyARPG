@@ -6,6 +6,7 @@ import { BiomeId } from '../core/ZoneConfig';
 export class Sprites {
   static player: Texture;
   static ranger: Texture;
+  static summoner: Texture;
   static enemy: Texture;
   static archer: Texture;
   static cultist: Texture;
@@ -71,6 +72,28 @@ export class Sprites {
       ctx.fillRect(22, 6, 3, 14);
       ctx.fillStyle = '#6a4a2a';
       ctx.fillRect(22, 6, 1, 14);
+    });
+
+    Sprites.summoner = Sprites.createTexture(32, 32, (ctx) => {
+      ctx.fillStyle = '#3a2060';
+      ctx.fillRect(10, 0, 12, 6);
+      ctx.fillStyle = '#d4c4a0';
+      ctx.fillRect(12, 4, 8, 5);
+      ctx.fillStyle = '#4a2870';
+      ctx.fillRect(8, 9, 16, 11);
+      ctx.fillStyle = '#6a48aa';
+      ctx.fillRect(10, 10, 12, 2);
+      ctx.fillStyle = '#2a1850';
+      ctx.fillRect(8, 20, 16, 2);
+      ctx.fillStyle = '#5a3890';
+      ctx.fillRect(9, 22, 6, 6);
+      ctx.fillRect(17, 22, 6, 6);
+      ctx.fillStyle = '#1a0e30';
+      ctx.fillRect(8, 28, 7, 4);
+      ctx.fillRect(17, 28, 7, 4);
+      ctx.fillStyle = '#8844cc';
+      ctx.fillRect(13, 6, 3, 2);
+      ctx.fillRect(17, 6, 3, 2);
     });
 
     Sprites.enemy = Sprites.createTexture(32, 32, (ctx) => {

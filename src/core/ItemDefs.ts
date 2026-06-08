@@ -162,6 +162,10 @@ export const AFFIXES: ItemAffix[] = [
   { id: 'of_meditation', name: 'of Meditation', type: 'suffix', stat: 'manaRegenPct', min: 5, max: 15, tier: 1 },
   { id: 'of_clarity', name: 'of Clarity', type: 'suffix', stat: 'manaRegenPct', min: 10, max: 25, tier: 2 },
   { id: 'of_transcendence', name: 'of Transcendence', type: 'suffix', stat: 'manaRegenPct', min: 18, max: 35, tier: 3 },
+  // Minion Life %
+  { id: 'minion_hp', name: 'Reanimating', type: 'prefix', stat: 'minionHpPct', min: 10, max: 18, tier: 1 },
+  { id: 'minion_hp_t2', name: 'Necrotizing', type: 'prefix', stat: 'minionHpPct', min: 18, max: 28, tier: 2 },
+  { id: 'minion_hp_t3', name: "of the Lich", type: 'suffix', stat: 'minionHpPct', min: 28, max: 40, tier: 3 },
 ];
 
 export const JEWEL_ONLY_AFFIXES: ItemAffix[] = [

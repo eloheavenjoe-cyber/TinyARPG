@@ -183,9 +183,72 @@ export class SkillSubTree {
   }
 }
 
+const BONE_SPEAR_TREE: SkillSubTreeNode[] = [
+  { id: 'bs_start', name: 'Bone Spear', desc: 'Starting point for Bone Spear', type: 'start', x: 400, y: 620, connections: ['bs_1'], effects: {} },
+  { id: 'bs_1', name: 'Bone Spear Dmg I', desc: '+8% projectile damage', type: 'small', x: 280, y: 540, connections: ['bs_start', 'bs_2', 'bs_3'], effects: { projectileDmgPct: 8 } },
+  { id: 'bs_2', name: 'Bone Spear Dmg II', desc: '+8% projectile damage', type: 'small', x: 220, y: 460, connections: ['bs_1', 'bs_4', 'bs_5', 'bs_6'], effects: { projectileDmgPct: 8 } },
+  { id: 'bs_3', name: 'Bone Piercer', desc: '+1 projectile pierce', type: 'small', x: 220, y: 350, connections: ['bs_1', 'bs_8'], effects: { pierce: 1 } },
+  { id: 'bs_4', name: 'Bone Speed', desc: '+10% projectile speed', type: 'small', x: 300, y: 270, connections: ['bs_2', 'bs_9'], effects: { projectileSpeedPct: 10 } },
+  { id: 'bs_5', name: 'Bone Range', desc: '+10% skill range', type: 'small', x: 400, y: 270, connections: ['bs_2', 'bs_10'], effects: { rangePct: 10 } },
+  { id: 'bs_6', name: 'Bone Barrage', desc: 'Bone Spear fires 2 additional projectiles in a spread', type: 'keystone', x: 140, y: 370, connections: ['bs_2'], effects: { boneBarrage: 1 } },
+  { id: 'bs_7', name: 'Bone Calcify', desc: '+5% armor', type: 'small', x: 520, y: 540, connections: ['bs_start'], effects: { armorPct: 5 } },
+  { id: 'bs_8', name: 'Marrow Seekers', desc: 'Bone Spear projectiles home toward enemies', type: 'keystone', x: 140, y: 430, connections: ['bs_3'], effects: { marrowSeekers: 1 } },
+  { id: 'bs_9', name: 'Shattering Impact', desc: 'Bone Spear hits reduce enemy armor by 15% for 4s', type: 'keystone', x: 260, y: 180, connections: ['bs_4'], effects: { shatteringImpact: 1 } },
+  { id: 'bs_10', name: 'Ossified Volley', desc: 'Every 4th Bone Spear is a guaranteed crit (2× damage)', type: 'keystone', x: 460, y: 180, connections: ['bs_5'], effects: { ossifiedVolley: 1 } },
+];
+
+const SOUL_DRAIN_TREE: SkillSubTreeNode[] = [
+  { id: 'sd_start', name: 'Soul Drain', desc: 'Starting point for Soul Drain', type: 'start', x: 400, y: 620, connections: ['sd_1', 'sd_3', 'sd_5'], effects: {} },
+  { id: 'sd_1', name: 'Soul Dmg I', desc: '+5% damage', type: 'small', x: 280, y: 540, connections: ['sd_start', 'sd_2'], effects: { damagePct: 5 } },
+  { id: 'sd_2', name: 'Soul Dmg II', desc: '+5% damage', type: 'small', x: 220, y: 460, connections: ['sd_1', 'sd_6'], effects: { damagePct: 5 } },
+  { id: 'sd_3', name: 'Soul Duration I', desc: '+10% channel duration', type: 'small', x: 520, y: 540, connections: ['sd_start', 'sd_4'], effects: { skillDurationPct: 10 } },
+  { id: 'sd_4', name: 'Soul Duration II', desc: '+10% channel duration', type: 'small', x: 580, y: 460, connections: ['sd_3', 'sd_8'], effects: { skillDurationPct: 10 } },
+  { id: 'sd_5', name: 'Soul Range', desc: '+10% skill range', type: 'small', x: 400, y: 350, connections: ['sd_start', 'sd_9'], effects: { rangePct: 10 } },
+  { id: 'sd_6', name: 'Life Siphon', desc: 'Soul Drain heals for 100% of damage (up from 50%)', type: 'keystone', x: 140, y: 370, connections: ['sd_2'], effects: { lifeSiphon: 1 } },
+  { id: 'sd_7', name: 'Soul Well', desc: '+5% mana regen', type: 'small', x: 620, y: 350, connections: ['sd_4'], effects: { manaRegenPct: 5 } },
+  { id: 'sd_8', name: 'Essence Theft', desc: 'Soul Drain restores mana equal to 30% of damage dealt', type: 'keystone', x: 660, y: 370, connections: ['sd_4'], effects: { essenceTheft: 1 } },
+  { id: 'sd_9', name: 'Shared Torment', desc: 'Soul Drain chains to 1 additional nearby enemy', type: 'keystone', x: 320, y: 270, connections: ['sd_5'], effects: { sharedTorment: 1 } },
+  { id: 'sd_10', name: 'Unending Feast', desc: 'Soul Drain gains 2 additional ticks (+1s duration)', type: 'keystone', x: 480, y: 270, connections: ['sd_5'], effects: { unendingFeast: 1 } },
+];
+
+const CORPSE_EXPLOSION_TREE: SkillSubTreeNode[] = [
+  { id: 'ce_start', name: 'Corpse Explosion', desc: 'Starting point for Corpse Explosion', type: 'start', x: 400, y: 620, connections: ['ce_1', 'ce_3', 'ce_5'], effects: {} },
+  { id: 'ce_1', name: 'Corpse Dmg I', desc: '+8% corpse explosion damage', type: 'small', x: 280, y: 540, connections: ['ce_start', 'ce_2'], effects: { damagePct: 8 } },
+  { id: 'ce_2', name: 'Corpse Dmg II', desc: '+8% corpse explosion damage', type: 'small', x: 220, y: 460, connections: ['ce_1', 'ce_6'], effects: { damagePct: 8 } },
+  { id: 'ce_3', name: 'Corpse Range I', desc: '+10% explosion radius', type: 'small', x: 520, y: 540, connections: ['ce_start', 'ce_4'], effects: { aoePct: 10 } },
+  { id: 'ce_4', name: 'Corpse Range II', desc: '+10% explosion radius', type: 'small', x: 580, y: 460, connections: ['ce_3', 'ce_8', 'ce_10'], effects: { aoePct: 10 } },
+  { id: 'ce_5', name: 'Corpse Speed', desc: '+10% cast speed', type: 'small', x: 400, y: 350, connections: ['ce_start', 'ce_9'], effects: { castSpeedPct: 10 } },
+  { id: 'ce_6', name: 'Chain Reaction', desc: 'Corpse explosions chain to nearby corpses (chain up to 3)', type: 'keystone', x: 140, y: 370, connections: ['ce_2'], effects: { chainReaction: 1 } },
+  { id: 'ce_7', name: 'Corpse Decay', desc: '+5% damage over time', type: 'small', x: 660, y: 350, connections: ['ce_4'], effects: { dotDmgPct: 5 } },
+  { id: 'ce_8', name: 'Necrotic Cloud', desc: 'Corpse explosion leaves a poison cloud for 4s (3% max HP/s)', type: 'keystone', x: 620, y: 370, connections: ['ce_4'], effects: { necroticCloud: 1 } },
+  { id: 'ce_9', name: 'Desecrate', desc: 'If no corpse within range, create a desecrated ground corpse (2 charges)', type: 'keystone', x: 320, y: 270, connections: ['ce_5'], effects: { desecrate: 1 } },
+  { id: 'ce_10', name: 'Overkill', desc: 'Corpse explosion has +50% damage and +40px radius', type: 'keystone', x: 480, y: 270, connections: ['ce_4'], effects: { overkill: 1 } },
+];
+
+const COMMAND_WRATH_TREE: SkillSubTreeNode[] = [
+  { id: 'cw_start', name: 'Command Wrath', desc: 'Starting point for Command Wrath', type: 'start', x: 400, y: 620, connections: ['cw_1', 'cw_3', 'cw_5'], effects: {} },
+  { id: 'cw_1', name: 'Command Dur I', desc: '+10% buff duration', type: 'small', x: 280, y: 540, connections: ['cw_start', 'cw_2'], effects: { skillDurationPct: 10 } },
+  { id: 'cw_2', name: 'Command Dur II', desc: '+10% buff duration', type: 'small', x: 220, y: 460, connections: ['cw_1', 'cw_6'], effects: { skillDurationPct: 10 } },
+  { id: 'cw_3', name: 'Command Dmg I', desc: '+5% minion damage', type: 'small', x: 520, y: 540, connections: ['cw_start', 'cw_4'], effects: { minionDmgPct: 5 } },
+  { id: 'cw_4', name: 'Command Dmg II', desc: '+5% minion damage', type: 'small', x: 580, y: 460, connections: ['cw_3', 'cw_8'], effects: { minionDmgPct: 5 } },
+  { id: 'cw_5', name: 'Command Effect', desc: '+5% buff effectiveness', type: 'small', x: 400, y: 350, connections: ['cw_start', 'cw_9', 'cw_10'], effects: { buffEffectivenessPct: 5 } },
+  { id: 'cw_6', name: 'Inspiring Presence', desc: 'Command Wrath also grants +15% move speed to you and minions', type: 'keystone', x: 140, y: 370, connections: ['cw_2'], effects: { inspiringPresence: 1 } },
+  { id: 'cw_7', name: 'Command Haste', desc: '+5% move speed', type: 'small', x: 660, y: 350, connections: ['cw_4'], effects: { moveSpeedPct: 5 } },
+  { id: 'cw_8', name: 'Shared Fury', desc: 'Your attacks during Command Wrath extend its duration by 1s per hit (max +4s)', type: 'keystone', x: 660, y: 270, connections: ['cw_4'], effects: { sharedFury: 1 } },
+  { id: 'cw_9', name: 'War Drums', desc: 'Command Wrath cooldown reduced by 2s', type: 'keystone', x: 320, y: 270, connections: ['cw_5'], effects: { warDrums: 1 } },
+  { id: 'cw_10', name: 'Blood Pact', desc: 'Command Wrath costs health instead of mana, but grants +50% damage instead of +30%', type: 'keystone', x: 480, y: 270, connections: ['cw_5'], effects: { bloodPact: 1 } },
+];
+
 export const RANGER_SUB_TREES: Record<string, SkillSubTreeNode[]> = {
   quick_shot: QUICK_SHOT_TREE,
   multi_shot: MULTI_SHOT_TREE,
   rain_of_arrows: RAIN_OF_ARROWS_TREE,
   snipe: SNIPE_TREE,
+};
+
+export const SUMMONER_SUB_TREES: Record<string, SkillSubTreeNode[]> = {
+  bone_spear: BONE_SPEAR_TREE,
+  soul_drain: SOUL_DRAIN_TREE,
+  corpse_explosion: CORPSE_EXPLOSION_TREE,
+  command_wrath: COMMAND_WRATH_TREE,
 };

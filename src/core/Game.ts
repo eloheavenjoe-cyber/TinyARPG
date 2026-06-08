@@ -12,6 +12,7 @@ import { SkillBar } from '../ui/SkillBar';
 import { Room, ROOM_WIDTH, ROOM_HEIGHT, rectsOverlap, resolveCollision } from '../world/Room';
 import { Player, InventorySlot, EquipSlot } from '../entities/Player';
 import { Enemy, EnemyType } from '../entities/Enemy';
+import { Minion } from '../entities/Minion';
 import { Projectile } from '../entities/Projectile';
 import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, createJewelDrop, isOrbDrop, createOrbDrop, isPortalScrollDrop, isJewelDrop } from '../entities/ItemDrop';
@@ -44,6 +45,7 @@ import { SettingsPlaceholder } from '../ui/SettingsPlaceholder';
 import { ALL_SKILLS } from './SkillDefs';
 import { VendorScreen } from '../ui/VendorScreen';
 import { StashScreen } from '../ui/StashScreen';
+import { SoulVaultScreen } from '../ui/SoulVaultScreen';
 import { generateVendorStock, VendorStockItem, calculateSellPrice } from '../core/VendorManager';
 import { StashTab } from '../core/SaveManager';
 
@@ -85,6 +87,15 @@ interface ChillZone {
   radius: number;
 }
 
+interface CapturedSoul {
+  enemyType: string;
+  name: string;
+  baseHp: number;
+  baseDamage: number;
+  baseSpeed: number;
+  captureLevel: number;
+}
+
 export class Game {
   private app: Application;
   private input: InputManager;
@@ -100,6 +111,9 @@ export class Game {
   private room?: Room;
   private player?: Player;
   private enemies: Enemy[] = [];
+  private minions: Minion[] = [];
+  private recentCorpses: { x: number; y: number; maxHp: number; deathFrame: number }[] = [];
+  private frameCount: number = 0;
   private projectiles: Projectile[] = [];
   private waveCooldown = 0;
   private itemDrops: ItemDrop[] = [];
@@ -170,6 +184,12 @@ export class Game {
   private currentSaveData: SaveData | null = null;
   private hasSeenHubTip: boolean = false;
   private hubTip?: HubTip;
+  private soulVault: CapturedSoul[] = [];
+  private activeSpectre: CapturedSoul | null = null;
+  private activeSpectreMinion: Minion | null = null;
+  private soulDrops: { x: number; y: number; enemyType: string; label: string; container: Container }[] = [];
+  soulVaultScreen?: SoulVaultScreen;
+  soulVaultOpen: boolean = false;
 
   constructor(app: Application) {
     this.app = app;
@@ -337,6 +357,14 @@ export class Game {
     this.tutorialKeyWasDown = new Set();
     this.tutorialScreen = new TutorialScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
     this.app.stage.addChild(this.tutorialScreen.container);
+
+    this.soulVaultScreen = new SoulVaultScreen(
+      1920, 1080,
+      (soul) => this.summonSpectre(soul),
+      () => this.despawnSpectre(),
+      () => { this.soulVaultScreen?.toggle(); this.soulVaultOpen = false; },
+    );
+    this.app.stage.addChild(this.soulVaultScreen.container);
   }
 
   private loadGame(slotIndex: number) {
@@ -418,6 +446,15 @@ export class Game {
       this.player.skills.currentStance = data.player.skills.currentStance;
     }
     this.player.skills.mainAbility = this.player.skills.slots[0];
+
+    // Restore soul vault and spectre
+    if (data.player.soulVault) {
+      this.soulVault = data.player.soulVault;
+    }
+    if (data.player.activeSpectre) {
+      this.activeSpectre = data.player.activeSpectre;
+      this.summonSpectre(data.player.activeSpectre);
+    }
 
     this.player.recalcStats();
 
@@ -504,6 +541,8 @@ export class Game {
           allocatedNodeIds: [...p.passiveTree.allocated],
         },
         skillSubPoints: p.skillSubPoints,
+        soulVault: this.soulVault,
+        activeSpectre: this.activeSpectre,
         skillSubTrees: (() => {
           const result: Record<string, string[]> = {};
           for (const [id, tree] of p.skillSubTrees) {
@@ -813,6 +852,11 @@ export class Game {
     if (this.settingsPlaceholder) { this.app.stage.removeChild(this.settingsPlaceholder.container); this.settingsPlaceholder.destroy(); this.settingsPlaceholder = undefined; }
     if (this.vendorScreen) { this.app.stage.removeChild(this.vendorScreen.container); this.vendorScreen.destroy(); this.vendorScreen = undefined; }
     if (this.stashScreen) { this.app.stage.removeChild(this.stashScreen.container); this.stashScreen.destroy(); this.stashScreen = undefined; }
+    if (this.soulVaultScreen) {
+      this.soulVaultScreen.destroy();
+      this.soulVaultScreen = undefined;
+      this.soulVaultOpen = false;
+    }
     if (this.tutorialScreen) {
       this.app.stage.removeChild(this.tutorialScreen.container);
       this.tutorialScreen.destroy();
@@ -834,9 +878,17 @@ export class Game {
     }
     this.bossSpawned = false;
     this.enemies = [];
+    for (const m of this.minions) m.destroy();
+    this.minions = [];
+    this.recentCorpses = [];
+    this.frameCount = 0;
     for (const p of this.projectiles) if (p.alive) { try { p.destroy(); } catch (_) {} }
     this.projectiles = [];
     this.itemDrops = [];
+    this.soulDrops = [];
+    this.soulVault = [];
+    this.activeSpectre = null;
+    this.activeSpectreMinion = null;
     this.rainZones = [];
     this.vfx = [];
     this.modGfx = [];
@@ -943,7 +995,9 @@ export class Game {
     for (const s of this.decorationSprites) { try { this.gameContainer.removeChild(s); } catch (_) {} try { s.destroy(); } catch (_) {} }
     for (const c of this.chests) { try { this.gameContainer.removeChild(c.container); } catch (_) {} try { c.destroy(); } catch (_) {} }
     for (const b of this.breakables) { try { this.gameContainer.removeChild(b.container); } catch (_) {} try { b.destroy(); } catch (_) {} }
+    for (const m of this.minions) m.destroy();
     this.enemies = [];
+    this.minions = [];
     this.projectiles = [];
     this.itemDrops = [];
     this.decorationSprites = [];
@@ -1524,6 +1578,24 @@ export class Game {
           }
         }
         this.wasCKeyDown = cDown;
+
+        // V key: Soul Vault
+        if (this.input.isKeyDown('KeyV') && !this.lastKeys.has('KeyV')) {
+          if (!this.devConsole.isVisible() && !this.vendorOpen && !this.stashOpen &&
+              !this.soulVaultScreen?.visible && !this.inventoryOpen && !this.treeOpen &&
+              !this.characterScreenOpen && !this.subTreeScreen && !this.escapeMenuOpen) {
+            this.soulVaultScreen?.toggle();
+            this.soulVaultOpen = !this.soulVaultOpen;
+            this.lastKeys.add('KeyV');
+            return;
+          }
+          if (this.soulVaultScreen?.visible) {
+            this.soulVaultScreen.toggle();
+            this.soulVaultOpen = false;
+            this.lastKeys.add('KeyV');
+            return;
+          }
+        }
       }
     }
     switch (this.state) {
@@ -1547,6 +1619,11 @@ export class Game {
 
   private updateGameplay(dt: number) {
     if (!this.player?.alive || !this.room) return;
+    if (this.soulVaultScreen?.visible) {
+      this.soulVaultScreen.update(this.soulVault, this.activeSpectre, (soul) => this.summonSpectre(soul));
+      return;
+    }
+    this.frameCount++;
 
     // Clean up per-frame mod VFX
     for (const g of this.modGfx) {
@@ -1689,6 +1766,41 @@ export class Game {
         streak.y = enemy.y;
         this.gameContainer!.addChild(streak);
         this.modGfx.push(streak);
+      }
+    }
+
+    // Minion updates
+    const mageFireProjectiles: { minion: Minion; angle: number; dmg: number }[] = [];
+    for (const m of this.minions) {
+      if (!m.alive) continue;
+      m.update(this.player.x, this.player.y, this.enemies, this.room.walls, dt, this.minions);
+      if (m.wantsToFire) {
+        const nearest = this.findNearestEnemy(m.x, m.y);
+        if (nearest) {
+          mageFireProjectiles.push({
+            minion: m,
+            angle: Math.atan2(nearest.y - m.y, nearest.x - m.x),
+            dmg: m.damage,
+          });
+        }
+        m.wantsToFire = false;
+      }
+    }
+    // Spawn mage projectiles
+    for (const fp of mageFireProjectiles) {
+      const p = new Projectile(fp.minion.x, fp.minion.y, fp.angle, 5, fp.dmg, false, false, 0x8844cc);
+      p.lifetime = 90;
+      this.projectiles.push(p);
+      this.gameContainer!.addChild(p.sprite);
+    }
+
+    // Minion death cleanup
+    for (let i = this.minions.length - 1; i >= 0; i--) {
+      if (!this.minions[i].alive) {
+        const dead = this.minions.splice(i, 1)[0];
+        this.gameContainer!.removeChild(dead.sprite);
+        if (dead.nameplate) this.gameContainer!.removeChild(dead.nameplate);
+        dead.destroy();
       }
     }
 
@@ -2286,6 +2398,24 @@ export class Game {
       }
     }
 
+    // Right click: capture soul drop
+    if (this.input.consumeRightClick()) {
+      for (let i = this.soulDrops.length - 1; i >= 0; i--) {
+        const drop = this.soulDrops[i];
+        const d = Math.sqrt((drop.x - mouseWX) ** 2 + (drop.y - mouseWY) ** 2);
+        if (d < 40) {
+          if (this.soulVault.length >= 8) {
+            Logger.log('ui', 'Soul vault is full!');
+          } else {
+            this.captureSoul(drop.enemyType, drop.label);
+            this.gameContainer!.removeChild(drop.container);
+            this.soulDrops.splice(i, 1);
+            break;
+          }
+        }
+      }
+    }
+
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       if (!this.enemies[i].alive) {
         const dead = this.enemies.splice(i, 1)[0];
@@ -2337,7 +2467,35 @@ export class Game {
         }
         const rarityLootMult = dead.rarity === 'rare' ? 3 : dead.rarity === 'magic' ? 2 : 1;
         this.spawnLoot(dead.x, dead.y, rarityLootMult);
+
+        // Soul drop for spectre capture
+        const soulDropChance = 0.04 * (1 + (this.player.computedStats.magicFindPct || 0) / 100);
+        if (Math.random() < soulDropChance) {
+          const soulLabel = new Text(`Soul of ${this.getEnemyDisplayName(dead.type)}`, new TextStyle({
+            fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#66ccff',
+            stroke: '#000', strokeThickness: 2,
+          }));
+          soulLabel.anchor.set(0.5);
+          const soulContainer = new Container();
+          soulContainer.addChild(soulLabel);
+          soulContainer.x = dead.x;
+          soulContainer.y = dead.y;
+          this.gameContainer!.addChild(soulContainer);
+          this.soulDrops.push({
+            x: dead.x, y: dead.y,
+            enemyType: dead.type,
+            label: `Soul of ${this.getEnemyDisplayName(dead.type)}`,
+            container: soulContainer,
+          });
+        }
+
         dead.destroy();
+        this.recentCorpses.push({
+          x: dead.x, y: dead.y,
+          maxHp: dead.maxHealth,
+          deathFrame: this.frameCount,
+        });
+        this.recentCorpses = this.recentCorpses.filter(c => this.frameCount - c.deathFrame < 300).slice(-8);
       }
     }
 
@@ -2470,6 +2628,71 @@ export class Game {
     }
     this.skillBar?.update(this.player.skills);
     if (!this.player.alive) this.showDeathScreen();
+  }
+
+  private getEnemyDisplayName(type: string): string {
+    const names: Record<string, string> = {
+      grunt: 'Grunt', archer: 'Archer', juggernaut: 'Juggernaut', cultist: 'Cultist',
+    };
+    return names[type] || type;
+  }
+
+  private getEnemyBaseConfig(type: string): { hp: number; damage: number; speed: number } {
+    const configs: Record<string, { hp: number; damage: number; speed: number }> = {
+      grunt: { hp: 40, damage: 8, speed: 2.2 },
+      archer: { hp: 25, damage: 6, speed: 2.5 },
+      juggernaut: { hp: 120, damage: 16, speed: 1.2 },
+      cultist: { hp: 35, damage: 5, speed: 2.0 },
+    };
+    return configs[type] || { hp: 40, damage: 8, speed: 2.2 };
+  }
+
+  private captureSoul(enemyType: string, name: string): void {
+    const cfg = this.getEnemyBaseConfig(enemyType);
+    this.soulVault.push({
+      enemyType,
+      name: name.replace('Soul of ', ''),
+      baseHp: cfg.hp,
+      baseDamage: cfg.damage,
+      baseSpeed: cfg.speed,
+      captureLevel: this.player!.level,
+    });
+    // Capture VFX — expanding cyan ring at player
+    this.addVfx((g, t) => {
+      g.clear();
+      g.beginFill(0x66ccff, 0.5 * (1 - t));
+      g.drawCircle(this.player!.x, this.player!.y, 60 * t);
+      g.endFill();
+    }, 20).position.set(0, 0);
+  }
+
+  private summonSpectre(soul: CapturedSoul): void {
+    if (this.activeSpectreMinion) this.despawnSpectre();
+
+    const levelScale = 1 + (this.player!.level - soul.captureLevel) * 0.05;
+    const minionDmgMult = 1 + (this.player!.computedStats.minionDmgPct || 0) / 100;
+    const minionHpMult = 1 + (this.player!.computedStats.minionHpPct || 0) / 100;
+    const hp = Math.round(soul.baseHp * levelScale * Math.max(1, minionHpMult));
+    const dmg = Math.round(soul.baseDamage * levelScale * Math.max(1, minionDmgMult));
+    const spd = soul.baseSpeed;
+
+    this.activeSpectre = soul;
+    this.activeSpectreMinion = new Minion(
+      this.player!.x, this.player!.y - 30,
+      'spectre', hp, dmg, spd,
+    );
+    this.activeSpectreMinion.sourceEnemyType = soul.enemyType;
+    this.minions.push(this.activeSpectreMinion);
+    this.gameContainer!.addChild(this.activeSpectreMinion.sprite);
+  }
+
+  private despawnSpectre(): void {
+    if (this.activeSpectreMinion) {
+      this.activeSpectreMinion.health = 0;
+      this.activeSpectreMinion.alive = false;
+      this.activeSpectreMinion = null;
+      this.activeSpectre = null;
+    }
   }
 
   private addVfx(draw: (g: Graphics, t: number) => void, duration: number): Graphics {
@@ -2649,6 +2872,14 @@ export class Game {
   private useMainAbility() {
     if (!this.player?.alive) return;
 
+    let mouseWX = this.input.mouseX;
+    let mouseWY = this.input.mouseY;
+    if (this.gameContainer) {
+      const local = this.gameContainer.toLocal(new Point(this.input.mouseX, this.input.mouseY));
+      mouseWX = local.x;
+      mouseWY = local.y;
+    }
+
     // Monk meditate channel
     if (this.player.classType === 'monk' && this.player.skills.mainAbility?.id === 'meditate') {
       const result = this.player.skills.consume(0, this.player.mana);
@@ -2662,6 +2893,47 @@ export class Game {
 
     const skill = this.player.skills.mainAbility;
     const angle = this.player.facingAngle;
+
+    // Channel skills
+    if (skill?.effectType === 'channel') {
+      this.player.startChannel(skill.id, skill.duration || 120);
+      const result = this.player.skills.consume(0, this.player.mana);
+      if (result) {
+        this.player.mana -= result.manaCost;
+        this.player.triggerAttackAnimation(skill.id);
+      }
+      return;
+    }
+
+    // Corpse Explosion
+    if (skill?.id === 'corpse_explosion') {
+      let nearestCorpse: { x: number; y: number; maxHp: number; deathFrame: number } | null = null;
+      let nearestDist = skill.range || 200;
+      for (const c of this.recentCorpses) {
+        const d = Math.sqrt((c.x - mouseWX) ** 2 + (c.y - mouseWY) ** 2);
+        if (d < nearestDist) { nearestDist = d; nearestCorpse = c; }
+      }
+      if (nearestCorpse) {
+        const result = this.player.skills.consume(0, this.player.mana);
+        if (!result) return;
+        this.player.mana -= result.manaCost;
+        const explodeDmg = Math.round(nearestCorpse.maxHp * (skill.damageMult || 0.15));
+        for (const e of this.enemies) {
+          if (!e.alive) continue;
+          const d = Math.sqrt((e.x - nearestCorpse.x) ** 2 + (e.y - nearestCorpse.y) ** 2);
+          if (d < 120) e.takeDamage(explodeDmg);
+        }
+        this.addVfx((g, t) => {
+          g.clear();
+          g.beginFill(0x8844cc, 0.4 * (1 - t));
+          g.drawCircle(nearestCorpse!.x, nearestCorpse!.y, 120 * t);
+          g.endFill();
+        }, 20).position.set(0, 0);
+        const idx = this.recentCorpses.indexOf(nearestCorpse);
+        if (idx >= 0) this.recentCorpses.splice(idx, 1);
+      }
+      return;
+    }
 
     const isProjectileType = skill?.effectType === 'projectile' || skill?.effectType === 'projectile_spread' || skill?.effectType === 'projectile_pierce';
     const isAoeTarget = skill?.effectType === 'aoe_target';
@@ -2882,7 +3154,69 @@ export class Game {
         }
         break;
       }
+      case 'summon': {
+        if (result.id === 'raise_skeleton') {
+          const skeletonCount = this.minions.filter(m => m.type === 'skeleton_warrior' && m.alive).length;
+          if (skeletonCount >= 3) {
+            for (const m of this.minions) {
+              if (m.type === 'skeleton_warrior' && m.alive) {
+                m.health = Math.min(m.maxHealth, m.health + 30);
+              }
+            }
+          } else {
+            const m = new Minion(
+              this.player.x + (Math.random() - 0.5) * 40,
+              this.player.y + (Math.random() - 0.5) * 40,
+              'skeleton_warrior', 60, 8, this.player.speed * 0.8,
+            );
+            this.minions.push(m);
+            this.gameContainer!.addChild(m.sprite);
+          }
+        } else if (result.id === 'summon_mage') {
+          const mageCount = this.minions.filter(m => m.type === 'skeleton_mage' && m.alive).length;
+          if (mageCount < 2) {
+            const m = new Minion(
+              this.player.x + (Math.random() - 0.5) * 50,
+              this.player.y + (Math.random() - 0.5) * 50,
+              'skeleton_mage', 40, 10, this.player.speed * 0.7, 900,
+            );
+            this.minions.push(m);
+            this.gameContainer!.addChild(m.sprite);
+          }
+        } else if (result.id === 'spectre_summon') {
+          // Handle spectre summoning — will be wired in Task 7
+        }
+        break;
+      }
+      case 'aoe_target': {
+        if (result.id === 'flesh_offering') {
+          let nearestCorpse: { x: number; y: number; maxHp: number; deathFrame: number } | null = null;
+          let nearestDist = 200;
+          for (const c of this.recentCorpses) {
+            const d = Math.sqrt((c.x - this.player.x) ** 2 + (c.y - this.player.y) ** 2);
+            if (d < nearestDist) { nearestDist = d; nearestCorpse = c; }
+          }
+          if (nearestCorpse) {
+            this.player.skills.addBuff('flesh_offering');
+            const idx = this.recentCorpses.indexOf(nearestCorpse);
+            if (idx >= 0) this.recentCorpses.splice(idx, 1);
+          }
+          return;
+        }
+        break;
+      }
     }
+  }
+
+  private findNearestEnemy(x: number, y: number): Enemy | null {
+    let nearest: Enemy | null = null;
+    let nearestDist = 600;
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const d = Math.sqrt((e.x - x) ** 2 + (e.y - y) ** 2);
+      if (d < nearestDist) { nearestDist = d; nearest = e; }
+    }
+    return nearest;
   }
 
   private spawnLoot(x: number, y: number, rarityMult: number = 1) {
@@ -3475,6 +3809,11 @@ export class Game {
     if (this.hud) { this.app.stage.removeChild(this.hud.container); this.hud.destroy(); this.hud = undefined; }
     if (this.skillBar) { this.app.stage.removeChild(this.skillBar.container); this.skillBar.destroy(); this.skillBar = undefined; }
     if (this.minimap) { this.app.stage.removeChild(this.minimap.container); this.minimap.destroy(); this.minimap = undefined; }
+    if (this.soulVaultScreen) {
+      this.soulVaultScreen.destroy();
+      this.soulVaultScreen = undefined;
+    }
+    this.soulVaultOpen = false;
 
     // Boss cleanup must happen before gameContainer destroy
     if (this.boss) {
@@ -3505,9 +3844,16 @@ export class Game {
     this.tutorialKeys = new Set();
     this.tutorialKeyWasDown = new Set();
     this.enemies = [];
+    this.minions = [];
+    this.recentCorpses = [];
+    this.frameCount = 0;
     for (const p of this.projectiles) { try { p.destroy(); } catch (_) {} }
     this.projectiles = [];
     this.itemDrops = [];
+    this.soulDrops = [];
+    this.soulVault = [];
+    this.activeSpectre = null;
+    this.activeSpectreMinion = null;
     this.vfx = [];
     this.modGfx = [];
     this.chillZones = [];

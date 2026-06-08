@@ -26,12 +26,12 @@ let pendingMonkSprites: AnimatedSprite[] = [];
 let cthulhuFrames: Record<CthulhuAnimName, Texture[]> | null = null;
 let pendingCthulhuSprites: AnimatedSprite[] = [];
 
-function getFrames(classType: 'warrior' | 'ranger' | 'monk'): Record<AnimName, Texture[]> | null {
-  if (classType === 'monk') return null;
+function getFrames(classType: 'warrior' | 'ranger' | 'monk' | 'summoner'): Record<AnimName, Texture[]> | null {
+  if (classType === 'monk' || classType === 'summoner') return null;
   return classType === 'ranger' ? rangerFrames : warriorFrames;
 }
 
-export function isLoaded(classType: 'warrior' | 'ranger' | 'monk' = 'warrior'): boolean {
+export function isLoaded(classType: 'warrior' | 'ranger' | 'monk' | 'summoner' = 'warrior'): boolean {
   return getFrames(classType) !== null;
 }
 
@@ -967,7 +967,7 @@ export function playChestOpenAnimation(sprite: AnimatedSprite) {
   sprite.gotoAndPlay(0);
 }
 
-export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true, classType: 'warrior' | 'ranger' | 'monk' = 'warrior') {
+export function playAnimation(sprite: AnimatedSprite, name: AnimName, loop: boolean = true, classType: 'warrior' | 'ranger' | 'monk' | 'summoner' = 'warrior') {
   if (classType === 'monk') return;
   const frames = getFrames(classType);
   if (!frames) return;
