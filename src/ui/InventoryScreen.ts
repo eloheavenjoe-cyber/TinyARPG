@@ -72,8 +72,7 @@ export class InventoryScreen {
   private onUnsocketOrb: (orbId: string, slot: Slot, socketIndex: number) => void = () => {};
   private activeSocketJewel: number | null = null;
   private draggingJewel: { gridIndex: number; icon: Sprite } | null = null;
-  /* PERF: prevent tooltip rebuild when hovering same item */
-  private lastTooltipItem: any = null;
+  private tooltipItemId: string | null = null;
   onSocketJewelCallback(cb: (slot: Slot, gridIndex: number) => void) { this.onSocketJewel = cb; }
   onDrillOrbCallback(cb: (slot: Slot) => void) { this.onDrillOrb = cb; }
   onUnsocketOrbCallback(cb: (orbId: string, slot: Slot, socketIndex: number) => void) { this.onUnsocketOrb = cb; }
@@ -309,9 +308,7 @@ export class InventoryScreen {
   }
 
   private showTooltip(item: GeneratedItem, x: number, y: number) {
-    /* PERF: identity guard — skip full tooltip rebuild when hovering the same item */
-    if (item === this.lastTooltipItem && this.tooltip) return;
-    this.lastTooltipItem = item;
+    this.tooltipItemId = item.id;
     if (this.tooltip) this.container.removeChild(this.tooltip);
     this.tooltip = new Container();
 
@@ -464,10 +461,14 @@ export class InventoryScreen {
     }
   }
 
+  forceRefreshTooltip() {
+    if (this.tooltip) {
+      this.hideTooltip();
+    }
+  }
+
   private showOrbTooltip(orb: OrbInfo) {
-    /* PERF: skip rebuild when hovering the same orb */
-    if (orb === this.lastTooltipItem && this.tooltip) return;
-    this.lastTooltipItem = orb;
+    this.tooltipItemId = `orb_${orb.orbId}`;
     if (this.tooltip) this.container.removeChild(this.tooltip);
     const descriptions: Record<string, string> = {
       empowerment: 'Adds a random affix to a\nrare item',
