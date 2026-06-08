@@ -2612,17 +2612,37 @@ export class Game {
         if (dead.nameplate) {
           this.gameContainer!.removeChild(dead.nameplate);
         }
-        const healAmt = this.player.skills.healOnKill();
-        if (healAmt > 0) this.player.heal(healAmt);
-        if (this.player.addXp(dead.xpReward)) {
-          this.combatText.showDamage(dead.x, dead.y - 30, this.player.level - 1, 0x44ff88);
-          Logger.log('combat', `Player reached level ${this.player.level}`);
+
+        const isUrnEnemy = dead.spawnSource === 'cursed_urn';
+
+        if (!isUrnEnemy) {
+          const healAmt = this.player.skills.healOnKill();
+          if (healAmt > 0) this.player.heal(healAmt);
         }
-        const rarityLootMult = dead.rarity === 'rare' ? 3 : dead.rarity === 'magic' ? 2 : 1;
-        this.spawnLoot(dead.x, dead.y, rarityLootMult);
+
+        if (!isUrnEnemy) {
+          if (this.player.addXp(dead.xpReward)) {
+            this.combatText.showDamage(dead.x, dead.y - 30, this.player.level - 1, 0x44ff88);
+            Logger.log('combat', `Player reached level ${this.player.level}`);
+          }
+          const rarityLootMult = dead.rarity === 'rare' ? 3 : dead.rarity === 'magic' ? 2 : 1;
+          this.spawnLoot(dead.x, dead.y, rarityLootMult);
+        } else {
+          if (this.player.addXp(Math.round(dead.xpReward * dead.xpMultiplier))) {
+            this.combatText.showDamage(dead.x, dead.y - 30, this.player.level - 1, 0x44ff88);
+            Logger.log('combat', `Player reached level ${this.player.level}`);
+          }
+          const group = this.urnSpawnGroups.get(dead.urnId);
+          if (group && !group.lootDropped) {
+            group.totalKilled++;
+            if (group.totalKilled >= group.totalSpawned) {
+              this.triggerUrnClear(dead.urnId, group);
+            }
+          }
+        }
 
         // Soul drop for spectre capture (summoner only)
-        if (this.player?.classType === 'summoner') {
+        if (!isUrnEnemy && this.player?.classType === 'summoner') {
           const soulDropChance = 0.04 * (1 + (this.player.computedStats.magicFindPct || 0) / 100);
           if (Math.random() < soulDropChance) {
             const soulLabel = new Text(`Soul of ${this.getEnemyDisplayName(dead.type)}`, new TextStyle({
@@ -3597,6 +3617,39 @@ export class Game {
 
       this.urnSpawnQueue.push({ enemy, urnId: urn.id });
     }
+  }
+
+  private triggerUrnClear(urnId: number, group: UrnSpawnGroup) {
+    group.lootDropped = true;
+
+    const urn = this.urns.find(u => u.id === urnId);
+    if (!urn) return;
+
+    urn.state = 'cleared';
+
+    this.spawnUrnLoot(urn.x, urn.y, urn);
+
+    // Golden flash VFX at urn position
+    this.addVfx((g, t) => {
+      const alpha = Math.max(0, 0.6 - t * 1.5);
+      g.beginFill(0xffd700, alpha);
+      g.drawCircle(0, 0, 40 + 20 * t);
+      g.endFill();
+    }, 10).position.set(urn.x, urn.y);
+
+    // Depleted smoke puff VFX
+    this.addVfx((g, t) => {
+      const alpha = Math.max(0, 0.5 - t);
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2 + t * 2;
+        const r = 10 + 30 * t;
+        g.beginFill(0x333333, alpha);
+        g.drawCircle(Math.cos(a) * r, Math.sin(a) * r - 20 * t, 6 - 4 * t);
+        g.endFill();
+      }
+    }, 15).position.set(urn.x, urn.y);
+
+    this.saveGame();
   }
 
   private vfxUrnOpen(x: number, y: number, color: number) {
