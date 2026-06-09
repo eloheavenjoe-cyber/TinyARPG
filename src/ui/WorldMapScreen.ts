@@ -174,6 +174,12 @@ export class WorldMapScreen {
 
     this.pulseGfx = new Graphics();
     this.container.addChild(this.pulseGfx);
+    this.youAreHereText = new Text('You are here', new TextStyle({
+      fontFamily: 'MedievalSharp, serif', fontSize: 9, fill: '#c8963e',
+      fontStyle: 'italic',
+    }));
+    this.youAreHereText.anchor.set(0.5, 0);
+    this.container.addChild(this.youAreHereText);
 
     this.tooltipGfx = new Graphics();
     this.container.addChild(this.tooltipGfx);
@@ -492,6 +498,7 @@ export class WorldMapScreen {
     }
   }
 
+  private youAreHereText: Text;
   private drawPulseRing() {
     this.pulseGfx.clear();
     const currentEntry = Object.values(WORLD_MAP_REGISTRY).find(e => e.id === this.currentZoneId);
@@ -501,6 +508,8 @@ export class WorldMapScreen {
     const ringAlpha = 0.5 + 0.4 * Math.sin(this.pulseAngle * 2);
     this.pulseGfx.lineStyle(2, 0xf0c060, ringAlpha);
     this.pulseGfx.drawCircle(nx, ny, 22);
+    this.youAreHereText.x = nx;
+    this.youAreHereText.y = ny + 28;
   }
 
   private updateHover(mouseX: number, mouseY: number) {
