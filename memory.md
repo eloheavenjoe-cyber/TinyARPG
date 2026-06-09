@@ -1235,3 +1235,27 @@ Tier 4: #35, #43  → professional quality
 
 **Files changed:** 3 new files (+903 lines), 8 modified files (+302/−75). 13 commits across all subsystems.
 
+### Phase 24 — World Map Bug Fixes (completed 2026-06-09)
+
+**Fix 1 — Travel Confirmation Buttons** (WorldMapScreen.ts + Game.ts):
+- **Root cause**: Double-offset bug — `confirmText.x` was set to absolute screen coords within the container, AND the container was positioned at the same absolute coords, rendering buttons at 2× their intended position (off-screen at x=1960). Additionally, `removeAllListeners()` in `showConfirmation()` wiped the constructor's `pointerdown` handler.
+- **Fix**: Text children use local coords (x=0), containers positioned with absolute screen coords. `pointerdown` handler re-attached after `removeAllListeners`. `hitArea` added for comfortable clicking. Enter/NumpadEnter confirms travel, Escape cancels selection before closing the map.
+
+**Fix 2 — Overlapping Tooltips/Popups** (WorldMapScreen.ts):
+- **Root cause**: `selectNode()` showed a new confirmation without clearing the previous state. Hover tooltips remained visible when a confirmation popup was active.
+- **Fix**: Added `clearSelection()` — resets selected zone, clears popup/tooltip graphics, deselects hovered node, stops node pulse animation. Called at start of `selectNode()`, on `close()`, on cancel. `updateHover()` returns early when a selection is active.
+
+**Fix 3 — Verdant Forest Unlocked By Default** (WorldMapData.ts + Game.ts):
+- **Root cause**: `forest.discovered` was `false` in `WORLD_MAP_REGISTRY`. No migration path for existing saves.
+- **Fix**: Set `discovered: true` on `forest`. Added `DEFAULT_DISCOVERED` constant. `restoreDiscoveries()` now always merges defaults with saved discoveries. Save loader calls it unconditionally (even for old saves missing the field).
+
+**Fix 4 — Door Zone Connectivity** (RoomTemplates.ts):
+- **Root cause**: All boss room exit doors pointed to `hub`, breaking linear progression (forest→desert→ice). Forest boss door and desert boss door both went to hub.
+- **Fix**: Forest boss door → `'desert'`, Desert boss door → `'ice'`. Preserves dungeon crawl flow independent of world map.
+
+**Fix 5 — Secondary Font** (WorldMapScreen.ts, DiscoveryNotification.ts, index.html):
+- **Root cause**: `MedievalSharp` was illegible at small sizes (9-10px) for secondary map text.
+- **Fix**: Added **Sorts Mill Goudy** to Google Fonts import. Replaced all `MedievalSharp` text on the world map and discovery notification with `Sorts Mill Goudy` at updated sizes (zone labels 13px, tooltip name 16px, tooltip badge 12px, confirmation 15px, buttons 14px with letterSpacing, counter 12px, "you are here" 11px italic). `Cinzel` kept for title/heading only.
+
+**Files changed:** 6 files (+113/−43) across 1 commit.
+
