@@ -130,12 +130,7 @@ export const TEMPLATE_HUB: RoomTemplate = {
   ],
   doors: [],
   portals: [
-    { rect: { x: 1640, y: 1070, width: 80, height: 80 }, targetZone: 'tutorial', label: 'Tutorial' },
-    { rect: { x: 1640, y: 1470, width: 80, height: 80 }, targetZone: 'forest', label: 'Verdant Forest' },
-    { rect: { x: 1640, y: 1870, width: 80, height: 80 }, targetZone: 'desert', label: 'Scorched Desert' },
-    { rect: { x: 4680, y: 1070, width: 80, height: 80 }, targetZone: 'endless_arena', label: 'Endless Arena' },
-    { rect: { x: 4680, y: 1470, width: 80, height: 80 }, targetZone: 'ice', label: 'Frozen Wastes' },
-    { rect: { x: 4680, y: 1870, width: 80, height: 80 }, targetZone: 'endless_dungeon', label: 'Endless Dungeon' },
+    { rect: { x: 3150, y: 1900, width: 100, height: 100 }, targetZone: 'hub', label: 'World Map' },
   ],
   spawnZones: [],
   decorationRects: [
@@ -162,7 +157,9 @@ export const TEMPLATE_TUTORIAL: RoomTemplate = {
   doors: [
     { rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 },
   ],
-  portals: [],
+  portals: [
+    { rect: { x: 3160, y: 3160, width: 80, height: 80 }, targetZone: 'tutorial', label: 'Portal' },
+  ],
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
   buildings: [],
@@ -176,7 +173,7 @@ export const TEMPLATE_ARENA: RoomTemplate = {
   walls: [],
   doors: [],
   portals: [
-    { rect: { x: 6000, y: 128, width: 320, height: 200 }, targetZone: 'hub', label: 'Exit' },
+    { rect: { x: 3160, y: 460, width: 80, height: 80 }, targetZone: 'endless_arena', label: 'Portal' },
   ],
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
@@ -193,7 +190,7 @@ export const TEMPLATE_DUNGEON: RoomTemplate = {
     { rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'endless_dungeon', targetRoom: -1 },
   ],
   portals: [
-    { rect: { x: 6000, y: 128, width: 320, height: 200 }, targetZone: 'hub', label: 'Exit' },
+    { rect: { x: 3160, y: 460, width: 80, height: 80 }, targetZone: 'endless_dungeon', label: 'Portal' },
   ],
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
@@ -209,7 +206,9 @@ export const TEMPLATE_DEV: RoomTemplate = {
   doors: [
     { rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 },
   ],
-  portals: [],
+  portals: [
+    { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'dev', label: 'Portal' },
+  ],
   spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
   decorationRects: [],
   buildings: [],
@@ -570,7 +569,9 @@ export const TEMPLATE_FOREST_BOSS: RoomTemplate = {
     { x: 4200, y: 1600, width: 200, height: 200 },
   ],
   doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 }],
-  portals: [],
+  portals: [
+    { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'forest', label: 'Portal' },
+  ],
   spawnZones: [],
   decorationRects: [
     { x: 560, y: 480, width: 56, height: 56 },
@@ -598,7 +599,9 @@ export const TEMPLATE_DESERT_BOSS: RoomTemplate = {
     { x: 5680, y: 1600, width: 320, height: 64 },
   ],
   doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 }],
-  portals: [],
+  portals: [
+    { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'desert', label: 'Portal' },
+  ],
   spawnZones: [{ x: 800, y: 600, width: 4800, height: 2400 }],
   decorationRects: [
     { x: 800, y: 720, width: 40, height: 64 },
@@ -628,7 +631,9 @@ export const TEMPLATE_ICE_BOSS: RoomTemplate = {
     { x: 3440, y: 2000, width: 160, height: 160 },
   ],
   doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 }],
-  portals: [],
+  portals: [
+    { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'ice', label: 'Portal' },
+  ],
   spawnZones: [],
   decorationRects: [
     { x: 600, y: 600, width: 64, height: 64 },
@@ -660,7 +665,9 @@ export const TEMPLATE_CRYPT: RoomTemplate = {
       targetRoom: 0,
     },
   ],
-  portals: [],
+  portals: [
+    { rect: { x: 3160, y: 1460, width: 80, height: 80 }, targetZone: 'secret_crypt', label: 'Portal' },
+  ],
   spawnZones: [
     { x: 1650, y: 200, width: 600, height: 600 },
     { x: 4150, y: 200, width: 600, height: 600 },
