@@ -38,7 +38,7 @@ export class HubTip {
     title.y = py + 30;
     this.container.addChild(title);
 
-    const body = new Text('Portals to new zones are to the left and right of town.', new TextStyle({
+    const body = new Text('Use the central portal to open the World Map and travel to discovered zones.', new TextStyle({
       fontFamily: 'MedievalSharp, serif', fontSize: 14, fill: '#e8dcc8',
       stroke: '#000', strokeThickness: 1,
     }));

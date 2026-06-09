@@ -1653,6 +1653,15 @@ export class Game {
           const mouseY = this.app.renderer.events.pointer?.y ?? 0;
           this.worldMapScreen.update(dt, mouseX, mouseY);
         }
+        // Check Escape to close world map
+        if (this.input.isKeyDown('Escape')) {
+          if (!this.wasEscapeKeyDown) {
+            this.worldMapScreen?.close();
+            this.wasEscapeKeyDown = true;
+          }
+        } else {
+          this.wasEscapeKeyDown = false;
+        }
         this.updateGameplay(dt);
         return;
       }
@@ -2100,7 +2109,8 @@ export class Game {
 
     // Update minimap
     if (this.minimap && this.room) {
-      this.minimap.update(this.player.x, this.player.y, this.room.walls, this.enemies, this.chests, this.breakables, this.urns, this.room.doors);
+      const portalData = this.room.portals.map(p => ({ rect: p.rect, discovered: p.discovered ?? false }));
+      this.minimap.update(this.player.x, this.player.y, this.room.walls, this.enemies, this.chests, this.breakables, this.urns, this.room.doors, portalData);
     }
 
     // Recall portal drawing and collision
@@ -4436,6 +4446,21 @@ export class Game {
         const count = parseInt(args[0]) || 1;
         this.player.skillSubPoints += count;
         return `Added ${count} sub skill point(s) (total: ${this.player.skillSubPoints})`;
+      },
+    });
+
+    c.registerCommand({
+      name: 'discover', aliases: ['d'],
+      description: 'Discover a zone portal for world map fast travel',
+      usage: '<zoneId>',
+      run: (args) => {
+        const zoneId = args[0];
+        const entry = WORLD_MAP_REGISTRY[zoneId];
+        if (!entry) return `Unknown zone: ${zoneId}`;
+        if (entry.discovered) return `${entry.name} is already discovered`;
+        entry.discovered = true;
+        this.saveGame();
+        return `Discovered ${entry.name}! It is now available on the World Map.`;
       },
     });
 

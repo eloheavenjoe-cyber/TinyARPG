@@ -97,7 +97,7 @@ export class Minimap {
     this.container.addChild(this.borderGfx);
   }
 
-  update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[], urns?: { x: number; y: number; isOpen: boolean }[], doors?: { rect: { x: number; y: number; width: number; height: number } }[]) {
+  update(playerX: number, playerY: number, walls: Rect[], enemies: { x: number; y: number; alive: boolean }[], chests: { x: number; y: number; isOpen: boolean }[], breakables: { x: number; y: number; alive: boolean }[], urns?: { x: number; y: number; isOpen: boolean }[], doors?: { rect: { x: number; y: number; width: number; height: number } }[], portals?: { rect: { x: number; y: number; width: number; height: number }; discovered: boolean }[]) {
     this.currentAlpha += (this.targetAlpha - this.currentAlpha) * 0.1;
     /* PERF: snap alpha when converged to skip redundant assignment */
     if (Math.abs(this.currentAlpha - this.targetAlpha) < 0.005) {
@@ -178,6 +178,21 @@ export class Minimap {
         g.drawCircle(cx, cy, 3);
       }
       g.endFill();
+    }
+
+    // Draw portals — cyan dots for discovered, grey for undiscovered
+    if (portals) {
+      for (const portal of portals) {
+        const cx = (portal.rect.x + portal.rect.width / 2) * sx;
+        const cy = (portal.rect.y + portal.rect.height / 2) * sy;
+        if (portal.discovered) {
+          g.beginFill(0x88ccff, 0.6);
+        } else {
+          g.beginFill(0x555555, 0.4);
+        }
+        g.drawCircle(cx, cy, portal.discovered ? 3 : 2);
+        g.endFill();
+      }
     }
   }
 
