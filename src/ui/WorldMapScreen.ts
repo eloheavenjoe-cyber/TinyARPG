@@ -57,6 +57,15 @@ export class WorldMapScreen {
   private hoveredNode: NodeInfo | null = null;
   private selectedZoneId: string | null = null;
   private nodePulse: { node: NodeInfo; frame: number } | null = null;
+  private youAreHereText: Text;
+  private tooltipName = new Text('', new TextStyle({
+    fontFamily: 'Cinzel, serif', fontSize: 12, fill: '#f0c060',
+    stroke: '#000', strokeThickness: 1,
+  }));
+  private tooltipBadge = new Text('', new TextStyle({
+    fontFamily: 'MedievalSharp, serif', fontSize: 10, fill: '#c8963e',
+    stroke: '#000', strokeThickness: 1,
+  }));
 
   private closing = false;
   private closeFrames = 9;
@@ -182,6 +191,10 @@ export class WorldMapScreen {
     this.container.addChild(this.youAreHereText);
 
     this.tooltipGfx = new Graphics();
+    this.tooltipGfx.addChild(this.tooltipName);
+    this.tooltipGfx.addChild(this.tooltipBadge);
+    this.tooltipName.visible = false;
+    this.tooltipBadge.visible = false;
     this.container.addChild(this.tooltipGfx);
 
     this.confirmGfx = new Graphics();
@@ -412,10 +425,12 @@ export class WorldMapScreen {
     confirmText.anchor.set(0.5);
     confirmText.x = confX + 180;
     confirmText.y = confY + confH / 2;
+    this.confirmBtn.removeChildren();
     this.confirmBtn.addChild(confirmText);
     this.confirmBtn.x = confX + 180;
     this.confirmBtn.y = confY + confH / 2;
     this.confirmBtn.visible = true;
+    this.confirmBtn.removeAllListeners();
     this.confirmBtn.on('pointerover', () => { confirmText.style = confirmHoverStyle; });
     this.confirmBtn.on('pointerout', () => { confirmText.style = confirmStyle; });
 
@@ -498,7 +513,6 @@ export class WorldMapScreen {
     }
   }
 
-  private youAreHereText: Text;
   private drawPulseRing() {
     this.pulseGfx.clear();
     const currentEntry = Object.values(WORLD_MAP_REGISTRY).find(e => e.id === this.currentZoneId);
@@ -552,7 +566,11 @@ export class WorldMapScreen {
 
   private drawTooltip(node: NodeInfo | null, mouseX: number, mouseY: number) {
     this.tooltipGfx.clear();
-    if (!node) return;
+    if (!node) {
+      this.tooltipName.visible = false;
+      this.tooltipBadge.visible = false;
+      return;
+    }
 
     const tw = 160;
     const th = 50;
@@ -566,22 +584,16 @@ export class WorldMapScreen {
     this.tooltipGfx.lineStyle(1, 0x8a7a3a, 0.8);
     this.tooltipGfx.drawRoundedRect(tx, ty, tw, th, 4);
 
-    const name = new Text(node.entry.name, new TextStyle({
-      fontFamily: 'Cinzel, serif', fontSize: 12, fill: '#f0c060',
-      stroke: '#000', strokeThickness: 1,
-    }));
-    name.x = tx + 8;
-    name.y = ty + 8;
-    this.tooltipGfx.addChild(name);
-
     const typeMap: Record<string, string> = { hub: 'Hub', dungeon: 'Zone', arena: 'Arena', boss: 'Boss', secret: 'Secret', dev: 'Dev' };
-    const badge = new Text(typeMap[node.entry.type] || node.entry.type, new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 10, fill: '#c8963e',
-      stroke: '#000', strokeThickness: 1,
-    }));
-    badge.x = tx + 8;
-    badge.y = ty + 28;
-    this.tooltipGfx.addChild(badge);
+    this.tooltipName.text = node.entry.name;
+    this.tooltipName.x = tx + 8;
+    this.tooltipName.y = ty + 8;
+    this.tooltipName.visible = true;
+
+    this.tooltipBadge.text = typeMap[node.entry.type] || node.entry.type;
+    this.tooltipBadge.x = tx + 8;
+    this.tooltipBadge.y = ty + 28;
+    this.tooltipBadge.visible = true;
   }
 
   private updateNodePulse() {
