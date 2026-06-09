@@ -52,6 +52,9 @@ import { SoulVaultScreen } from '../ui/SoulVaultScreen';
 import { generateVendorStock, VendorStockItem, calculateSellPrice } from '../core/VendorManager';
 import { StashTab } from '../core/SaveManager';
 import { getRandomMods } from './MonsterMods';
+import { WORLD_MAP_REGISTRY, ZONE_PORTAL_POSITIONS, getDiscoveredZoneIds, restoreDiscoveries } from './WorldMapData';
+import { WorldMapScreen } from '../ui/WorldMapScreen';
+import { DiscoveryNotification } from '../ui/DiscoveryNotification';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -207,6 +210,11 @@ export class Game {
   private activeSpectre: CapturedSoul | null = null;
   private activeSpectreMinion: Minion | null = null;
   private soulDrops: { x: number; y: number; enemyType: string; label: string; container: Container }[] = [];
+  private worldMapScreen: WorldMapScreen | null = null;
+  private worldMapOpen = false;
+  private discoveryNotification: DiscoveryNotification | null = null;
+  private pendingDiscoveryQueue: string[] = [];
+  private spawnInvulnTimer = 0;
   soulVaultScreen?: SoulVaultScreen;
   soulVaultOpen: boolean = false;
 
@@ -376,6 +384,9 @@ export class Game {
     this.app.stage.addChild(this.skillBar.container);
     this.minimap = new Minimap();
     this.app.stage.addChild(this.minimap.container);
+    // Create discovery notification
+    this.discoveryNotification = new DiscoveryNotification();
+    this.app.stage.addChild(this.discoveryNotification.container);
     this.zoneManager.transitionTo('tutorial');
     this.buildCurrentZoneRoom();
     this.tutorialStage = 'move';
@@ -507,11 +518,18 @@ export class Game {
     this.app.stage.addChild(this.skillBar.container);
     this.minimap = new Minimap();
     this.app.stage.addChild(this.minimap.container);
+    // Create discovery notification
+    this.discoveryNotification = new DiscoveryNotification();
+    this.app.stage.addChild(this.discoveryNotification.container);
 
     // Restore zone state
     this.zoneManager = new ZoneManager();
     for (const zoneId of data.zone.completedZoneIds) {
       this.zoneManager.completedZoneIds.add(zoneId);
+    }
+    // Restore discovered zones
+    if (data.zone.discoveredZones) {
+      restoreDiscoveries(data.zone.discoveredZones);
     }
     this.cryptJackpotClaimed = data.zone.cryptJackpotClaimed ?? false;
     this.zoneManager.transitionTo(data.zone.currentZoneId, data.zone.currentRoomIndex);
@@ -564,6 +582,7 @@ export class Game {
         completedZoneIds: [...this.zoneManager.completedZoneIds],
         cryptJackpotClaimed: this.cryptJackpotClaimed || undefined,
         urns: this.urns.filter(u => u.state === 'cleared' || u.isOpen).map(u => u.serialize()),
+        discoveredZones: getDiscoveredZoneIds(),
       },
       player: {
         x: p.x, y: p.y,
@@ -907,6 +926,13 @@ export class Game {
     this.tutorialStage = null;
     this.tutorialKeys = new Set();
     this.tutorialKeyWasDown = new Set();
+    this.worldMapScreen?.destroy();
+    this.worldMapScreen = null;
+    this.worldMapOpen = false;
+    this.discoveryNotification?.destroy();
+    this.discoveryNotification = null;
+    this.pendingDiscoveryQueue = [];
+    this.spawnInvulnTimer = 0;
     if (this.boss) {
       if (this.boss.sprite.parent && this.gameContainer) this.gameContainer.removeChild(this.boss.sprite);
       if (this.boss.telegraphs.parent && this.gameContainer) this.gameContainer.removeChild(this.boss.telegraphs);
@@ -961,6 +987,53 @@ export class Game {
     this.vendorStock = [];
   }
  
+  private openWorldMap(): void {
+    if (this.worldMapOpen || !this.player?.alive) return;
+    this.worldMapOpen = true;
+    this.worldMapScreen = new WorldMapScreen(
+      this.zoneManager.zoneId,
+      (targetZoneId: string) => {
+        this.worldMapScreen?.destroy();
+        this.worldMapScreen = null;
+        this.worldMapOpen = false;
+        this.initiateTeleport(targetZoneId);
+      },
+      () => {
+        this.worldMapScreen?.destroy();
+        this.worldMapScreen = null;
+        this.worldMapOpen = false;
+      }
+    );
+    this.app.stage.addChild(this.worldMapScreen.container);
+  }
+
+  private initiateTeleport(targetZoneId: string): void {
+    this.addVfx((g, t) => {
+      g.clear();
+      const r = 10 + t * 80;
+      g.lineStyle(2, 0xaa66ff, 1 - t);
+      g.drawCircle(0, 0, r);
+    }, 30).position.set(this.player!.x, this.player!.y);
+    
+    this.zoneManager.transitionTo(targetZoneId);
+    this.buildCurrentZoneRoom();
+    
+    const portalPos = ZONE_PORTAL_POSITIONS[targetZoneId];
+    if (portalPos && this.player) {
+      this.player.x = portalPos.x;
+      this.player.y = portalPos.y;
+    }
+    
+    this.addVfx((g, t) => {
+      g.clear();
+      const r = 80 - t * 70;
+      g.lineStyle(2, 0xaa66ff, t);
+      g.drawCircle(0, 0, r);
+    }, 30).position.set(this.player!.x, this.player!.y);
+    
+    this.spawnInvulnTimer = 90;
+  }
+
   private toggleEscapeMenu() {
     if (!this.player) return;
     this.escapeMenuOpen = !this.escapeMenuOpen;
@@ -1109,6 +1182,11 @@ export class Game {
       this.tutorialScreen = new TutorialScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
       this.tutorialScreen.setStage(this.tutorialStage);
       this.app.stage.addChild(this.tutorialScreen.container);
+    }
+
+    // Set discovered state on portals before creating room
+    for (const p of template.portals) {
+      p.discovered = WORLD_MAP_REGISTRY[p.targetZone]?.discovered ?? false;
     }
 
     this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, template.playerStart, template.cabins, state.roomIndex);
@@ -1568,10 +1646,23 @@ export class Game {
         return;
       }
 
+      // World map overlay
+      if (this.worldMapOpen) {
+        if (this.worldMapScreen) {
+          const mouseX = this.app.renderer.events.pointer?.x ?? 0;
+          const mouseY = this.app.renderer.events.pointer?.y ?? 0;
+          this.worldMapScreen.update(dt, mouseX, mouseY);
+        }
+        this.updateGameplay(dt);
+        return;
+      }
+
       // Escape key handling
       if (this.input.isKeyDown('Escape')) {
         if (!this.wasEscapeKeyDown) {
-          if (this.soulVaultScreen?.visible) {
+          if (this.worldMapOpen) {
+            this.worldMapScreen?.close();
+          } else if (this.soulVaultScreen?.visible) {
             this.soulVaultScreen.toggle();
             this.soulVaultOpen = false;
           } else if (this.vendorOpen) {
@@ -1731,6 +1822,18 @@ export class Game {
       this.soulVaultScreen.update(this.soulVault, this.activeSpectre, (soul) => this.summonSpectre(soul));
       return;
     }
+
+    // Spawn invulnerability
+    if (this.spawnInvulnTimer > 0) {
+      this.spawnInvulnTimer -= dt;
+      if (this.player && this.player.alive) {
+        (this.player as any).invulnTimer = Math.max(
+          (this.player as any).invulnTimer ?? 0,
+          this.spawnInvulnTimer
+        );
+      }
+    }
+
     this.frameCount++;
 
     // Process urn enemy spawn queue (staggered)
@@ -1801,6 +1904,27 @@ export class Game {
     const inputDisabled = this.playerPullTimer > 0;
     if (!inputDisabled) {
       this.player.update(this.input, mouseWX, mouseWY, this.room.walls, dt);
+    }
+
+    // Portal discovery: proximity-based auto-trigger
+    for (let i = 0; i < (this.room?.portals ?? []).length; i++) {
+      const portal = this.room!.portals[i];
+      if (portal.discovered === false) {
+        const cx = portal.rect.x + portal.rect.width / 2;
+        const cy = portal.rect.y + portal.rect.height / 2;
+        const dist = Math.hypot(this.player!.x - cx, this.player!.y - cy);
+        if (dist < 80) {
+          portal.discovered = true;
+          if (WORLD_MAP_REGISTRY[portal.targetZone]) {
+            WORLD_MAP_REGISTRY[portal.targetZone].discovered = true;
+          }
+          this.room?.startDiscoveryTransition(i);
+          this.pendingDiscoveryQueue.push(
+            WORLD_MAP_REGISTRY[portal.targetZone]?.name ?? portal.targetZone
+          );
+          this.saveGame();
+        }
+      }
     }
 
     // HP regen from passive tree
@@ -2513,15 +2637,18 @@ export class Game {
     this.handleSkillKeys(mouseWX, mouseWY);
 
     if (this.input.consumeClick()) {
-      // Portal click check (game coords, must be near portal)
+      // Portal click: open world map for discovered portals
       let clickedItem = false;
       for (const portal of this.room?.portals ?? []) {
         const cx = portal.rect.x + portal.rect.width / 2;
         const cy = portal.rect.y + portal.rect.height / 2;
         const distToPlayer = Math.hypot(this.player!.x - cx, this.player!.y - cy);
-        if (distToPlayer < 150 && Math.hypot(mouseWX - cx, mouseWY - cy) < 60 && this.zoneManager.isZoneUnlocked(portal.targetZone)) {
-          this.zoneManager.transitionTo(portal.targetZone);
-          this.buildCurrentZoneRoom();
+        if (distToPlayer < 150 && Math.hypot(mouseWX - cx, mouseWY - cy) < 60) {
+          const entry = WORLD_MAP_REGISTRY[portal.targetZone];
+          const isDiscovered = entry?.discovered ?? false;
+          if (isDiscovered) {
+            this.openWorldMap();
+          }
           clickedItem = true;
           break;
         }
@@ -2817,6 +2944,19 @@ export class Game {
       this.hud?.setZoneName(zoneName);
     }
     this.skillBar?.update(this.player.skills);
+
+    // Room discovery transition update
+    this.room?.updateDiscoveryTransitions(dt);
+
+    // Discovery notification queue
+    if (this.discoveryNotification) {
+      if (this.pendingDiscoveryQueue.length > 0 && !this.discoveryNotification.isShowing()) {
+        const next = this.pendingDiscoveryQueue.shift()!;
+        this.discoveryNotification.show(next);
+      }
+      this.discoveryNotification.update(dt);
+    }
+
     if (!this.player.alive) this.showDeathScreen();
   }
 

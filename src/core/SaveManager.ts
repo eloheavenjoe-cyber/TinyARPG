@@ -75,6 +75,7 @@ export interface SaveData {
     completedZoneIds: string[];
     cryptJackpotClaimed?: boolean;
     urns?: SerializedUrn[];
+    discoveredZones?: string[];
   };
   player: {
     x: number;
