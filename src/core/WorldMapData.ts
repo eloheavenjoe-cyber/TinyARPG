@@ -57,7 +57,7 @@ export const WORLD_MAP_REGISTRY: Record<string, WorldMapEntry> = {
     connections: ['hub', 'tutorial', 'desert'],
     description: 'A sprawling woodland teeming with archers and grunts. The Stone Golem awaits.',
     actGroup: 1,
-    discovered: false,
+    discovered: true,
   },
   desert: {
     id: 'desert',
@@ -134,8 +134,11 @@ export function getDiscoveredZoneIds(): string[] {
     .map(entry => entry.id);
 }
 
+export const DEFAULT_DISCOVERED: string[] = ['hub', 'tutorial', 'forest', 'endless_arena', 'endless_dungeon', 'dev'];
+
 export function restoreDiscoveries(discoveredIds: string[]): void {
-  for (const id of discoveredIds) {
+  const allIds = new Set([...discoveredIds, ...DEFAULT_DISCOVERED]);
+  for (const id of allIds) {
     const entry = WORLD_MAP_REGISTRY[id];
     if (entry) {
       entry.discovered = true;

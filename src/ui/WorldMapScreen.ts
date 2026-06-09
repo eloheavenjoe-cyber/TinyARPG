@@ -1,4 +1,4 @@
-import { Container, Text, TextStyle, Graphics } from 'pixi.js';
+import { Container, Text, TextStyle, Graphics, Rectangle } from 'pixi.js';
 import { WORLD_MAP_REGISTRY, WorldMapEntry, getDiscoveredCount, getTotalZoneCount } from '../core/WorldMapData';
 
 const PW = 1200;
@@ -59,11 +59,11 @@ export class WorldMapScreen {
   private nodePulse: { node: NodeInfo; frame: number } | null = null;
   private youAreHereText: Text;
   private tooltipName = new Text('', new TextStyle({
-    fontFamily: 'Cinzel, serif', fontSize: 12, fill: '#f0c060',
+    fontFamily: 'Cinzel, serif', fontSize: 16, fill: '#f0c060',
     stroke: '#000', strokeThickness: 1,
   }));
   private tooltipBadge = new Text('', new TextStyle({
-    fontFamily: 'MedievalSharp, serif', fontSize: 10, fill: '#c8963e',
+    fontFamily: 'Sorts Mill Goudy, serif', fontSize: 12, fill: '#c8963e',
     stroke: '#000', strokeThickness: 1,
   }));
 
@@ -149,7 +149,7 @@ export class WorldMapScreen {
     this.container.addChild(line);
 
     const sub = new Text(`${getDiscoveredCount()} / ${getTotalZoneCount()} Zones Discovered`, new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 13, fill: '#c8963e',
+      fontFamily: 'Sorts Mill Goudy, serif', fontSize: 12, fill: '#c8963e',
       stroke: '#000', strokeThickness: 2,
     }));
     sub.anchor.set(0.5);
@@ -184,7 +184,7 @@ export class WorldMapScreen {
     this.pulseGfx = new Graphics();
     this.container.addChild(this.pulseGfx);
     this.youAreHereText = new Text('You are here', new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 9, fill: '#c8963e',
+      fontFamily: 'Sorts Mill Goudy, serif', fontSize: 11, fill: '#c8963e',
       fontStyle: 'italic',
     }));
     this.youAreHereText.anchor.set(0.5, 0);
@@ -214,12 +214,7 @@ export class WorldMapScreen {
     this.cancelBtn.eventMode = 'static';
     this.cancelBtn.cursor = 'pointer';
     this.cancelBtn.on('pointerdown', () => {
-      this.selectedZoneId = null;
-      this.confirmGfx.clear();
-      this.confirmBtn.removeChildren();
-      this.confirmBtn.visible = false;
-      this.cancelBtn.removeChildren();
-      this.cancelBtn.visible = false;
+      this.clearSelection();
     });
     this.container.addChild(this.cancelBtn);
   }
@@ -272,8 +267,8 @@ export class WorldMapScreen {
       const isDiscovered = entry.discovered;
       const labelText = isDiscovered ? entry.name : '???';
       const label = new Text(labelText, new TextStyle({
-        fontFamily: isDiscovered ? 'Cinzel, serif' : 'MedievalSharp, serif',
-        fontSize: isDiscovered ? 11 : 10,
+        fontFamily: 'Sorts Mill Goudy, serif',
+        fontSize: 13,
         fill: isDiscovered ? '#e8dcc8' : '#555555',
         stroke: '#000', strokeThickness: 2,
       }));
@@ -377,6 +372,7 @@ export class WorldMapScreen {
   }
 
   private selectNode(zoneId: string) {
+    this.clearSelection();
     if (zoneId === this.currentZoneId) return;
     this.selectedZoneId = zoneId;
     const node = this.nodes.find(n => n.entry.id === zoneId);
@@ -406,46 +402,49 @@ export class WorldMapScreen {
     this.confirmGfx.drawRoundedRect(confX, confY, confW, confH, 4);
 
     const prompt = new Text(`Travel to ${entry.name}?`, new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#e8dcc8',
+      fontFamily: 'Sorts Mill Goudy, serif', fontSize: 15, fill: '#e8dcc8',
       stroke: '#000', strokeThickness: 1,
     }));
-    prompt.x = confX + 16;
-    prompt.y = confY + 6;
+    prompt.x = confX + 12;
+    prompt.y = confY + 4;
     this.confirmGfx.addChild(prompt);
 
     const confirmStyle = new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#f0c060',
-      stroke: '#000', strokeThickness: 1,
+      fontFamily: 'Sorts Mill Goudy, serif', fontSize: 14, fill: '#f0c060',
+      stroke: '#000', strokeThickness: 1, letterSpacing: 1,
     });
     const confirmHoverStyle = new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#ffffff',
-      stroke: '#000', strokeThickness: 1,
+      fontFamily: 'Sorts Mill Goudy, serif', fontSize: 14, fill: '#ffffff',
+      stroke: '#000', strokeThickness: 1, letterSpacing: 1,
     });
     const confirmText = new Text('[CONFIRM]', confirmStyle);
     confirmText.anchor.set(0.5);
-    confirmText.x = confX + 180;
-    confirmText.y = confY + confH / 2;
     this.confirmBtn.removeChildren();
     this.confirmBtn.addChild(confirmText);
-    this.confirmBtn.x = confX + 180;
+    this.confirmBtn.x = confX + 190;
     this.confirmBtn.y = confY + confH / 2;
     this.confirmBtn.visible = true;
     this.confirmBtn.removeAllListeners();
+    this.confirmBtn.on('pointerdown', () => {
+      if (this.selectedZoneId) {
+        this.onTravelConfirm(this.selectedZoneId);
+      }
+    });
     this.confirmBtn.on('pointerover', () => { confirmText.style = confirmHoverStyle; });
     this.confirmBtn.on('pointerout', () => { confirmText.style = confirmStyle; });
+    this.confirmBtn.hitArea = new Rectangle(-55, -18, 110, 36);
 
     const cancelStyle = new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 12, fill: '#c8963e',
-      stroke: '#000', strokeThickness: 1,
+      fontFamily: 'Sorts Mill Goudy, serif', fontSize: 14, fill: '#c8963e',
+      stroke: '#000', strokeThickness: 1, letterSpacing: 1,
     });
     const cancelText = new Text('[CANCEL]', cancelStyle);
     cancelText.anchor.set(0.5);
-    cancelText.x = confX + 260;
-    cancelText.y = confY + confH / 2;
     this.cancelBtn.addChild(cancelText);
-    this.cancelBtn.x = confX + 260;
+    this.cancelBtn.x = confX + 270;
     this.cancelBtn.y = confY + confH / 2;
     this.cancelBtn.visible = true;
+    this.cancelBtn.hitArea = new Rectangle(-45, -18, 90, 36);
   }
 
   update(dt: number, mouseX: number, mouseY: number) {
@@ -527,6 +526,21 @@ export class WorldMapScreen {
   }
 
   private updateHover(mouseX: number, mouseY: number) {
+    if (this.selectedZoneId !== null) {
+      if (this.hoveredNode) {
+        this.hoveredNode.iconNormal.alpha = 1;
+        this.hoveredNode.iconHover.alpha = 0;
+        this.hoveredNode.label.style = new TextStyle({
+          fontFamily: 'Sorts Mill Goudy, serif', fontSize: 13, fill: '#e8dcc8',
+          stroke: '#000', strokeThickness: 2,
+        });
+        this.hoveredNode = null;
+      }
+      this.tooltipGfx.clear();
+      this.tooltipName.visible = false;
+      this.tooltipBadge.visible = false;
+      return;
+    }
     let closest: NodeInfo | null = null;
     for (const node of this.nodes) {
       if (!node.entry.discovered) continue;
@@ -543,7 +557,7 @@ export class WorldMapScreen {
         this.hoveredNode.iconNormal.alpha = 1;
         this.hoveredNode.iconHover.alpha = 0;
         this.hoveredNode.label.style = new TextStyle({
-          fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#e8dcc8',
+          fontFamily: 'Sorts Mill Goudy, serif', fontSize: 13, fill: '#e8dcc8',
           stroke: '#000', strokeThickness: 2,
         });
       }
@@ -552,7 +566,7 @@ export class WorldMapScreen {
         this.hoveredNode.iconNormal.alpha = 0;
         this.hoveredNode.iconHover.alpha = 1;
         this.hoveredNode.label.style = new TextStyle({
-          fontFamily: 'Cinzel, serif', fontSize: 11, fill: '#e8dcc8',
+          fontFamily: 'Sorts Mill Goudy, serif', fontSize: 13, fill: '#e8dcc8',
           stroke: '#000', strokeThickness: 2, fontWeight: 'bold',
         });
       }
@@ -596,6 +610,47 @@ export class WorldMapScreen {
     this.tooltipBadge.visible = true;
   }
 
+  private clearSelection() {
+    this.selectedZoneId = null;
+    this.confirmGfx.clear();
+    this.confirmBtn.removeChildren();
+    this.confirmBtn.visible = false;
+    this.cancelBtn.removeChildren();
+    this.cancelBtn.visible = false;
+    this.tooltipGfx.clear();
+    this.tooltipName.visible = false;
+    this.tooltipBadge.visible = false;
+    if (this.hoveredNode) {
+      this.hoveredNode.iconNormal.alpha = 1;
+      this.hoveredNode.iconHover.alpha = 0;
+      this.hoveredNode.label.style = new TextStyle({
+        fontFamily: 'Sorts Mill Goudy, serif', fontSize: 13, fill: '#e8dcc8',
+        stroke: '#000', strokeThickness: 2,
+      });
+      this.hoveredNode = null;
+    }
+    if (this.nodePulse) {
+      this.nodePulse.node.container.scale.set(1);
+      this.nodePulse = null;
+    }
+  }
+
+  public handleConfirm(): boolean {
+    if (this.selectedZoneId) {
+      this.onTravelConfirm(this.selectedZoneId);
+      return true;
+    }
+    return false;
+  }
+
+  public handleCancel(): boolean {
+    if (this.selectedZoneId !== null) {
+      this.clearSelection();
+      return true;
+    }
+    return false;
+  }
+
   private updateNodePulse() {
     if (!this.nodePulse) return;
     this.nodePulse.frame++;
@@ -610,6 +665,7 @@ export class WorldMapScreen {
   }
 
   close() {
+    this.clearSelection();
     this.closing = true;
     this.closeCount = 0;
   }

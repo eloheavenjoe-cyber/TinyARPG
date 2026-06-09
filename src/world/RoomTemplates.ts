@@ -568,7 +568,7 @@ export const TEMPLATE_FOREST_BOSS: RoomTemplate = {
     { x: 2000, y: 1600, width: 200, height: 200 },
     { x: 4200, y: 1600, width: 200, height: 200 },
   ],
-  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 }],
+  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'desert', targetRoom: 0 }],
   portals: [
     { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'forest', label: 'Portal' },
   ],
@@ -598,7 +598,7 @@ export const TEMPLATE_DESERT_BOSS: RoomTemplate = {
     { x: 400, y: 1600, width: 320, height: 64 },
     { x: 5680, y: 1600, width: 320, height: 64 },
   ],
-  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 }],
+  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'ice', targetRoom: 0 }],
   portals: [
     { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'desert', label: 'Portal' },
   ],

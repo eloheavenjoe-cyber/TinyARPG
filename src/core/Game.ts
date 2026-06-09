@@ -52,7 +52,7 @@ import { SoulVaultScreen } from '../ui/SoulVaultScreen';
 import { generateVendorStock, VendorStockItem, calculateSellPrice } from '../core/VendorManager';
 import { StashTab } from '../core/SaveManager';
 import { getRandomMods } from './MonsterMods';
-import { WORLD_MAP_REGISTRY, ZONE_PORTAL_POSITIONS, getDiscoveredZoneIds, restoreDiscoveries } from './WorldMapData';
+import { WORLD_MAP_REGISTRY, ZONE_PORTAL_POSITIONS, getDiscoveredZoneIds, restoreDiscoveries, DEFAULT_DISCOVERED } from './WorldMapData';
 import { WorldMapScreen } from '../ui/WorldMapScreen';
 import { DiscoveryNotification } from '../ui/DiscoveryNotification';
 
@@ -181,6 +181,7 @@ export class Game {
   private saveSlotScreen?: SaveSlotScreen;
   private settingsPlaceholder?: SettingsPlaceholder;
   private wasEscapeKeyDown = false;
+  private wasEnterKeyDown = false;
   private wasKKeyDown = false;
   private subTreeScreen?: SkillSubTreeScreen;
   private vendorOpen = false;
@@ -527,10 +528,8 @@ export class Game {
     for (const zoneId of data.zone.completedZoneIds) {
       this.zoneManager.completedZoneIds.add(zoneId);
     }
-    // Restore discovered zones
-    if (data.zone.discoveredZones) {
-      restoreDiscoveries(data.zone.discoveredZones);
-    }
+    // Restore discovered zones — always ensure defaults are present
+    restoreDiscoveries(data.zone.discoveredZones || []);
     this.cryptJackpotClaimed = data.zone.cryptJackpotClaimed ?? false;
     this.zoneManager.transitionTo(data.zone.currentZoneId, data.zone.currentRoomIndex);
     this.buildCurrentZoneRoom();
@@ -1653,10 +1652,22 @@ export class Game {
           const mouseY = this.app.renderer.events.pointer?.y ?? 0;
           this.worldMapScreen.update(dt, mouseX, mouseY);
         }
-        // Check Escape to close world map
+        // Enter key confirms travel
+        if (this.input.isKeyDown('Enter') || this.input.isKeyDown('NumpadEnter')) {
+          if (!this.wasEnterKeyDown) {
+            this.worldMapScreen?.handleConfirm();
+            this.wasEnterKeyDown = true;
+          }
+        } else {
+          this.wasEnterKeyDown = false;
+        }
+        // Escape — cancel selection first, close map if no selection
         if (this.input.isKeyDown('Escape')) {
           if (!this.wasEscapeKeyDown) {
-            this.worldMapScreen?.close();
+            const handled = this.worldMapScreen?.handleCancel() ?? false;
+            if (!handled) {
+              this.worldMapScreen?.close();
+            }
             this.wasEscapeKeyDown = true;
           }
         } else {

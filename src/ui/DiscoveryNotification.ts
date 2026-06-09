@@ -63,7 +63,7 @@ export class DiscoveryNotification {
     this.container.addChild(zoneLabel);
 
     const hint = new Text('Added to your World Map', new TextStyle({
-      fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#c8963e',
+      fontFamily: 'Sorts Mill Goudy, serif', fontSize: 12, fill: '#c8963e',
       stroke: '#000', strokeThickness: 1,
     }));
     hint.x = 16;
