@@ -1111,7 +1111,7 @@ export class Game {
       this.app.stage.addChild(this.tutorialScreen.container);
     }
 
-    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, (targetZone: string) => this.zoneManager.isZoneUnlocked(targetZone), template.playerStart, template.cabins, state.roomIndex);
+    this.room = new Room(zone.biome, template.doors, template.portals, template.decorationRects, template.buildings, template.npcs, template.playerStart, template.cabins, state.roomIndex);
     this.gameContainer.addChild(this.room.container);
 
     // Procedural decoration

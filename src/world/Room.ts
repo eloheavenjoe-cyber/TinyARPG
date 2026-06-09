@@ -70,11 +70,10 @@ export class Room {
   private npcs: NpcData[];
   private cabins: CabinData[];
   private roomIndex: number;
-  private isPortalUnlocked: (targetZone: string) => boolean;
 
   private playerStart?: { x: number; y: number };
 
-  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = [], isPortalUnlocked?: (targetZone: string) => boolean, playerStart?: { x: number; y: number }, cabins: CabinData[] = [], roomIndex: number = 0) {
+  constructor(biome: BiomeId = 'dev', doors: DoorMarker[] = [], portals: PortalMarker[] = [], decorations: Rect[] = [], buildings: BuildingData[] = [], npcs: NpcData[] = [], playerStart?: { x: number; y: number }, cabins: CabinData[] = [], roomIndex: number = 0) {
     this.container = new Container();
     this.walkableArea = {
       x: WALL_THICKNESS,
@@ -89,7 +88,6 @@ export class Room {
     this.decorations = decorations;
     this.buildings = buildings;
     this.npcs = npcs;
-    this.isPortalUnlocked = isPortalUnlocked || (() => true);
     this.playerStart = playerStart;
     this.cabins = cabins;
     this.roomIndex = roomIndex;
@@ -319,9 +317,9 @@ export class Room {
 
       const container = new Container();
       const g = new Graphics();
+      container.addChild(g);
 
       if (portal.discovered === false) {
-        // Undiscovered: greyscale, dim
         g.lineStyle(2, 0x555555, 0.6);
         g.drawCircle(cx, cy, r);
         container.alpha = 0.6;
@@ -334,7 +332,6 @@ export class Room {
         label.y = cy + r + 6;
         container.addChild(label);
       } else {
-        // Discovered: full colour (same as current rendering)
         g.lineStyle(2, 0xaa66ff, 0.5);
         g.drawCircle(cx, cy, r);
         g.lineStyle(1, 0xcc88ff, 0.3);
@@ -348,8 +345,6 @@ export class Room {
         label.y = cy + r + 6;
         container.addChild(label);
       }
-
-      container.addChild(g);
       this.container.addChild(container);
       this.portalGraphics.push(g);
       this.portalContainers.push(container);
@@ -358,9 +353,31 @@ export class Room {
 
   startDiscoveryTransition(portalIndex: number): void {
     const container = this.portalContainers[portalIndex];
-    if (container) {
-      this.discoveryTransitions.push({ container, timer: 48 });
-    }
+    const portal = this.portals[portalIndex];
+    if (!container || !portal) return;
+
+    const cx = portal.rect.x + portal.rect.width / 2;
+    const cy = portal.rect.y + portal.rect.height / 2;
+    const r = Math.min(portal.rect.width, portal.rect.height) / 2 - 4;
+
+    container.removeChildren();
+    const g = new Graphics();
+    g.lineStyle(2, 0xaa66ff, 0.5);
+    g.drawCircle(cx, cy, r);
+    g.lineStyle(1, 0xcc88ff, 0.3);
+    g.drawCircle(cx, cy, r * 0.6);
+
+    const label = new Text(portal.label, {
+      fontFamily: 'Cinzel, serif', fontSize: 13, fill: 0xc8963e,
+    });
+    label.anchor.set(0.5, 0);
+    label.x = cx;
+    label.y = cy + r + 6;
+
+    container.addChild(g);
+    container.addChild(label);
+    container.alpha = 0.6;
+    this.discoveryTransitions.push({ container, timer: 48 });
   }
 
   updateDiscoveryTransitions(dt: number): void {
