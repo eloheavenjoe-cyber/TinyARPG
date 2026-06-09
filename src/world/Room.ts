@@ -62,6 +62,9 @@ export class Room {
   biomeId: BiomeId;
   doors: DoorMarker[];
   portals: PortalMarker[];
+  portalGraphics: Graphics[] = [];
+  portalContainers: Container[] = [];
+  private discoveryTransitions: { container: Container; timer: number }[] = [];
   private decorations: Rect[];
   private buildings: BuildingData[];
   private npcs: NpcData[];
@@ -95,6 +98,9 @@ export class Room {
   }
 
   private build() {
+    this.portalGraphics = [];
+    this.portalContainers = [];
+    this.discoveryTransitions = [];
     const tc = TILE_CONFIGS[this.biomeId];
     const floorTx = tc ? tileTextures[tc.floorTile] : undefined;
 
@@ -310,40 +316,61 @@ export class Room {
       const cx = portal.rect.x + portal.rect.width / 2;
       const cy = portal.rect.y + portal.rect.height / 2;
       const r = Math.min(portal.rect.width, portal.rect.height) / 2 - 4;
-      // Static ring background
+
+      const container = new Container();
       const g = new Graphics();
-      g.lineStyle(2, 0xaa66ff, 0.5);
-      g.drawCircle(cx, cy, r);
-      g.lineStyle(1, 0xcc88ff, 0.3);
-      g.drawCircle(cx, cy, r * 0.6);
-      this.container.addChild(g);
-      // Label
-      const label = new Text(portal.label, { fontFamily: 'Cinzel, serif', fontSize: 13, fill: 0xc8963e });
-      label.anchor.set(0.5, 0);
-      label.x = cx;
-      label.y = cy + r + 6;
-      this.container.addChild(label);
-      // Locked portal overlay
-      if (!this.isPortalUnlocked(portal.targetZone)) {
-        g.lineStyle(3, 0x5a3a2a);
-        const chainStartX = cx - 20;
-        const chainEndX = cx + 20;
-        g.moveTo(chainStartX, cy - r);
-        g.lineTo(chainStartX - 8, cy - r - 16);
-        g.moveTo(chainEndX, cy - r);
-        g.lineTo(chainEndX + 8, cy - r - 16);
-        g.lineStyle(2, 0x886644);
-        g.drawRect(cx - 6, cy - r - 20, 12, 10);
-        g.beginFill(0x443322);
-        g.drawRect(cx - 2, cy - r - 18, 4, 4);
-        g.endFill();
-        const lockLabel = new Text('Locked', {
-          fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#6b4c1e',
+
+      if (portal.discovered === false) {
+        // Undiscovered: greyscale, dim
+        g.lineStyle(2, 0x555555, 0.6);
+        g.drawCircle(cx, cy, r);
+        container.alpha = 0.6;
+
+        const label = new Text('???', {
+          fontFamily: 'MedievalSharp, serif', fontSize: 11, fill: '#555555',
         });
-        lockLabel.anchor.set(0.5);
-        lockLabel.x = cx;
-        lockLabel.y = cy + r + 28;
-        this.container.addChild(lockLabel);
+        label.anchor.set(0.5, 0);
+        label.x = cx;
+        label.y = cy + r + 6;
+        container.addChild(label);
+      } else {
+        // Discovered: full colour (same as current rendering)
+        g.lineStyle(2, 0xaa66ff, 0.5);
+        g.drawCircle(cx, cy, r);
+        g.lineStyle(1, 0xcc88ff, 0.3);
+        g.drawCircle(cx, cy, r * 0.6);
+
+        const label = new Text(portal.label, {
+          fontFamily: 'Cinzel, serif', fontSize: 13, fill: 0xc8963e,
+        });
+        label.anchor.set(0.5, 0);
+        label.x = cx;
+        label.y = cy + r + 6;
+        container.addChild(label);
+      }
+
+      container.addChild(g);
+      this.container.addChild(container);
+      this.portalGraphics.push(g);
+      this.portalContainers.push(container);
+    }
+  }
+
+  startDiscoveryTransition(portalIndex: number): void {
+    const container = this.portalContainers[portalIndex];
+    if (container) {
+      this.discoveryTransitions.push({ container, timer: 48 });
+    }
+  }
+
+  updateDiscoveryTransitions(dt: number): void {
+    for (let i = this.discoveryTransitions.length - 1; i >= 0; i--) {
+      const t = this.discoveryTransitions[i];
+      t.timer -= dt;
+      t.container.alpha = 0.6 + (1.0 - 0.6) * (1 - t.timer / 48);
+      if (t.timer <= 0) {
+        t.container.alpha = 1.0;
+        this.discoveryTransitions.splice(i, 1);
       }
     }
   }

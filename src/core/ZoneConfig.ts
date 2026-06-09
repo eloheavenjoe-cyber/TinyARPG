@@ -31,6 +31,7 @@ export interface PortalMarker {
   rect: { x: number; y: number; width: number; height: number };
   targetZone: string;
   label: string;
+  discovered?: boolean;
 }
 
 export interface BuildingData {
