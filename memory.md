@@ -1165,3 +1165,73 @@ Tier 4: #35, #43  → professional quality
 - Breakables (pots/barrels) deliberately left in hub for visual flavor
 - Cabin chests were already hub-excluded (hub template has `cabins: []`)
 
+### Phase 23 — World Map & Portal Discovery System (completed 2026-06-09)
+
+**Data Layer:**
+- `src/core/WorldMapData.ts` (new, ~152 lines): Pure data file with `WORLD_MAP_REGISTRY` — 9 zones with percentage map positions, connections, icon types, descriptions, act groups, and mutable discovered state. Helper functions: `getDiscoveredZoneIds()`, `restoreDiscoveries()`, `getDiscoveredCount()`, `getTotalZoneCount()`. Map zone IDs to world spawn coords via `ZONE_PORTAL_POSITIONS`.
+- `ZoneType`: `'hub' | 'dungeon' | 'arena' | 'boss' | 'secret' | 'dev'`
+- `MapIconType`: `'town' | 'dungeon' | 'forest' | 'desert' | 'ice' | 'arena' | 'secret' | 'dev'`
+
+**Town Hub Rework:**
+- Removed all 6 side portals from `TEMPLATE_HUB` (left: tutorial/forest/desert, right: arena/ice/dungeon)
+- Added 1 central portal at `(3150, 1900)` — 100x100, label "World Map", south of fountain on central path
+- HubTip text updated: "Use the central portal to open the World Map"
+
+**Zone Portal Placement (8 zones, boss/final rooms):**
+- Tutorial: `(3160, 3160)` — above exit door. Forest Boss: `(3160, 1752)`. Desert Boss: `(3160, 1752)`. Ice Boss: `(3160, 1752)`.
+- Arena: `(3160, 460)` — top-center, replaced old Exit at (6000,128). Dungeon: `(3160, 460)` — same.
+- Crypt: `(3160, 1460)`. Dev: `(3160, 1752)`.
+- All zone portals are 80x80, label "Portal". Old arena/dungeon exit portals repurposed.
+
+**Portal Rendering (Room.ts):**
+- Undiscovered portals: greyscale circle `0x555555`, no inner circle, container alpha 0.6, "???" label (MedievalSharp, #555555)
+- Discovered portals: purple circles (outer `0xaa66ff`, inner `0xcc88ff`), zone name label (Cinzel, 0xc8963e)
+- Removed old chain/lock overlay system and `isPortalUnlocked` callback from Room constructor
+- Added `portalGraphics: Graphics[]`, `portalContainers: Container[]`, `discoveryTransitions` arrays
+- `startDiscoveryTransition(index)`: clears container, rebuilds with discovered visuals (purple circles, proper label), lerps alpha 0.6→1.0 over 48 frames (~0.8s)
+- `updateDiscoveryTransitions(dt)`: per-frame alpha advancement, safe backward iteration
+
+**PortalMarker** in `PortalMarker` interface gained `discovered?: boolean` field (ZoneConfig.ts).
+
+**Discovery Notification (new: `src/ui/DiscoveryNotification.ts`, ~155 lines):**
+- State machine: idle → sliding_in (15f, ease-out) → visible (210f) → sliding_out (12f, ease-in) → gap (30f) → idle
+- Position: screen (1648, 126), 260×80 panel below minimap
+- Content: "✦ Portal Discovered" (Cinzel 14 gold), zone name (Cinzel 18 white), "Added to your World Map" (MedievalSharp 11 tan)
+- Golden shimmer sweep (260×4 line, 0xf0c060 at 30% alpha) over first 24 frames
+- Queue system: one at a time, 0.5s gap between. Double-destroy guard, child destroy on rebuild.
+
+**World Map Overlay (new: `src/ui/WorldMapScreen.ts`, ~630 lines):**
+- Full-screen overlay (1200×800 panel centered), game does NOT pause under it
+- Parchment sepia background `0xc8a96e` with aged stain ellipses, edge burn, ornate double border (bronze+gold), corner diamond ornaments
+- Drifting mist: 5 dark circles oscillating over undiscovered regions via sin/cos
+- Header: "World Map" (Cinzel 28 gold), ruled line with diamond, "X / Y Zones Discovered" subtitle, close button top-right
+- Zone nodes at percentage map positions: 8 icon types drawn via Graphics (town lantern, dungeon arch, forest tree, desert pyramid, ice snowflake, arena swords, secret eye, dev gear), golden glow for discovered, 20% opacity grey for undiscovered with "???"
+- Connection lines: bezier curves between connected zones, warm sepia ink for discovered, dim grey for undiscovered, 400ms fade-in animation
+- Current zone: pulsing gold ring + "You are here" label
+- Hover tooltip: 160×50 card with zone name + type badge
+- Travel confirmation: node pulse + panel with [CONFIRM]/[CANCEL], confirm triggers teleport callback
+- Close animation: 150ms fade-out. Uses singleton Text objects (no per-frame allocation) and removeAllListeners() on confirm button.
+
+**Game.ts Integration:**
+- Proximity discovery: 80px radius auto-trigger on `updateGameplay()` each frame
+- Portal click: discovered portals → `openWorldMap()`, undiscovered → ignored
+- `openWorldMap()`: creates `WorldMapScreen` with teleport confirm/close callbacks
+- `initiateTeleport(targetZoneId)`: exit VFX (expanding purple circle, 30f), `zoneManager.transitionTo()`, `buildCurrentZoneRoom()`, player spawn at `ZONE_PORTAL_POSITIONS[zoneId]`, entry VFX (contracting circle, 30f), 90-frame spawn invulnerability
+- World map input guard: runs world map screen + `updateGameplay()` (enemies move, DoTs tick), blocks player input
+- Escape handler: closes world map before soul vault / vendor / stash / character screen
+- Room portal discovered state synced from `WORLD_MAP_REGISTRY` before Room construction
+- `updateDiscoveryTransitions(dt)` called per frame
+- Dev console: `/discover <zoneId>` command for testing
+
+**Save/Persistence:**
+- `SaveData.zone.discoveredZones?: string[]` — stored as array of discovered zone IDs
+- On `saveGame()`: `getDiscoveredZoneIds()` serialized
+- On `loadGame()`: `restoreDiscoveries(data.zone.discoveredZones)` restores state
+- Old saves without `discoveredZones` load correctly — default-discovered zones (hub, tutorial, endless modes, dev) handled by registry defaults
+
+**Minimap:**
+- Portal markers added: discovered portals = cyan dots (`0x88ccff`, radius 3), undiscovered = grey dots (`0x555555`, radius 2)
+- Update signature extended with optional `portals` parameter
+
+**Files changed:** 3 new files (+903 lines), 8 modified files (+302/−75). 13 commits across all subsystems.
+
