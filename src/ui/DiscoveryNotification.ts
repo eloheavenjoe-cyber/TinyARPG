@@ -10,6 +10,7 @@ export class DiscoveryNotification {
   private currentName = '';
   private shimmerTimer = 0;
   private shimmerG = new Graphics();
+  private destroyed = false;
 
   constructor() {
     this.container = new Container();
@@ -30,6 +31,9 @@ export class DiscoveryNotification {
   }
 
   private buildVisual(zoneName: string): void {
+    for (const child of this.container.children) {
+      child.destroy({ children: true });
+    }
     this.container.removeChildren();
     this.shimmerG = new Graphics();
     this.currentName = zoneName;
@@ -126,14 +130,12 @@ export class DiscoveryNotification {
 
     if (this.shimmerTimer < 24 && (this.state === 'sliding_in' || this.state === 'visible')) {
       this.shimmerTimer += dt;
+      const sy = (this.shimmerTimer / 24) * 80;
+      this.shimmerG.clear();
       if (this.shimmerTimer < 24) {
-        const sy = (this.shimmerTimer / 24) * 80;
-        this.shimmerG.clear();
         this.shimmerG.beginFill(0xf0c060, 0.3);
         this.shimmerG.drawRect(0, sy, 260, 4);
         this.shimmerG.endFill();
-      } else {
-        this.shimmerG.clear();
       }
     }
   }
@@ -143,6 +145,8 @@ export class DiscoveryNotification {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     if (this.container.parent) {
       this.container.parent.removeChild(this.container);
     }
