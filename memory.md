@@ -1277,3 +1277,28 @@ Tier 4: #35, #43  → professional quality
 
 **Files changed:** 6 files (+113/−43) across 1 commit.
 
+### Phase 25 — Type Safety & Code Quality Polish (completed 2026-06-09)
+
+**Goal:** Eliminate `as any` casts and code duplication in Game.ts. Static analysis pass uncovered no runtime bugs, but identified type-safety gaps.
+
+**Changes:**
+
+1. **Public invulnTimer accessor** — `Player.invulnTimer` was `private` but Game.ts bypassed it via `(this.player as any).invulnTimer`. Added `setInvulnTimer(frames)` and `getInvulnTimer()` public methods. Replaced the single bypass site in `updateGameplay()` spawn invulnerability block.
+
+2. **Extract consumeOrb helper** — Identical 4-line orb-decrement pattern (findIndex → as any → count-- → null if empty) appeared 7 times across `applyUrnCurrency`, `onCraftOrbCallback`, `onCraftOrbGridCallback`, `onDrillOrbCallback`, `onUnsocketOrbCallback`, `onConsumePortalScrollCallback`, and a flare/runes path. Extracted into `private consumeOrb(orbId: string): boolean` with proper type narrowing (`slot.kind !== 'orb'` guard). Replaced all 7 call sites, removing 6 `as any` casts.
+
+3. **Fix spawnUrns inline type annotation** — Parameter used inline types including `biome: any`. Replaced with proper `ZoneConfig` and `RoomTemplate` imports. Added `ZoneConfig` and `RoomTemplate` to the import line from `ZoneConfig.ts`.
+
+4. **Boss.ts callback tightening** — `onSpawnEnemies` callback used `type: string` parameter; changed to `type: EnemyType`. Imported `EnemyType` from `./Enemy`. Removed `as any` casts on both `new Enemy(x, y, type)` call sites in Game.ts. Endless dungeon spawn declaration changed to `const type: EnemyType`.
+
+5. **Dev console rarity cast** — `item.rarity = rarity as any` → `item.rarity = rarity as Rarity`. Imported `Rarity` from `ItemDefs.ts`.
+
+6. **Deserialization cast** — `(result as any)[key]` → `const k = key as Slot; result[k]`. More specific than `any`.
+
+7. **Pillar Graphics** — `decorationSprites.push(pillarL as any)` → removed cast. `Graphics` extends `Container` in PixiJS 7.
+
+8. **Bracket notation** — `urn['buildVisuals']()` → `urn.buildVisuals()`. Method is public; bracket access was unnecessary.
+
+**Result:** Game.ts `as any` casts: **17 → 0**. Project-wide: 21 → 4 (InventoryScreen.ts ×2, EscapeMenu.ts, SpriteAnimator.ts — require deeper refactoring).
+
+**Files changed:** Player.ts (+10), Boss.ts (+1/−1), Game.ts (−55/+28). 1 commit.
