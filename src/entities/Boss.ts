@@ -3,6 +3,7 @@ import { Sprites } from '../rendering/Sprites';
 import { Projectile } from './Projectile';
 import { Rect, resolveCollision } from '../world/Room';
 import { Logger } from '../core/Logger';
+import { EnemyType } from './Enemy';
 import { createReaperSprite, playReaperAnimation, createGolemSprite, playGolemAnimation, createCthulhuSprite, playCthulhuAnimation, ReaperAnimName, GolemAnimName, CthulhuAnimName } from '../rendering/SpriteAnimator';
 
 export type BossId = 'golem' | 'reaper' | 'cthulhu';
@@ -59,7 +60,7 @@ export class Boss {
   private hitFlashTimer = 0;
   private aiTimer = 0;
   private attackWindup = 0;
-  private spawnEnemiesCallback: ((count: number, type: string) => void) | null = null;
+  private spawnEnemiesCallback: ((count: number, type: EnemyType) => void) | null = null;
 
   constructor(x: number, y: number, bossId: BossId) {
     const cfg = getBossConfig(bossId);
@@ -112,7 +113,7 @@ export class Boss {
     }
   }
 
-  onSpawnEnemies(callback: (count: number, type: string) => void) {
+  onSpawnEnemies(callback: (count: number, type: EnemyType) => void) {
     this.spawnEnemiesCallback = callback;
   }
 

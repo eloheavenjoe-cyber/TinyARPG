@@ -1165,6 +1165,24 @@ Tier 4: #35, #43  → professional quality
 - Breakables (pots/barrels) deliberately left in hub for visual flavor
 - Cabin chests were already hub-excluded (hub template has `cabins: []`)
 
+### Phase 22d — Dynamic Item Names & Live Tooltips (completed 2026-06-09)
+
+**Three interconnected fixes:**
+
+1. **Stale item names after orb/craft mutations:** Extracted `generateItemName()` as an exported pure function in ItemGenerator.ts, replacing the stored `computedName` field with an optional `customDisplayName` (used only for uniques). Names are now always computed on demand from current affixes + base name. Removed `computedName` from `GeneratedItem` interface, `SerializedItem` interface, and all creation/save/load sites. All display consumers (Tooltip.ts, InventoryScreen.ts, ItemDrop.ts) call `generateItemName(item)` directly.
+
+2. **Tooltip not reacting live to item mutations:** Replaced InventoryScreen's `lastTooltipItem` identity guard (which prevented re-renders on the same item) with `tooltipItemId: string | null` tracking. Added public `forceRefreshTooltip()` method that hides the current tooltip so the next hover triggers a full rebuild. Wired `forceRefreshTooltip()` into all 5 orb mutation paths in Game.ts: `onCraftOrbCallback`, `onCraftOrbGridCallback`, socket, jewel drill, and unsocket handlers.
+
+3. **Corruption/warp visuals:** Added dedicated corruption zone to both Tooltip.ts and InventoryScreen.ts. When `item.warped`, a purple-tinted section renders below normal stats with: "Corruption" header (#9966cc), ⬡ warp implicit (if present), "CORRUPTED" crimson tag (#8b1a1a) with Cinzel bold + letter spacing, and warp outcome label. Purple background fill (0x500078 at 15% alpha) with gradient divider line (0xb060e0) separates the corruption zone from normal affixes.
+
+**Key decisions:**
+- `warped`/`warpImplicit` internal field names kept (code already used them); UI displays "CORRUPTED"
+- `customDisplayName` is optional — only set on unique items and rare jewels with 4+ affixes
+- `generateItemName` takes `Pick<GeneratedItem, 'base' | 'affixes' | 'uniqueId' | 'customDisplayName'>` — pure, no side effects
+- Backward compatible: old saves missing `customDisplayName` load correctly (optional field)
+
+**Files changed:** ItemGenerator.ts (+export/-computedName), Tooltip.ts (+corruption zone, -old warp blocks), InventoryScreen.ts (+corruption zone, +forceRefreshTooltip, -identity guard), ItemDrop.ts (generateItemName), Game.ts (save/load serialization, 5× forceRefresh calls), SaveManager.ts (SerializedItem interface), Player.ts (no changes needed — warp mutations already correct), ItemDefs.ts (no changes needed).
+
 ### Phase 23 — World Map & Portal Discovery System (completed 2026-06-09)
 
 **Data Layer:**

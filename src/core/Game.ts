@@ -18,7 +18,7 @@ import { CombatTextManager } from '../entities/CombatText';
 import { ItemDrop, createRandomLoot, isEquippableDrop, createItemDrop, createJewelDrop, isOrbDrop, createOrbDrop, isPortalScrollDrop, isJewelDrop } from '../entities/ItemDrop';
 import { decorateRoom } from '../world/RoomDecorator';
 import { TILE_CONFIGS } from '../core/TileConfigs';
-import { BiomeId } from './ZoneConfig';
+import { BiomeId, ZoneConfig, RoomTemplate } from './ZoneConfig';
 import { Chest } from '../entities/Chest';
 import { Breakable } from '../entities/Breakable';
 import { SecretBush } from '../entities/SecretBush';
@@ -31,7 +31,7 @@ import { SkillSubTreeScreen } from '../ui/SkillSubTreeScreen';
 import { InventoryScreen } from '../ui/InventoryScreen';
 import { CharacterScreen } from '../ui/CharacterScreen';
 import { generateItemDrop, generateOrbDrop, generateJewel, GeneratedItem, getMaxSockets, SocketSlot } from './ItemGenerator';
-import { Slot, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
+import { Slot, Rarity, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
@@ -703,7 +703,8 @@ export class Game {
     for (const [key, item] of Object.entries(data)) {
       if (!item) continue;
       if (key in result) {
-        (result as any)[key] = this.deserializeItem(item);
+        const k = key as Slot;
+        result[k] = this.deserializeItem(item);
       }
     }
     return result;
@@ -1330,7 +1331,7 @@ export class Game {
         pillarL.drawRoundedRect(-6, -20, 12, 80, 3);
         pillarL.x = 1720; pillarL.y = py + 40;
         this.gameContainer.addChild(pillarL);
-        this.decorationSprites.push(pillarL as any);
+        this.decorationSprites.push(pillarL);
 
         const pillarR = new Graphics();
         pillarR.beginFill(0x6a6a6a, 0.9);
@@ -1340,7 +1341,7 @@ export class Game {
         pillarR.drawRoundedRect(-6, -20, 12, 80, 3);
         pillarR.x = 4680; pillarR.y = py + 40;
         this.gameContainer.addChild(pillarR);
-        this.decorationSprites.push(pillarR as any);
+        this.decorationSprites.push(pillarR);
       }
 
       // Building collision walls
@@ -1512,7 +1513,7 @@ export class Game {
         const wa = this.room!.walkableArea;
         const x = margin + Math.random() * (wa.width - margin * 2) + wa.x;
         const y = margin + Math.random() * (wa.height - margin * 2) + wa.y;
-        const e = new Enemy(x, y, type as any);
+        const e = new Enemy(x, y, type);
         this.enemies.push(e);
         this.gameContainer!.addChild(e.sprite);
         if (e.nameplate) this.gameContainer!.addChild(e.nameplate);
@@ -1553,7 +1554,7 @@ export class Game {
     }
   }
 
-  private spawnUrns(zone: { id: string; biome: any; enemyCount?: number | { min: number; max: number } }, template: { walls: { x: number; y: number; width: number; height: number }[]; spawnZones: { x: number; y: number; width: number; height: number }[]; doors: { rect: { x: number; y: number; width: number; height: number } }[]; portals: { rect: { x: number; y: number; width: number; height: number } }[] }) {
+  private spawnUrns(zone: ZoneConfig, template: RoomTemplate) {
     const count = UrnConfig.URN_SPAWN_CONFIG.minPerZone + Math.floor(Math.random() * (UrnConfig.URN_SPAWN_CONFIG.maxPerZone - UrnConfig.URN_SPAWN_CONFIG.minPerZone + 1));
     let rareCount = 0;
     for (let i = 0; i < count; i++) {
@@ -1847,10 +1848,7 @@ export class Game {
     if (this.spawnInvulnTimer > 0) {
       this.spawnInvulnTimer -= dt;
       if (this.player && this.player.alive) {
-        (this.player as any).invulnTimer = Math.max(
-          (this.player as any).invulnTimer ?? 0,
-          this.spawnInvulnTimer
-        );
+        this.player.setInvulnTimer(this.spawnInvulnTimer);
       }
     }
 
@@ -2911,8 +2909,8 @@ export class Game {
             const spawnZone = template.spawnZones[Math.floor(Math.random() * template.spawnZones.length)];
             const x = spawnZone.x + Math.random() * spawnZone.width;
             const y = spawnZone.y + Math.random() * spawnZone.height;
-            const type = Math.random() < 0.4 ? 'juggernaut' : 'grunt';
-            const e = new Enemy(x, y, type as any);
+            const type: EnemyType = Math.random() < 0.4 ? 'juggernaut' : 'grunt';
+            const e = new Enemy(x, y, type);
             e.health = Math.round(e.health * hpMult);
             e.maxHealth = e.health;
             e.damage = Math.round(e.damage * 1.1);
@@ -3854,6 +3852,19 @@ export class Game {
     this.vfxRing(x, y, ringColor, 80);
   }
 
+  private consumeOrb(orbId: string): boolean {
+    if (!this.player) return false;
+    const idx = this.player.inventory.findIndex(
+      s => s !== null && s.kind === 'orb' && s.orbId === orbId
+    );
+    if (idx < 0) return false;
+    const slot = this.player.inventory[idx];
+    if (!slot || slot.kind !== 'orb') return false;
+    slot.count--;
+    if (slot.count <= 0) this.player.inventory[idx] = null;
+    return true;
+  }
+
   private applyUrnCurrency(urn: CursedUrn, orbId: string) {
     if (urn.isOpen || !this.player) return;
 
@@ -3902,13 +3913,7 @@ export class Game {
     if (!success) return;
 
     // Consume the orb from inventory
-    const orbIdx = this.player.inventory.findIndex(
-      s => s !== null && s.kind === 'orb' && s.orbId === orbId
-    );
-    if (orbIdx < 0) return;
-    const orbSlot = this.player.inventory[orbIdx] as any;
-    orbSlot.count--;
-    if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
+    this.consumeOrb(orbId);
 
     // Apply the upgrade to the urn
     urn.rarity = newRarity;
@@ -3919,7 +3924,7 @@ export class Game {
       urn.rareName = `${prefix} ${urn.type.name}`;
     }
     // Rebuild visuals to reflect new rarity
-    urn['buildVisuals']();
+    urn.buildVisuals();
 
     this.activeUrnOrb = null;
     Logger.log('combat', `Urn upgraded with ${orbId}: ${urn.type.name} (${newRarity})`);
@@ -4102,14 +4107,7 @@ export class Game {
           case 'warp_stone': success = this.player.warpItem(slot); break;
         }
         if (success) {
-          const orbIdx = this.player.inventory.findIndex(
-            s => s !== null && s.kind === 'orb' && s.orbId === orbId
-          );
-          if (orbIdx >= 0) {
-            const orbSlot = this.player.inventory[orbIdx] as any;
-            orbSlot.count--;
-            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
-          }
+          this.consumeOrb(orbId);
           this.inventoryScreen?.update(
             this.player.inventory, this.player.equipment,
             this.player.computedStats, this.input,
@@ -4131,14 +4129,7 @@ export class Game {
           case 'warp_stone': success = this.player.warpInventoryItem(gridIndex); break;
         }
         if (success) {
-          const orbIdx = this.player.inventory.findIndex(
-            s => s !== null && s.kind === 'orb' && s.orbId === orbId
-          );
-          if (orbIdx >= 0) {
-            const orbSlot = this.player.inventory[orbIdx] as any;
-            orbSlot.count--;
-            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
-          }
+          this.consumeOrb(orbId);
           this.inventoryScreen?.update(
             this.player.inventory, this.player.equipment,
             this.player.computedStats, this.input,
@@ -4161,14 +4152,7 @@ export class Game {
         if (!this.player) return;
         const success = this.player.drillSockets(slot);
         if (success) {
-          const orbIdx = this.player.inventory.findIndex(
-            s => s !== null && s.kind === 'orb' && s.orbId === 'drilling'
-          );
-          if (orbIdx >= 0) {
-            const orbSlot = this.player.inventory[orbIdx] as any;
-            orbSlot.count--;
-            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
-          }
+          this.consumeOrb('drilling');
           this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
           this.inventoryScreen?.forceRefreshTooltip();
         }
@@ -4178,14 +4162,7 @@ export class Game {
         const destroy = orbId === 'shattering';
         const success = this.player.unsocketJewel(slot, socketIndex, destroy);
         if (success) {
-          const orbIdx = this.player.inventory.findIndex(
-            s => s !== null && s.kind === 'orb' && s.orbId === orbId
-          );
-          if (orbIdx >= 0) {
-            const orbSlot = this.player.inventory[orbIdx] as any;
-            orbSlot.count--;
-            if (orbSlot.count <= 0) this.player.inventory[orbIdx] = null;
-          }
+          this.consumeOrb(orbId);
           this.inventoryScreen?.update(this.player.inventory, this.player.equipment, this.player.computedStats, this.input);
           this.inventoryScreen?.forceRefreshTooltip();
         }
@@ -4195,13 +4172,7 @@ export class Game {
       };
       this.inventoryScreen.onConsumePortalScrollCallback(() => {
         if (!this.player || !this.gameContainer) return;
-        const idx = this.player.inventory.findIndex(
-          s => s !== null && s.kind === 'orb' && s.orbId === 'portal_scroll'
-        );
-        if (idx === -1) return;
-        const slot = this.player.inventory[idx] as any;
-        slot.count--;
-        if (slot.count <= 0) this.player.inventory[idx] = null;
+        if (!this.consumeOrb('portal_scroll')) return;
         // Create recall portal at player position
         this.recallPortal?.graphic.destroy();
         this.recallPortal = {
@@ -4265,7 +4236,7 @@ export class Game {
         if (!['normal', 'magic', 'rare', 'unique'].includes(rarity)) return 'Rarity must be normal/magic/rare/unique';
         const item = generateItemDrop(this.player.level);
         item.base = base;
-        item.rarity = rarity as any;
+        item.rarity = rarity as Rarity;
         const idx = this.player!.inventory.findIndex(s => s === null);
         if (idx === -1) return 'Inventory full';
         this.player!.inventory[idx] = { kind: 'equip', item };

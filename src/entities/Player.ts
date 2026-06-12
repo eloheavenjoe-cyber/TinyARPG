@@ -802,6 +802,14 @@ export class Player {
     return false;
   }
 
+  setInvulnTimer(frames: number) {
+    this.invulnTimer = Math.max(this.invulnTimer, frames);
+  }
+
+  getInvulnTimer(): number {
+    return this.invulnTimer;
+  }
+
   heal(amount: number) {
     this.health = Math.min(this.maxHealth, this.health + amount);
     Logger.log('combat', `Player healed for ${amount} (hp: ${this.health}/${this.maxHealth})`);
