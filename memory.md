@@ -1302,3 +1302,23 @@ Tier 4: #35, #43  → professional quality
 **Result:** Game.ts `as any` casts: **17 → 0**. Project-wide: 21 → 4 (InventoryScreen.ts ×2, EscapeMenu.ts, SpriteAnimator.ts — require deeper refactoring).
 
 **Files changed:** Player.ts (+10), Boss.ts (+1/−1), Game.ts (−55/+28). 1 commit.
+
+### Phase 26 — Summoner Soul Pickup Fix & Max Summons Increase (completed 2026-06-12)
+
+**Bug fixes:**
+
+1. **Soul pickup was right-click-only, no proximity auto-pickup** — Added walk-over auto-collection at 50px radius in `updateGameplay()`, running every frame for summoner class. Right-click pickup retained as fallback. Both paths show "Vault Full" floating combat text when at capacity.
+
+2. **Soul Vault blocked soul pickup** — `updateGameplay()` had an early `return` when `soulVaultScreen?.visible`, skipping the soul pickup handler entirely. Removed the early return; vault update still runs, but gameplay (and soul pickup) continues.
+
+3. **Soul drops persisted across zone transitions** — `buildCurrentZoneRoom()` never cleared `this.soulDrops` array or removed soul containers from the game container. Added cleanup alongside existing entity clearing.
+
+4. **Vault Full was silent** — `Logger.log` in the right-click handler gave no player-visible feedback. Replaced with `combatText.showDamage('Vault Full', 0xff4444)` shown at the soul drop position.
+
+**Balance changes (25% increase):**
+- `raise_skeleton` max: 3 → 4 (`skeletonCount >= 4`)
+- `summon_mage` max: 2 → 3 (`mageCount < 3`)
+- Soul vault capacity: 8 → 10 (both in Game.ts guards and SoulVaultScreen slot creation)
+- Vault grid layout: 5 columns × 2 rows (`Math.floor(i / 5)`)
+
+**Files changed:** Game.ts (+29/−9), SoulVaultScreen.ts (+4/−3). 1 commit.
