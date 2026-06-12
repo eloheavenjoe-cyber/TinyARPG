@@ -1133,6 +1133,10 @@ export class Game {
     }
     this.jackpotChest = null;
     this.vfx = [];
+    for (const sd of this.soulDrops) {
+      this.gameContainer!.removeChild(sd.container);
+    }
+    this.soulDrops = [];
     this.chillZones = [];
     this.dash = null;
     if (this.recallPortal) {
@@ -1841,7 +1845,6 @@ export class Game {
     if (!this.player?.alive || !this.room) return;
     if (this.soulVaultScreen?.visible) {
       this.soulVaultScreen.update(this.soulVault, this.activeSpectre, (soul) => this.summonSpectre(soul));
-      return;
     }
 
     // Spawn invulnerability
@@ -1890,6 +1893,23 @@ export class Game {
       const local = this.gameContainer.toLocal(new Point(this.input.mouseX, this.input.mouseY));
       mouseWX = local.x;
       mouseWY = local.y;
+    }
+
+    // Soul proximity auto-pickup (summoner only)
+    if (this.player?.classType === 'summoner') {
+      for (let i = this.soulDrops.length - 1; i >= 0; i--) {
+        const drop = this.soulDrops[i];
+        const dist = Math.hypot(this.player.x - drop.x, this.player.y - drop.y);
+        if (dist < 50) {
+          if (this.soulVault.length >= 10) {
+            this.combatText.showDamage(drop.x, drop.y - 20, 'Vault Full', 0xff4444);
+          } else {
+            this.captureSoul(drop.enemyType, drop.label);
+            this.gameContainer!.removeChild(drop.container);
+            this.soulDrops.splice(i, 1);
+          }
+        }
+      }
     }
 
     // Handle dash movement
@@ -2718,8 +2738,8 @@ export class Game {
         const drop = this.soulDrops[i];
         const d = Math.sqrt((drop.x - mouseWX) ** 2 + (drop.y - mouseWY) ** 2);
         if (d < 40) {
-          if (this.soulVault.length >= 8) {
-            Logger.log('ui', 'Soul vault is full!');
+          if (this.soulVault.length >= 10) {
+            this.combatText.showDamage(drop.x, drop.y - 20, 'Vault Full', 0xff4444);
           } else {
             this.captureSoul(drop.enemyType, drop.label);
             this.gameContainer!.removeChild(drop.container);
@@ -3506,7 +3526,7 @@ export class Game {
       case 'summon': {
         if (result.id === 'raise_skeleton') {
           const skeletonCount = this.minions.filter(m => m.type === 'skeleton_warrior' && m.alive).length;
-          if (skeletonCount >= 3) {
+          if (skeletonCount >= 4) {
             for (const m of this.minions) {
               if (m.type === 'skeleton_warrior' && m.alive) {
                 m.health = Math.min(m.maxHealth, m.health + 30);
@@ -3523,7 +3543,7 @@ export class Game {
           }
         } else if (result.id === 'summon_mage') {
           const mageCount = this.minions.filter(m => m.type === 'skeleton_mage' && m.alive).length;
-          if (mageCount < 2) {
+          if (mageCount < 3) {
             const m = new Minion(
               this.player.x + (Math.random() - 0.5) * 50,
               this.player.y + (Math.random() - 0.5) * 50,

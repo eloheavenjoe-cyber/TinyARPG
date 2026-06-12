@@ -75,9 +75,9 @@ export class SoulVaultScreen {
 
     const startX = screenWidth / 2 - 380;
     const startY = 320;
-    for (let i = 0; i < 8; i++) {
-      const col = i % 4;
-      const row = Math.floor(i / 4);
+    for (let i = 0; i < 10; i++) {
+      const col = i % 5;
+      const row = Math.floor(i / 5);
       const cx = startX + col * 200;
       const cy = startY + row * 180;
       const bg = new Graphics();
@@ -145,7 +145,7 @@ export class SoulVaultScreen {
       this.activeCard.interactive = false;
     }
 
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < souls.length; i++) {
       const card = this.cards[i];
       card.bg.removeChildren();
       card.soul = souls[i] || null;
