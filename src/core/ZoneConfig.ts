@@ -1,6 +1,6 @@
 import { EnemyType } from '../entities/Enemy';
 
-export type BiomeId = 'dev' | 'hub' | 'tutorial' | 'forest' | 'desert' | 'ice' | 'endless' | 'crypt';
+export type BiomeId = 'dev' | 'hub' | 'tutorial' | 'forest' | 'desert' | 'ice' | 'endless' | 'crypt' | 'volcanic';
 
 export interface BiomeData {
   floorColor: number;
@@ -19,6 +19,7 @@ export const BIOME_DATA: Record<BiomeId, BiomeData> = {
   ice:       { floorColor: 0xaabbdd, wallColor: 0x8899cc, wallBorderColor: 0x99aadd, decorColor: 0xddeeff, decorColorB: 0xeeeeff },
   endless:   { floorColor: 0x453555, wallColor: 0x3a2a4a, wallBorderColor: 0x4a3a5a, decorColor: 0x8844aa, decorColorB: 0x663388 },
   crypt:     { floorColor: 0x1a1028, wallColor: 0x2a2040, wallBorderColor: 0x3a3050, decorColor: 0x0a0020, decorColorB: 0x553366 },
+  volcanic:  { floorColor: 0x3a1a1a, wallColor: 0x4a2020, wallBorderColor: 0x5a2a2a, decorColor: 0x5a2a1a, decorColorB: 0x2a1010 },
 };
 
 export interface DoorMarker {

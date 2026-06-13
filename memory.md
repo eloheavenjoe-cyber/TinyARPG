@@ -1322,3 +1322,16 @@ Tier 4: #35, #43  → professional quality
 - Vault grid layout: 5 columns × 2 rows (`Math.floor(i / 5)`)
 
 **Files changed:** Game.ts (+29/−9), SoulVaultScreen.ts (+4/−3). 1 commit.
+
+### Phase 27 — Volcanic Depths Zone (completed 2026-06-12)
+
+**New story zone added after Frozen Wastes, completing Act 1:**
+
+- **Biome**: `volcanic` — dark red/black palette (floor `0x3a1a1a`, wall `0x4a2020`, decor `0x5a2a1a`, decorB `0x2a1010`)
+- **Zone**: `volcanic_depths` — 5 rooms (4+1), enemy pool grunt/archer/juggernaut, scaling HpMult 3.2/DmgMult 1.6/XpMult 2.0, boss golem (Magma Golem)
+- **5 room templates**: VOLCANIC_1 (open, 2 cabins), VOLCANIC_2 (4 pillars, 2 cabins), VOLCANIC_3 (5 walls + bar, 1 cabin), VOLCANIC_4 (6 pillars, 2 cabins), VOLCANIC_BOSS (6-wall arena, portal to volcanic_depths, door to hub)
+- **Progression**: Ice boss door → volcanic_depths (was → hub). Volcanic boss door → hub. Linear Act 1 chain: Forest → Desert → Ice → Volcanic Depths → Hub
+- **World map**: Volcano icon (dark mountain triangle + glowing crater + lava lines), positioned south-west of Ice at (5, 18), actGroup 1, discovered via boss room proximity
+- **Decor**: RoomDecorator volcanic entry (treeChance 0.1, rockChance 0.6, bushChance 0.2), tint 0x994422
+
+**Files changed:** ZoneConfig.ts, ZoneRegistry.ts, WorldMapData.ts, RoomTemplates.ts, WorldMapScreen.ts, RoomDecorator.ts (6 files).

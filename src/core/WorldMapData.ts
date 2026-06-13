@@ -1,6 +1,6 @@
 export type ZoneType = 'hub' | 'dungeon' | 'arena' | 'boss' | 'secret' | 'dev';
 
-export type MapIconType = 'town' | 'dungeon' | 'forest' | 'desert' | 'ice' | 'arena' | 'secret' | 'dev';
+export type MapIconType = 'town' | 'dungeon' | 'forest' | 'desert' | 'ice' | 'arena' | 'secret' | 'dev' | 'volcanic';
 
 export interface WorldMapEntry {
   id: string;
@@ -76,8 +76,19 @@ export const WORLD_MAP_REGISTRY: Record<string, WorldMapEntry> = {
     type: 'dungeon',
     icon: 'ice',
     mapPosition: { x: 8, y: 32 },
-    connections: ['desert'],
+    connections: ['desert', 'volcanic_depths'],
     description: 'A frozen hellscape at the edge of the world. The Death Reaper rules here.',
+    actGroup: 1,
+    discovered: false,
+  },
+  volcanic_depths: {
+    id: 'volcanic_depths',
+    name: 'Volcanic Depths',
+    type: 'dungeon',
+    icon: 'volcanic',
+    mapPosition: { x: 5, y: 18 },
+    connections: ['ice'],
+    description: 'The earth splits open into rivers of fire. A Magma Golem guards the depths.',
     actGroup: 1,
     discovered: false,
   },
@@ -125,6 +136,7 @@ export const ZONE_PORTAL_POSITIONS: Record<string, { x: number; y: number }> = {
   endless_dungeon: { x: 3200, y: 500 },
   secret_crypt: { x: 3200, y: 1500 },
   dev: { x: 3200, y: 1792 },
+  volcanic_depths: { x: 3200, y: 1792 },
   hub: { x: 3200, y: 1950 },
 };
 

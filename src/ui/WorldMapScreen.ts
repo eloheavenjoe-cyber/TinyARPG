@@ -346,6 +346,29 @@ export class WorldMapScreen {
           g.lineTo(Math.cos(a) * 6, Math.sin(a) * 6);
         }
         break;
+      case 'volcanic': {
+        const lavaColor = hover ? 0xff4422 : 0xcc3311;
+        g.beginFill(0x3a1a1a, 1);
+        g.moveTo(-6, 4);
+        g.lineTo(0, -5);
+        g.lineTo(6, 4);
+        g.closePath();
+        g.endFill();
+        g.lineStyle(2, color, 1);
+        g.moveTo(-6, 4);
+        g.lineTo(0, -5);
+        g.lineTo(6, 4);
+        g.closePath();
+        g.beginFill(lavaColor, 1);
+        g.drawCircle(0, -4, 2);
+        g.endFill();
+        g.lineStyle(1, color, 0.6);
+        g.moveTo(-2, -1);
+        g.lineTo(2, -1);
+        g.moveTo(-1, 1);
+        g.lineTo(1, 1);
+        break;
+      }
       case 'arena':
         g.moveTo(-5, -5);
         g.lineTo(5, 5);

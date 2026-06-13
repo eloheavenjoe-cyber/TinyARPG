@@ -630,7 +630,7 @@ export const TEMPLATE_ICE_BOSS: RoomTemplate = {
     { x: 2800, y: 2000, width: 160, height: 160 },
     { x: 3440, y: 2000, width: 160, height: 160 },
   ],
-  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 }],
+  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'volcanic_depths', targetRoom: 0 }],
   portals: [
     { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'ice', label: 'Portal' },
   ],
@@ -679,4 +679,190 @@ export const TEMPLATE_CRYPT: RoomTemplate = {
   cabins: [],
   npcs: [],
   playerStart: { x: 3200, y: 1792 },
+};
+
+export const TEMPLATE_VOLCANIC_1: RoomTemplate = {
+  walls: [],
+  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'volcanic_depths', targetRoom: 1 }],
+  portals: [],
+  spawnZones: [{ x: 256, y: 256, width: 5888, height: 3072 }],
+  decorationRects: [
+    { x: 800, y: 600, width: 72, height: 72 },
+    { x: 1600, y: 1200, width: 56, height: 56 },
+    { x: 2400, y: 2400, width: 64, height: 64 },
+    { x: 4000, y: 800, width: 48, height: 48 },
+    { x: 4800, y: 2000, width: 72, height: 72 },
+    { x: 1200, y: 2800, width: 56, height: 56 },
+    { x: 5200, y: 2800, width: 64, height: 64 },
+  ],
+  buildings: [],
+  cabins: [
+    {
+      x: 1200, y: 1800, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 1350, y: 1900 },
+      spawnZones: [{ x: 1310, y: 1900, width: 130, height: 120 }],
+    },
+    {
+      x: 4800, y: 800, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 4950, y: 900 },
+      spawnZones: [{ x: 4910, y: 900, width: 130, height: 120 }],
+    },
+  ],
+  npcs: [],
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
+};
+
+export const TEMPLATE_VOLCANIC_2: RoomTemplate = {
+  walls: [
+    { x: 2720, y: 1360, width: 160, height: 160 },
+    { x: 3520, y: 1360, width: 160, height: 160 },
+    { x: 2720, y: 2064, width: 160, height: 160 },
+    { x: 3520, y: 2064, width: 160, height: 160 },
+  ],
+  doors: [{ rect: { x: 3000, y: 0, width: 400, height: 144 }, targetZone: 'volcanic_depths', targetRoom: 2 }],
+  portals: [],
+  spawnZones: [
+    { x: 256, y: 256, width: 2200, height: 800 },
+    { x: 3600, y: 256, width: 2400, height: 800 },
+    { x: 256, y: 2000, width: 2200, height: 1200 },
+    { x: 3600, y: 2000, width: 2400, height: 1200 },
+  ],
+  decorationRects: [
+    { x: 800, y: 600, width: 64, height: 64 },
+    { x: 4800, y: 600, width: 56, height: 56 },
+    { x: 1200, y: 2400, width: 48, height: 48 },
+    { x: 4400, y: 2600, width: 72, height: 72 },
+    { x: 400, y: 1600, width: 56, height: 56 },
+    { x: 6000, y: 1200, width: 64, height: 64 },
+  ],
+  buildings: [],
+  cabins: [
+    {
+      x: 800, y: 800, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 950, y: 900 },
+      spawnZones: [{ x: 910, y: 900, width: 130, height: 120 }],
+    },
+    {
+      x: 5200, y: 2400, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 5350, y: 2500 },
+      spawnZones: [{ x: 5310, y: 2500, width: 130, height: 120 }],
+    },
+  ],
+  npcs: [],
+  playerStart: { x: 3200, y: 3200 },
+};
+
+export const TEMPLATE_VOLCANIC_3: RoomTemplate = {
+  walls: [
+    { x: 1500, y: 800, width: 200, height: 200 },
+    { x: 4700, y: 800, width: 200, height: 200 },
+    { x: 1500, y: 2584, width: 200, height: 200 },
+    { x: 4700, y: 2584, width: 200, height: 200 },
+    { x: 2960, y: 1672, width: 480, height: 80 },
+  ],
+  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'volcanic_depths', targetRoom: 3 }],
+  portals: [],
+  spawnZones: [
+    { x: 1700, y: 256, width: 3000, height: 1400 },
+    { x: 1700, y: 2000, width: 3000, height: 1000 },
+  ],
+  decorationRects: [
+    { x: 600, y: 600, width: 48, height: 48 },
+    { x: 5600, y: 600, width: 56, height: 56 },
+    { x: 800, y: 2400, width: 64, height: 64 },
+    { x: 5400, y: 2400, width: 48, height: 48 },
+    { x: 3200, y: 1200, width: 56, height: 56 },
+    { x: 2000, y: 2800, width: 40, height: 40 },
+    { x: 4200, y: 2800, width: 48, height: 48 },
+  ],
+  buildings: [],
+  cabins: [
+    {
+      x: 4400, y: 1200, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 4550, y: 1300 },
+      spawnZones: [{ x: 4510, y: 1300, width: 130, height: 120 }],
+    },
+  ],
+  npcs: [],
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
+};
+
+export const TEMPLATE_VOLCANIC_4: RoomTemplate = {
+  walls: [
+    { x: 1000, y: 1000, width: 160, height: 160 },
+    { x: 5240, y: 1000, width: 160, height: 160 },
+    { x: 1000, y: 2424, width: 160, height: 160 },
+    { x: 5240, y: 2424, width: 160, height: 160 },
+    { x: 2200, y: 1640, width: 160, height: 160 },
+    { x: 4040, y: 1640, width: 160, height: 160 },
+  ],
+  doors: [{ rect: { x: 3000, y: 0, width: 400, height: 144 }, targetZone: 'volcanic_depths', targetRoom: 4 }],
+  portals: [],
+  spawnZones: [
+    { x: 256, y: 256, width: 1400, height: 700 },
+    { x: 4800, y: 256, width: 1400, height: 700 },
+    { x: 256, y: 1800, width: 1400, height: 1400 },
+    { x: 4800, y: 1800, width: 1400, height: 1400 },
+  ],
+  decorationRects: [
+    { x: 500, y: 500, width: 56, height: 56 },
+    { x: 5600, y: 500, width: 48, height: 48 },
+    { x: 500, y: 2800, width: 64, height: 64 },
+    { x: 5600, y: 2800, width: 56, height: 56 },
+    { x: 1600, y: 600, width: 40, height: 40 },
+    { x: 4400, y: 2600, width: 48, height: 48 },
+    { x: 3200, y: 2600, width: 56, height: 56 },
+  ],
+  buildings: [],
+  cabins: [
+    {
+      x: 1600, y: 2600, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 1750, y: 2700 },
+      spawnZones: [{ x: 1710, y: 2700, width: 130, height: 120 }],
+    },
+    {
+      x: 4800, y: 1200, width: 350, height: 280,
+      doorSide: 'south',
+      chestPos: { x: 4950, y: 1300 },
+      spawnZones: [{ x: 4910, y: 1300, width: 130, height: 120 }],
+    },
+  ],
+  npcs: [],
+  playerStart: { x: 3200, y: 3200 },
+};
+
+export const TEMPLATE_VOLCANIC_BOSS: RoomTemplate = {
+  walls: [
+    { x: 1200, y: 800, width: 180, height: 180 },
+    { x: 5020, y: 800, width: 180, height: 180 },
+    { x: 1200, y: 2604, width: 180, height: 180 },
+    { x: 5020, y: 2604, width: 180, height: 180 },
+    { x: 600, y: 1600, width: 300, height: 80 },
+    { x: 5500, y: 1600, width: 300, height: 80 },
+  ],
+  doors: [{ rect: { x: 3000, y: 3312, width: 400, height: 144 }, targetZone: 'hub', targetRoom: 0 }],
+  portals: [
+    { rect: { x: 3160, y: 1752, width: 80, height: 80 }, targetZone: 'volcanic_depths', label: 'Portal' },
+  ],
+  spawnZones: [],
+  decorationRects: [
+    { x: 800, y: 720, width: 48, height: 64 },
+    { x: 1000, y: 760, width: 40, height: 56 },
+    { x: 5200, y: 720, width: 56, height: 72 },
+    { x: 5400, y: 760, width: 40, height: 48 },
+    { x: 800, y: 2600, width: 48, height: 72 },
+    { x: 1000, y: 2640, width: 40, height: 56 },
+    { x: 5200, y: 2640, width: 56, height: 64 },
+    { x: 5400, y: 2600, width: 40, height: 48 },
+  ],
+  buildings: [],
+  cabins: [],
+  npcs: [],
+  playerStart: { x: ROOM_WIDTH / 2, y: ROOM_HEIGHT / 2 },
 };

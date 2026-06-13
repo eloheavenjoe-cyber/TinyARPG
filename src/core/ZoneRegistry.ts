@@ -5,6 +5,8 @@ import {
   TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5,
   TEMPLATE_FOREST_BOSS, TEMPLATE_DESERT_BOSS, TEMPLATE_ICE_BOSS,
   TEMPLATE_CRYPT,
+  TEMPLATE_VOLCANIC_1, TEMPLATE_VOLCANIC_2, TEMPLATE_VOLCANIC_3, TEMPLATE_VOLCANIC_4,
+  TEMPLATE_VOLCANIC_BOSS,
 } from '../world/RoomTemplates';
 import { ZoneConfig } from './ZoneConfig';
 
@@ -72,6 +74,14 @@ export const ZONE_REGISTRY: Record<string, ZoneConfig> = {
     isEndless: false, nextZone: 'hub', availableFromHub: true,
     enemyCount: { min: 13, max: 22 }, bossId: 'reaper',
     templates: [TEMPLATE_ICE_1, TEMPLATE_ICE_2, TEMPLATE_ICE_3, TEMPLATE_ICE_4, TEMPLATE_ICE_5, TEMPLATE_ICE_BOSS],
+  },
+  volcanic_depths: {
+    id: 'volcanic_depths', name: 'Volcanic Depths', biome: 'volcanic',
+    roomCount: 5, enemyPool: ['grunt', 'archer', 'juggernaut'],
+    enemyHpMult: 3.2, enemyDmgMult: 1.6, enemyXpMult: 2.0,
+    isEndless: false, nextZone: 'hub', availableFromHub: false,
+    enemyCount: { min: 10, max: 17 }, bossId: 'golem',
+    templates: [TEMPLATE_VOLCANIC_1, TEMPLATE_VOLCANIC_2, TEMPLATE_VOLCANIC_3, TEMPLATE_VOLCANIC_4, TEMPLATE_VOLCANIC_BOSS],
   },
   endless_dungeon: {
     id: 'endless_dungeon', name: 'Endless Dungeon', biome: 'endless',
