@@ -34,6 +34,7 @@ import { generateItemDrop, generateOrbDrop, generateJewel, GeneratedItem, getMax
 import { Slot, Rarity, ITEM_BASES, AFFIXES, UNIQUE_ITEMS } from './ItemDefs';
 import { DeveloperConsole } from '../ui/DeveloperConsole';
 import { ZoneManager } from './ZoneManager';
+import { ZONE_REGISTRY } from './ZoneRegistry';
 import { TutorialScreen, TutorialStage } from '../ui/TutorialScreen';
 import { HubTip } from '../ui/HubTip';
 import { loadWarriorAnimations, loadRangerAnimations, loadReaperAnimations, loadGolemAnimations, loadMonkAnimations, loadSummonerAnimations, loadCultistAnimations, loadArcherAnimations, loadGruntAnimations, loadJuggernautAnimations, loadCthulhuAnimations, loadChestAnimations, loadVendorAnimations, loadStashAnimations, createVendorSprite, createStashSprite, playMonkAnimation, playRangerRollAnimation, playAnimation } from '../rendering/SpriteAnimator';
@@ -4431,7 +4432,10 @@ export class Game {
         if (!this.player) return 'No player';
         const zoneId = args[0];
         const config = ZoneManager.getZone(zoneId);
-        if (!config) return `Unknown zone: ${zoneId}. Try: forest, desert, ice`;
+        if (!config) {
+          const bossZones = Object.values(ZONE_REGISTRY).filter(z => z.bossId).map(z => z.id).join(', ');
+          return `Unknown zone: ${zoneId}. Try: ${bossZones}`;
+        }
         if (!config.bossId) return `${config.name} has no boss`;
         this.zoneManager.transitionTo(zoneId, config.roomCount - 1);
         this.buildCurrentZoneRoom();
