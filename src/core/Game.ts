@@ -56,7 +56,6 @@ import { getRandomMods } from './MonsterMods';
 import { WORLD_MAP_REGISTRY, ZONE_PORTAL_POSITIONS, getDiscoveredZoneIds, restoreDiscoveries, DEFAULT_DISCOVERED } from './WorldMapData';
 import { WorldMapScreen } from '../ui/WorldMapScreen';
 import { DiscoveryNotification } from '../ui/DiscoveryNotification';
-import { FogOfWar } from '../rendering/FogOfWar';
 
 export const SCREEN_WIDTH = 1920;
 export const SCREEN_HEIGHT = 1080;
@@ -218,7 +217,6 @@ export class Game {
   private discoveryNotification: DiscoveryNotification | null = null;
   private pendingDiscoveryQueue: string[] = [];
   private spawnInvulnTimer = 0;
-  private fogOfWar?: FogOfWar;
   soulVaultScreen?: SoulVaultScreen;
   soulVaultOpen: boolean = false;
 
@@ -978,11 +976,6 @@ export class Game {
       try { this.gameContainer.destroy({ children: true }); } catch (_) {}
       this.gameContainer = undefined;
     }
-    if (this.fogOfWar) {
-      this.app.stage.removeChild(this.fogOfWar.container);
-      this.fogOfWar.destroy();
-      this.fogOfWar = undefined;
-    }
     this.devConsole.hide();
     this.combatText.destroy();
     this.combatText = new CombatTextManager();
@@ -1502,29 +1495,6 @@ export class Game {
     }
 
     Logger.log('system', `Room built: ${zone.name}, room ${state.roomIndex + 1}/${zone.roomCount}`);
-
-    // Fog of war — create if not in hub zone
-    if (zone.id === 'hub') {
-      if (this.fogOfWar) {
-        this.app.stage.removeChild(this.fogOfWar.container);
-        this.fogOfWar.destroy();
-        this.fogOfWar = undefined;
-      }
-    } else {
-      if (this.fogOfWar) {
-        // Recreate fog for new zone
-        this.app.stage.removeChild(this.fogOfWar.container);
-        this.fogOfWar.destroy();
-      }
-      this.fogOfWar = new FogOfWar();
-      // Insert fog container right after gameContainer in stage children order
-      if (this.gameContainer) {
-        const idx = this.app.stage.getChildIndex(this.gameContainer) + 1;
-        this.app.stage.addChildAt(this.fogOfWar.container, idx);
-      } else {
-        this.app.stage.addChild(this.fogOfWar.container);
-      }
-    }
   }
 
   private spawnTutorialEnemies() {
@@ -2165,13 +2135,6 @@ export class Game {
       this.camera.update(this.player.x, this.player.y, dt);
       this.gameContainer!.x = -this.camera.x;
       this.gameContainer!.y = -this.camera.y;
-    }
-
-    // Update fog of war (screen-space overlay)
-    if (this.fogOfWar && this.gameContainer && this.camera) {
-      const screenX = this.player.x - this.camera.x;
-      const screenY = this.player.y - this.camera.y;
-      this.fogOfWar.update(screenX, screenY, dt);
     }
 
     // Update minimap
