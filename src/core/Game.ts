@@ -2841,15 +2841,13 @@ export class Game {
 
         if (!isUrnEnemy) {
           if (this.player.addXp(dead.xpReward)) {
-            this.combatText.showDamage(dead.x, dead.y - 30, this.player.level - 1, 0x44ff88);
-            Logger.log('combat', `Player reached level ${this.player.level}`);
+            this.vfxLevelUp(dead.x, dead.y, this.player.level);
           }
           const rarityLootMult = dead.rarity === 'rare' ? 3 : dead.rarity === 'magic' ? 2 : 1;
           this.spawnLoot(dead.x, dead.y, rarityLootMult);
         } else {
           if (this.player.addXp(Math.round(dead.xpReward * dead.xpMultiplier))) {
-            this.combatText.showDamage(dead.x, dead.y - 30, this.player.level - 1, 0x44ff88);
-            Logger.log('combat', `Player reached level ${this.player.level}`);
+            this.vfxLevelUp(dead.x, dead.y, this.player.level);
           }
           const group = this.urnSpawnGroups.get(dead.urnId);
           if (group && !group.lootDropped) {
@@ -2909,7 +2907,7 @@ export class Game {
       }
 
       if (this.player.addXp(this.boss.xpReward)) {
-        this.combatText.showDamage(this.boss.x, this.boss.y - 30, this.player.level - 1, 0x44ff88);
+        this.vfxLevelUp(this.boss.x, this.boss.y, this.player.level);
       }
 
       this.gameContainer!.removeChild(this.boss.telegraphs);
@@ -3205,6 +3203,46 @@ export class Game {
       g.lineStyle(4, color, alpha * 0.3);
       g.drawCircle(0, 0, r * 0.8);
     }, 30).position.set(x, y);
+  }
+
+  private vfxLevelUp(x: number, y: number, newLevel: number) {
+    // Outer golden ring — expands 30→150px, fades over 60 frames
+    this.addVfx((g, t) => {
+      const r = 30 + 120 * t;
+      const alpha = Math.max(0, 1 - t * 1.1);
+      g.lineStyle(3, 0xffd700, alpha * 0.7);
+      g.drawCircle(0, 0, r);
+      g.lineStyle(1, 0xffee88, alpha * 0.4);
+      g.drawCircle(0, 0, r * 1.15);
+    }, 60).position.set(x, y);
+
+    // Inner ring — slower expansion 0→60px, brighter, fades over 70 frames
+    this.addVfx((g, t) => {
+      const r = 60 * t;
+      const alpha = Math.max(0, 1 - t * 1.0);
+      g.lineStyle(2, 0xffdd44, alpha * 0.8);
+      g.drawCircle(0, 0, r);
+    }, 70).position.set(x, y);
+
+    // Sparkle particles — 18 gold dots radiating outward with twinkle
+    this.addVfx((g, t) => {
+      const alpha = Math.max(0, 1 - t * 1.3);
+      for (let i = 0; i < 18; i++) {
+        const baseAngle = (i / 18) * Math.PI * 2;
+        const dist = 40 + 80 * t;
+        const px = Math.cos(baseAngle) * dist;
+        const py = Math.sin(baseAngle) * dist;
+        const twinkle = 0.4 + 0.6 * Math.abs(Math.sin(t * Math.PI * 8 + i));
+        g.beginFill(0xffd700, alpha * twinkle * 0.9);
+        g.drawCircle(px, py, 2 + 2 * twinkle);
+        g.endFill();
+      }
+    }, 55).position.set(x, y);
+
+    // Big floating "LEVEL X!" text using combatText
+    if (this.combatText) {
+      this.combatText.showDamage(x, y - 50, `LEVEL ${newLevel}!`, 0xffd700);
+    }
   }
 
   private vfxProjectileTrail(p: Projectile) {
