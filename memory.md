@@ -42,7 +42,6 @@ Repo: https://github.com/eloheavenjoe-cyber/TinyARPG
     SpriteAnimator.ts         Sprite sheet loader + frame slicer + animation manager (warrior, ranger, reaper, golem, monk, cultist, archer, grunt, juggernaut, vendor, stash animated sprites)
     TileLoader.ts             PNG+JSON spritesheet loader (fetch → blob → Image → BaseTexture → named Textures)
     Camera.ts                 Player-following camera with smooth lerp, edge clamping
-    FogOfWar.ts               Screen-space dark overlay with soft circular cutout around player, lerp tracking
     Minimap.ts                Bottom-right minimap overlay (walls, player, enemies, chests, breakables)
   ui/
     MainMenu.ts               Title screen with New Game / Continue / Load Game
@@ -1337,17 +1336,7 @@ Tier 4: #35, #43  → professional quality
 
 **Files changed:** ZoneConfig.ts, ZoneRegistry.ts, WorldMapData.ts, RoomTemplates.ts, WorldMapScreen.ts, RoomDecorator.ts (6 files).
 
-### Phase 28 — Fog of War (completed 2026-06-13)
-
-**Screen-space dark overlay with soft circular cutout around the player:**
-
-- **FogOfWar class** (`src/rendering/FogOfWar.ts`, 78 lines): Full-screen dark overlay (`0x000000` at 0.88 alpha) punched with a clear circular cutout using PixiJS 7 `beginHole()`/`endHole()`. Soft gradient edge via 8 concentric rings (245→350px) with linearly increasing alpha. Smooth lerp tracking (speed 0.08) follows player screen position each frame.
-- **Game.ts integration**: Fog container inserted at `app.stage.getChildIndex(gameContainer) + 1` — renders above world objects, below HUD/skill bar. Hub zone skips fog. Player world→screen coordinate conversion via camera offset. Clean destroy on zone transitions and game session cleanup.
-- **Fixed zone ordering** for fog insertion to stay above gameContainer through zone rebuilds.
-
-**Files changed:** `src/rendering/FogOfWar.ts` (new), `src/core/Game.ts`. 2 files, 1 commit.
-
-### Phase 29 — Level-up Celebration VFX (completed 2026-06-13)
+### Phase 28 — Level-up Celebration VFX (completed 2026-06-13)
 
 **Golden rings + sparkles + floating text on every level-up:**
 
