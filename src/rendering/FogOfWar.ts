@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 
 const SCREEN_W = 1920;
 const SCREEN_H = 1080;
+const RING_STEP = 12;
 const RING_COUNT = 8;
 
 export class FogOfWar {
@@ -42,23 +43,26 @@ export class FogOfWar {
     const g = this.gfx;
     g.clear();
 
-    // 1. Full-screen dark overlay with clear hole at cutout
+    // 1. Full-screen dark overlay
     g.beginFill(this.fogColor, this.fogAlpha);
     g.drawRect(0, 0, SCREEN_W, SCREEN_H);
-    // beginHole must be called BEFORE endFill — it punches through the active fill
+    g.endFill();
+
+    // 2. Punch a fully clear hole at the cutout position (inner radius)
     g.beginHole();
     g.drawCircle(this.cutoutX, this.cutoutY, this.innerRadius);
     g.endHole();
-    g.endFill();
 
-    // 2. Soft edge: concentric ring outlines from innerRadius to radius
+    // 3. Soft edge: concentric rings from innerRadius to radius with increasing alpha
     const ringCount = RING_COUNT;
     const ringStep = (this.radius - this.innerRadius) / ringCount;
-    for (let i = 0; i <= ringCount; i++) {
+    for (let i = 1; i <= ringCount; i++) {
       const r = this.innerRadius + i * ringStep;
+      // Alpha goes from 0 at innerRadius up to fogAlpha at radius
       const ringAlpha = this.fogAlpha * (i / ringCount);
-      g.lineStyle(ringStep, this.fogColor, ringAlpha);
+      g.beginFill(this.fogColor, ringAlpha);
       g.drawCircle(this.cutoutX, this.cutoutY, r);
+      g.endFill();
     }
   }
 
